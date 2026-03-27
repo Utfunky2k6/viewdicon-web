@@ -1894,6 +1894,25 @@ function FamilyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
 
 // ── STEP: VILLAGE GATE ───────────────────────────────────────
 function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)=>void; theme:any; sovereigntyAllowed:boolean }) {
+  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURN (React rules)
+  const [selId, setSelId] = React.useState('')
+  const [query, setQuery] = React.useState('')
+
+  const visible = ALL_VILLAGES.filter(v => !v.holding)
+  const holding = ALL_VILLAGES.find(v => v.holding)!
+
+  const filtered = React.useMemo(() => {
+    if (!query.trim()) return visible
+    const q = query.toLowerCase()
+    return visible.filter(v =>
+      v.name.toLowerCase().includes(q) ||
+      v.ancientName.toLowerCase().includes(q) ||
+      (v.nationFull?.toLowerCase().includes(q) ?? false) ||
+      v.category.toLowerCase().includes(q) ||
+      v.guardian.toLowerCase().includes(q)
+    )
+  }, [visible, query])
+
   // LAW 3: Village Gate — requires African soil OR completed Heritage Verification
   if (!sovereigntyAllowed) {
     return (
@@ -1904,38 +1923,54 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
       </div>
     )
   }
-  const [selId, setSelId] = React.useState('')
-  const visible = ALL_VILLAGES.filter(v => !v.holding)
-  const holding = ALL_VILLAGES.find(v => v.holding)!
 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', background:theme.bg }}>
-       <div style={{ padding:20, flexShrink:0 }}>
-        <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
-        <div style={{ fontSize:13, color:theme.subText }}>20 ancient African civilisations — select your lineage.</div>
+      {/* Header + search */}
+      <div style={{ padding:'16px 20px 12px', flexShrink:0, borderBottom:`1px solid ${theme.border}`, background:theme.card }}>
+        <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:20, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
+        <div style={{ fontSize:12, color:theme.subText, marginBottom:12 }}>20 ancient African civilisations — select your lineage.</div>
+        <div style={{ position:'relative' }}>
+          <input value={query} onChange={e=>setQuery(e.target.value)}
+            placeholder="Search by name, empire, guardian…"
+            style={{ width:'100%', background:theme.muted, border:`1.5px solid ${query?theme.accent+'66':theme.border}`, borderRadius:12, padding:'10px 36px 10px 36px', color:theme.text, fontSize:13, outline:'none', transition:'border .2s', boxSizing:'border-box' }} />
+          <span style={{ position:'absolute', left:12, top:11, fontSize:14 }}>🔍</span>
+          {query && <button onClick={()=>setQuery('')} style={{ position:'absolute', right:12, top:10, background:'none', border:'none', color:theme.subText, cursor:'pointer', fontSize:14 }}>✕</button>}
+        </div>
       </div>
 
-      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 20px' }}>
-         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {visible.map(v => (
-              <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}15`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:20, padding:18, cursor:'pointer', transition:'all .2s' }}>
-                 <div style={{ fontSize:28, marginBottom:10 }}>{v.emoji}</div>
-                 <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:15, fontWeight:900, color:v.color, letterSpacing:'0.04em' }}>{v.ancientName}</div>
-                 <div style={{ fontSize:10, color:theme.subText, fontWeight:600, marginTop:3 }}>{v.nationFull?.split('·')[0]?.trim() || v.category}</div>
-              </div>
-            ))}
-         </div>
-         <div onClick={()=>setSelId(holding.id)} style={{ marginTop:12, padding:20, background:selId===holding.id?`${holding.color}15`:theme.card, border:`2px dashed ${selId===holding.id?holding.color:theme.border}`, borderRadius:20, display:'flex', alignItems:'center', gap:16, cursor:'pointer' }}>
-            <div style={{ fontSize:32 }}>{holding.emoji}</div>
-            <div>
-               <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:15, fontWeight:900, color:holding.color }}>{holding.ancientName}</div>
-               <div style={{ fontSize:11, color:theme.subText }}>The Griot will guide you to your path.</div>
+      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 20px' }}>
+        {filtered.length === 0 && (
+          <div style={{ textAlign:'center', marginTop:60, color:theme.subText, fontSize:13 }}>No villages matched — try a different search.</div>
+        )}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          {filtered.map(v => (
+            <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}18`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:18, padding:'14px 12px', cursor:'pointer', transition:'all .2s', display:'flex', flexDirection:'column', gap:5 }}>
+              <div style={{ fontSize:26 }}>{v.emoji}</div>
+              <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:13, fontWeight:900, color:v.color, letterSpacing:'0.03em', lineHeight:1.2 }}>{v.ancientName}</div>
+              <div style={{ fontSize:11, fontWeight:700, color:theme.text, lineHeight:1.2 }}>{v.name}</div>
+              <div style={{ fontSize:9, color:theme.subText, fontWeight:600, lineHeight:1.3 }}>{v.era}</div>
+              <div style={{ fontSize:9, color:v.color, fontWeight:700, marginTop:2, lineHeight:1.3 }}>🛡 {v.guardian}</div>
+              <div style={{ fontSize:9, color:theme.subText, lineHeight:1.4, marginTop:2, fontStyle:'italic' }}>{v.tagline}</div>
             </div>
-         </div>
+          ))}
+        </div>
+
+        {/* Holdings/Griot card — only shown when not searching */}
+        {!query && (
+          <div onClick={()=>setSelId(holding.id)} style={{ marginTop:10, padding:'14px 16px', background:selId===holding.id?`${holding.color}15`:theme.card, border:`2px dashed ${selId===holding.id?holding.color:theme.border}`, borderRadius:18, display:'flex', alignItems:'center', gap:14, cursor:'pointer', transition:'all .2s' }}>
+            <div style={{ fontSize:30 }}>{holding.emoji}</div>
+            <div>
+              <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:14, fontWeight:900, color:holding.color }}>{holding.ancientName}</div>
+              <div style={{ fontSize:11, fontWeight:700, color:theme.text, marginTop:2 }}>{holding.name}</div>
+              <div style={{ fontSize:10, color:theme.subText, marginTop:2, lineHeight:1.4 }}>The Griot will guide you to your path.</div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div style={{ padding:20, background:theme.card, borderTop:`1px solid ${theme.border}` }}>
-        <GradBtn onClick={()=>{ const v=ALL_VILLAGES.find(vv=>vv.id===selId); if(v) onNext(v) }} style={!selId?{opacity:0.4, pointerEvents:'none'}:{ height:56 }}>Enter the Village →</GradBtn>
+      <div style={{ padding:'16px 20px', background:theme.card, borderTop:`1px solid ${theme.border}`, flexShrink:0 }}>
+        <GradBtn onClick={()=>{ const v=ALL_VILLAGES.find(vv=>vv.id===selId); if(v) onNext(v) }} style={!selId?{opacity:0.4, pointerEvents:'none'}:{ height:52 }}>Enter the Village →</GradBtn>
       </div>
     </div>
   )
@@ -2118,20 +2153,35 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
             <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'0.04em' }}>
               {village.ancientName}
             </div>
-            <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.7)', marginTop:2 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.75)', marginTop:2 }}>
               {village.nationFull?.split('·')[0]?.trim() || village.category}
+            </div>
+            <div style={{ fontSize:9, color:'rgba(255,255,255,.55)', marginTop:3, fontStyle:'italic' }}>
+              {village.language} · {village.era}
             </div>
           </div>
         </div>
 
         {/* Role section */}
-        <div style={{ padding:'16px 20px' }}>
+        <div style={{ padding:'16px 20px 10px' }}>
           <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>Your Sovereign Role</div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:38, height:38, borderRadius:10, background:`${village.color}14`, border:`1.5px solid ${village.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>⚔</div>
             <div>
               <div style={{ fontFamily:'Sora,sans-serif', fontSize:15, fontWeight:800, color:theme.text }}>{role}</div>
               <div style={{ fontSize:11, color:village.color, fontWeight:700, marginTop:1 }}>{village.name}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Guardian & Meaning */}
+        <div style={{ padding:'0 20px 16px' }}>
+          <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Village Guardian</div>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 12px', borderRadius:12, background:`${village.color}08`, border:`1px solid ${village.color}22` }}>
+            <span style={{ fontSize:20, flexShrink:0 }}>🛡</span>
+            <div>
+              <div style={{ fontSize:12, fontWeight:800, color:village.color, marginBottom:3 }}>{village.guardian}</div>
+              <div style={{ fontSize:11, color:theme.subText, lineHeight:1.55 }}>{village.meaning}</div>
             </div>
           </div>
         </div>
@@ -2176,13 +2226,16 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
         </div>
       </div>
 
-      {/* ── Proverb Card ── */}
+      {/* ── Village Saying Card ── */}
       <div style={{ background:'rgba(212,160,23,.07)', border:'1px solid rgba(212,160,23,.18)', borderRadius:16, padding:'14px 18px', textAlign:'center', marginBottom:20 }}>
+        <div style={{ fontSize:10, fontWeight:800, color:'rgba(212,160,23,.6)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>
+          🛡 {village.guardian} — Guardian of {village.name}
+        </div>
         <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.65 }}>
-          &ldquo;The road that leads to a worthy destination is never easy.&rdquo;
+          &ldquo;{village.tagline}&rdquo;
         </div>
         <div style={{ fontSize:9, color:'rgba(212,160,23,.5)', marginTop:6, fontWeight:700 }}>
-          — African Proverb
+          — {village.ancientName} · {village.era}
         </div>
       </div>
 
@@ -2308,10 +2361,11 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
           ))}
         </div>
 
-        {/* Proverb */}
+        {/* Village guardian & tagline */}
         <div style={{ width:'100%', background:'rgba(212,160,23,.07)', border:'1px solid rgba(212,160,23,.18)', borderRadius:14, padding:'12px 16px', textAlign:'center', marginBottom:16 }}>
-          <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.6 }}>&ldquo;Ọmọ tí a kọ ni yóò ta ilé tì wa&rdquo;</div>
-          <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>The child we do not teach will sell our house — Yoruba Proverb</div>
+          <div style={{ fontSize:10, fontWeight:800, color:'rgba(212,160,23,.7)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>🛡 Guardian — {village.guardian}</div>
+          <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.6 }}>&ldquo;{village.tagline}&rdquo;</div>
+          <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>{village.ancientName} · {village.language} · {village.era}</div>
         </div>
         <GradBtn onClick={onDone} style={{ width:'100%' }}>Enter the Motherland 🌍 →</GradBtn>
         <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
@@ -2610,10 +2664,16 @@ export default function CeremonyPage() {
 
   const handleGriotSelection = (v: CanonicalVillage) => {
     setShowGriot(false)
-    const matched = ALL_VILLAGES.find(vv => vv.id === v.id) || ALL_VILLAGES[0]
+    const matched = ALL_VILLAGES.find(vv => vv.id === v.id)
+    if (!matched) {
+      // Griot returned unknown id — go to village selection so user can pick manually
+      setIdx(SEQUENCE.indexOf('VILLAGE'))
+      return
+    }
     setVillage(matched)
-    setIdx(SEQUENCE.indexOf('VILLAGE'))
-    next()
+    // Navigate directly to ROLE step — avoids React state-batching race with next()
+    const villageIdx = SEQUENCE.indexOf('VILLAGE')
+    setIdx(villageIdx >= 0 ? villageIdx + 1 : idx + 1)
   }
 
   const handleSendDrum = async (dialCode: string, _phone: string) => {
