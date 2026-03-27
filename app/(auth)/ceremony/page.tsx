@@ -99,19 +99,19 @@ type Step = 'TERMS'|'PRIVACY'|'PHONE'|'OTP'|'CIRCLES'|'HERITAGE_VERIFY'|'DEVICE'
  */
 function buildSequence(circle: UserCircle | null): Step[] {
   if (circle === 1) {
-    // Continental African — full sovereign path, no circles check
-    return ['TERMS','PHONE','OTP','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
+    // Continental African — full sovereign path, name/DOB first, then biometrics
+    return ['TERMS','PHONE','OTP','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
   }
   if (circle === 2) {
-    // Diaspora African — must prove heritage via Griot, then full access
-    return ['TERMS','PHONE','OTP','CIRCLES','HERITAGE_VERIFY','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
+    // Diaspora African — heritage verify first, then name/DOB, then biometrics
+    return ['TERMS','PHONE','OTP','CIRCLES','HERITAGE_VERIFY','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
   }
   if (circle === 3) {
     // Friend / Ally — STRIPPED of ALL African-specific steps
     return ['TERMS','PHONE','OTP','CIRCLES','DEVICE','ALLY_NAME','ALLY_CORONATION']
   }
-  // Default before phone step complete
-  return ['TERMS','PHONE','OTP','CIRCLES','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
+  // Default before phone step complete — name/DOB before biometrics
+  return ['TERMS','PHONE','OTP','CIRCLES','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
 }
 
 const STEP_LABELS: Record<Step,string> = {
