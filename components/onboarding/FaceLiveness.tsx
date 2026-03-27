@@ -1,16 +1,25 @@
 'use client'
 import * as React from 'react'
 
-type Challenge = 'BLINK' | 'TURN_LEFT' | 'SMILE' | 'NOD' | 'LOOK_UP'
+type Challenge = 'BLINK' | 'TURN_LEFT' | 'SMILE' | 'NOD' | 'LOOK_UP' | 'EYES_WIDE' | 'OPEN_MOUTH' | 'LOOK_RIGHT'
 type ChallengeState = 'waiting' | 'active' | 'passed' | 'timeout'
 
-const CHALLENGES: { type: Challenge; instruction: string; emoji: string; voice: string }[] = [
-  { type: 'BLINK',      instruction: 'Blink your eyes twice slowly',      emoji: '👁️',  voice: 'Now… blink your eyes twice slowly.' },
-  { type: 'SMILE',      instruction: 'Give us a big smile',               emoji: '😄',  voice: 'Beautiful. Now give us a big, warm smile.' },
-  { type: 'TURN_LEFT',  instruction: 'Turn your head slowly to the left', emoji: '↩️',  voice: 'Wonderful. Now slowly turn your head to the left.' },
-  { type: 'NOD',        instruction: 'Nod your head up and down',         emoji: '↕️',  voice: 'Almost done. Gently nod your head up and down.' },
-  { type: 'LOOK_UP',    instruction: 'Look up briefly, then look forward', emoji: '👆',  voice: 'Last one. Look up briefly, then look back at me.' },
+const ALL_CHALLENGES: { type: Challenge; instruction: string; emoji: string; voice: string }[] = [
+  { type: 'BLINK',      instruction: 'Blink your eyes twice slowly',         emoji: '👁️',  voice: 'Now… blink your eyes twice slowly.' },
+  { type: 'SMILE',      instruction: 'Give us a big warm smile',             emoji: '😄',  voice: 'Beautiful! Now give us a big, warm smile.' },
+  { type: 'TURN_LEFT',  instruction: 'Turn your head slowly to the left',   emoji: '↩️',  voice: 'Wonderful. Now slowly turn your head to the left.' },
+  { type: 'NOD',        instruction: 'Nod your head up and down',           emoji: '↕️',  voice: 'Almost there. Gently nod your head up and down.' },
+  { type: 'LOOK_UP',    instruction: 'Look up briefly, then look forward',  emoji: '👆',  voice: 'Look up briefly, then look back at me.' },
+  { type: 'EYES_WIDE',  instruction: 'Open your eyes as WIDE as possible',  emoji: '👀',  voice: 'Yes! Now open your eyes as wide as you possibly can.' },
+  { type: 'OPEN_MOUTH', instruction: 'Open your mouth wide — say AHHH',     emoji: '😮',  voice: 'Almost done. Open your mouth wide and say Ahhh.' },
+  { type: 'LOOK_RIGHT', instruction: 'Slowly look to the right',            emoji: '➡️',  voice: 'And now, slowly look to the right.' },
 ]
+
+/** Randomly pick `n` challenges from the pool each liveness session */
+function pickChallenges(n: number) {
+  const shuffled = [...ALL_CHALLENGES].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, n)
+}
 
 const CHALLENGE_TIMEOUT_MS = 10_000
 const SAMPLE_INTERVAL_MS = 200
@@ -81,6 +90,9 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const streamRef = React.useRef<MediaStream | null>(null)
 
+  // Pick 5 random challenges per session, stable across renders
+  const [CHALLENGES] = React.useState(() => pickChallenges(5))
+
   const [cameraReady, setCameraReady] = React.useState(false)
   const [cameraDenied, setCameraDenied] = React.useState(false)
   const [currentChallenge, setCurrentChallenge] = React.useState(0)
@@ -94,28 +106,26 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
   const baseCentroidRef = React.useRef(0.5)
   const baseCentroidYRef = React.useRef(0.5)
   const baseSmileBrightnessRef = React.useRef(0)
+  const baseEyeBrightnessRef = React.useRef(0)
+  const baseMouthBrightnessRef = React.useRef(0)
   const sampleCountRef = React.useRef(0)
 
-  const bg = theme?.bg || '#060b07'
-  const text = theme?.text || '#f0f7f0'
-  const accent = theme?.accent || '#1a7c3e'
+  const bg      = theme?.bg      || '#060b07'
+  const text    = theme?.text    || '#f0f7f0'
+  const accent  = theme?.accent  || '#1a7c3e'
   const subText = theme?.subText || 'rgba(255,255,255,.5)'
 
   // Speak challenge voice when state becomes active
   React.useEffect(() => {
     if (challengeState === 'active' && !allPassed) {
       const challenge = CHALLENGES[currentChallenge]
-      if (challenge) {
-        speak(challenge.voice)
-      }
+      if (challenge) speak(challenge.voice)
     }
-  }, [challengeState, currentChallenge, allPassed])
+  }, [challengeState, currentChallenge, allPassed, CHALLENGES])
 
   // Speak completion message
   React.useEffect(() => {
-    if (allPassed) {
-      speak('Face verified. Welcome to the Motherland.')
-    }
+    if (allPassed) speak('Face verified. Welcome to the Motherland.')
   }, [allPassed])
 
   // Start camera
@@ -151,12 +161,15 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
     const challenge = CHALLENGES[currentChallenge]
     if (!challenge) return
 
+    // Reset detection refs
     blinkCountRef.current = 0
     prevEyeBrightnessRef.current = 0
     eyeClosedRef.current = false
     baseCentroidRef.current = 0
     baseCentroidYRef.current = 0
     baseSmileBrightnessRef.current = 0
+    baseEyeBrightnessRef.current = 0
+    baseMouthBrightnessRef.current = 0
     sampleCountRef.current = 0
 
     const timeoutId = setTimeout(() => {
@@ -178,18 +191,15 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
       ctx.drawImage(video, 0, 0, w, h)
       sampleCountRef.current++
 
+      // ── BLINK ──────────────────────────────────────────────────
       if (challenge.type === 'BLINK') {
-        // Sample eye region: center horizontal strip, top 35-50% vertical
         const eyeY = Math.floor(h * 0.35)
         const eyeH = Math.floor(h * 0.15)
         const eyeX = Math.floor(w * 0.25)
         const eyeW = Math.floor(w * 0.5)
         const brightness = avgBrightness(ctx, eyeX, eyeY, eyeW, eyeH)
 
-        if (sampleCountRef.current <= 3) {
-          prevEyeBrightnessRef.current = brightness
-          return
-        }
+        if (sampleCountRef.current <= 3) { prevEyeBrightnessRef.current = brightness; return }
 
         const drop = (prevEyeBrightnessRef.current - brightness) / prevEyeBrightnessRef.current
 
@@ -199,8 +209,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
           eyeClosedRef.current = false
           blinkCountRef.current++
           if (blinkCountRef.current >= 2) {
-            clearInterval(intervalId)
-            clearTimeout(timeoutId)
+            clearInterval(intervalId); clearTimeout(timeoutId)
             setChallengeState('passed')
             setTimeout(() => advanceChallenge(), 800)
           }
@@ -208,69 +217,103 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
         prevEyeBrightnessRef.current = brightness
       }
 
+      // ── TURN_LEFT ───────────────────────────────────────────────
       if (challenge.type === 'TURN_LEFT') {
         const cx = luminanceCentroidX(ctx, w, h)
-        if (sampleCountRef.current <= 5) {
-          baseCentroidRef.current = cx
-          return
-        }
+        if (sampleCountRef.current <= 5) { baseCentroidRef.current = cx; return }
         const shift = cx - baseCentroidRef.current
-        // Head turned left = luminance centroid shifts right (mirrored video)
         if (Math.abs(shift) > 0.06) {
-          clearInterval(intervalId)
-          clearTimeout(timeoutId)
+          clearInterval(intervalId); clearTimeout(timeoutId)
           setChallengeState('passed')
           setTimeout(() => advanceChallenge(), 800)
         }
       }
 
+      // ── LOOK_RIGHT ──────────────────────────────────────────────
+      // Head turns right → luminance centroid shifts LEFT in mirrored video
+      if (challenge.type === 'LOOK_RIGHT') {
+        const cx = luminanceCentroidX(ctx, w, h)
+        if (sampleCountRef.current <= 5) { baseCentroidRef.current = cx; return }
+        const shift = baseCentroidRef.current - cx   // positive = moved left
+        if (shift > 0.06) {
+          clearInterval(intervalId); clearTimeout(timeoutId)
+          setChallengeState('passed')
+          setTimeout(() => advanceChallenge(), 800)
+        }
+      }
+
+      // ── SMILE ───────────────────────────────────────────────────
       if (challenge.type === 'SMILE') {
-        // Mouth region: center, bottom 60-80% of face
         const mouthY = Math.floor(h * 0.6)
         const mouthH = Math.floor(h * 0.2)
         const mouthX = Math.floor(w * 0.3)
         const mouthW = Math.floor(w * 0.4)
         const brightness = avgBrightness(ctx, mouthX, mouthY, mouthW, mouthH)
 
-        if (sampleCountRef.current <= 5) {
-          baseSmileBrightnessRef.current = brightness
-          return
-        }
-        const increase = (brightness - baseSmileBrightnessRef.current) / baseSmileBrightnessRef.current
+        if (sampleCountRef.current <= 5) { baseSmileBrightnessRef.current = brightness; return }
+        const increase = (brightness - baseSmileBrightnessRef.current) / (baseSmileBrightnessRef.current + 1)
         if (increase > 0.05) {
-          clearInterval(intervalId)
-          clearTimeout(timeoutId)
+          clearInterval(intervalId); clearTimeout(timeoutId)
           setChallengeState('passed')
           setTimeout(() => advanceChallenge(), 800)
         }
       }
 
+      // ── OPEN_MOUTH ──────────────────────────────────────────────
+      // Wider area + larger threshold than SMILE
+      if (challenge.type === 'OPEN_MOUTH') {
+        const mouthY = Math.floor(h * 0.58)
+        const mouthH = Math.floor(h * 0.25)
+        const mouthX = Math.floor(w * 0.25)
+        const mouthW = Math.floor(w * 0.5)
+        const brightness = avgBrightness(ctx, mouthX, mouthY, mouthW, mouthH)
+
+        if (sampleCountRef.current <= 5) { baseMouthBrightnessRef.current = brightness; return }
+        const increase = (brightness - baseMouthBrightnessRef.current) / (baseMouthBrightnessRef.current + 1)
+        if (increase > 0.10) {
+          clearInterval(intervalId); clearTimeout(timeoutId)
+          setChallengeState('passed')
+          setTimeout(() => advanceChallenge(), 800)
+        }
+      }
+
+      // ── EYES_WIDE ───────────────────────────────────────────────
+      // Eyes wide open = more light entering iris/sclera band = brightness increase
+      if (challenge.type === 'EYES_WIDE') {
+        const eyeY = Math.floor(h * 0.30)
+        const eyeH = Math.floor(h * 0.20)
+        const eyeX = Math.floor(w * 0.20)
+        const eyeW = Math.floor(w * 0.60)
+        const brightness = avgBrightness(ctx, eyeX, eyeY, eyeW, eyeH)
+
+        if (sampleCountRef.current <= 5) { baseEyeBrightnessRef.current = brightness; return }
+        const increase = (brightness - baseEyeBrightnessRef.current) / (baseEyeBrightnessRef.current + 1)
+        if (increase > 0.08) {
+          clearInterval(intervalId); clearTimeout(timeoutId)
+          setChallengeState('passed')
+          setTimeout(() => advanceChallenge(), 800)
+        }
+      }
+
+      // ── NOD ─────────────────────────────────────────────────────
       if (challenge.type === 'NOD') {
         const cy = luminanceCentroidY(ctx, w, h)
-        if (sampleCountRef.current <= 5) {
-          baseCentroidYRef.current = cy
-          return
-        }
+        if (sampleCountRef.current <= 5) { baseCentroidYRef.current = cy; return }
         const shift = Math.abs(cy - baseCentroidYRef.current)
         if (shift > 0.05) {
-          clearInterval(intervalId)
-          clearTimeout(timeoutId)
+          clearInterval(intervalId); clearTimeout(timeoutId)
           setChallengeState('passed')
           setTimeout(() => advanceChallenge(), 800)
         }
       }
 
+      // ── LOOK_UP ─────────────────────────────────────────────────
       if (challenge.type === 'LOOK_UP') {
         const cy = luminanceCentroidY(ctx, w, h)
-        if (sampleCountRef.current <= 5) {
-          baseCentroidYRef.current = cy
-          return
-        }
-        // Looking up = centroid shifts upward (smaller Y)
-        const shift = baseCentroidYRef.current - cy
+        if (sampleCountRef.current <= 5) { baseCentroidYRef.current = cy; return }
+        const shift = baseCentroidYRef.current - cy   // positive = moved upward
         if (shift > 0.05) {
-          clearInterval(intervalId)
-          clearTimeout(timeoutId)
+          clearInterval(intervalId); clearTimeout(timeoutId)
           setChallengeState('passed')
           setTimeout(() => advanceChallenge(), 800)
         }
@@ -329,7 +372,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
   if (allPassed) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: bg, padding: 20 }}>
-        <div style={{ fontSize: 64, marginBottom: 16, animation: 'wbBeat 1s ease-in-out' }}>✅</div>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
         <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 20, fontWeight: 900, color: '#4ade80', marginBottom: 8 }}>Face Verified</div>
         <div style={{ fontSize: 12, color: subText, textAlign: 'center' }}>Your spirit has been anchored to your physical form.</div>
       </div>
@@ -347,7 +390,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
         Face Verification
       </div>
       <div style={{ fontSize: 11, color: subText, marginBottom: 16, textAlign: 'center' }}>
-        Anchoring your digital spirit to your physical form
+        AI is reading your living presence — follow each prompt
       </div>
 
       {/* Camera feed */}
@@ -390,7 +433,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
       {/* Challenge progress dots */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
         {CHALLENGES.map((c, i) => (
-          <div key={c.type} style={{
+          <div key={c.type + i} style={{
             width: 10, height: 10, borderRadius: '50%',
             background: i < currentChallenge ? '#4ade80' : i === currentChallenge && challengeState === 'passed' ? '#4ade80' : i === currentChallenge ? accent : 'rgba(255,255,255,.15)',
             transition: 'background .3s',
@@ -398,11 +441,12 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
         ))}
       </div>
 
-      {/* Challenge instruction — speech bubble style */}
+      {/* Challenge instruction */}
       {challengeState === 'waiting' && cameraReady && (
         <>
-          <div style={{ fontSize: 13, color: subText, marginBottom: 16, textAlign: 'center' }}>
-            Position your face in the circle and stay still.
+          <div style={{ fontSize: 13, color: subText, marginBottom: 16, textAlign: 'center', lineHeight: 1.6, maxWidth: 260 }}>
+            Position your face in the circle and stay still.<br />
+            <span style={{ fontSize: 11, color: accent }}>🎙 Voice prompts will guide you through {CHALLENGES.length} checks</span>
           </div>
           <button
             onClick={handleStart}
@@ -447,7 +491,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
           padding: '10px 28px', borderRadius: 99,
           background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.15)',
           color: 'rgba(255,255,255,.5)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-          zIndex: 10,
+          zIndex: 10, whiteSpace: 'nowrap',
         }}
       >
         Skip for now →

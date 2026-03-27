@@ -2,9 +2,34 @@
 import * as React from 'react'
 
 const DRUM_CSS = `
-@keyframes drumFill { 0% { transform:scale(0.85) } 60% { transform:scale(1.08) } 100% { transform:scale(1) } }
-@keyframes drumPulse { 0%,100% { transform:scaleY(.35); opacity:.6 } 50% { transform:scaleY(1); opacity:1 } }
+@keyframes drumFill {
+  0%   { transform: scale(0.78); opacity: .6 }
+  65%  { transform: scale(1.12) }
+  100% { transform: scale(1) }
+}
+@keyframes drumPulse {
+  0%,100% { transform: scaleY(.3); opacity: .45 }
+  50%     { transform: scaleY(1); opacity: 1 }
+}
+@keyframes otpShake {
+  0%,100% { transform: translateX(0) }
+  18%,54% { transform: translateX(-7px) }
+  36%,72% { transform: translateX(7px) }
+}
+@keyframes otpGlow {
+  0%,100% { box-shadow: 0 0 0 0 transparent }
+  50%     { box-shadow: 0 0 18px 4px var(--otp-accent) }
+}
 `
+
+interface DrumOtpBoxesProps {
+  value: string
+  onChange: (v: string) => void
+  onComplete: () => void
+  accentColor?: string
+  error?: string
+  label?: string
+}
 
 export function DrumOtpBoxes({
   value,
@@ -12,120 +37,217 @@ export function DrumOtpBoxes({
   onComplete,
   accentColor = '#1a7c3e',
   error,
-}: {
-  value: string
-  onChange: (v: string) => void
-  onComplete: () => void
-  accentColor?: string
-  error?: string
-}) {
-  const r0 = React.useRef<HTMLInputElement>(null)
-  const r1 = React.useRef<HTMLInputElement>(null)
-  const r2 = React.useRef<HTMLInputElement>(null)
-  const r3 = React.useRef<HTMLInputElement>(null)
-  const r4 = React.useRef<HTMLInputElement>(null)
-  const r5 = React.useRef<HTMLInputElement>(null)
-  const refs = [r0, r1, r2, r3, r4, r5]
+  label = '🥁 TALKING DRUM CODE',
+}: DrumOtpBoxesProps) {
+  const inputRefs = [
+    React.useRef<HTMLInputElement>(null),
+    React.useRef<HTMLInputElement>(null),
+    React.useRef<HTMLInputElement>(null),
+    React.useRef<HTMLInputElement>(null),
+    React.useRef<HTMLInputElement>(null),
+    React.useRef<HTMLInputElement>(null),
+  ]
 
   const allFilled = value.length === 6
+  const [shake, setShake] = React.useState(false)
+  const prevError = React.useRef(error)
 
+  // Auto-focus first box on mount only (not on re-renders)
+  React.useEffect(() => {
+    const t = setTimeout(() => inputRefs[0].current?.focus(), 150)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fire onComplete when 6 digits are entered
   React.useEffect(() => {
     if (value.length === 6) onComplete()
   }, [value, onComplete])
 
-  const handle = (i: number, v: string) => {
-    if (!/^\d?$/.test(v)) return
+  // Shake animation when a new error appears
+  React.useEffect(() => {
+    if (error && error !== prevError.current) {
+      setShake(true)
+      const t = setTimeout(() => setShake(false), 520)
+      return () => clearTimeout(t)
+    }
+    prevError.current = error
+  }, [error])
+
+  // Re-focus first empty box when value is cleared externally
+  React.useEffect(() => {
+    if (value === '') {
+      setTimeout(() => inputRefs[0].current?.focus(), 60)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value])
+
+  const handleChange = (i: number, raw: string) => {
+    // Accept only single digits
+    const digit = raw.replace(/\D/g, '').slice(-1)
     const arr = (value + '      ').split('').slice(0, 6)
-    arr[i] = v
-    onChange(arr.join('').trimEnd())
-    if (v && i < 5) refs[i + 1].current?.focus()
+    arr[i] = digit
+    const next = arr.join('').trimEnd()
+    onChange(next)
+    if (digit && i < 5) inputRefs[i + 1].current?.focus()
   }
 
-  const handleKey = (i: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !value[i] && i > 0) refs[i - 1].current?.focus()
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      if (value[i]) {
+        // Clear current
+        const arr = (value + '      ').split('').slice(0, 6)
+        arr[i] = ' '
+        onChange(arr.join('').trimEnd())
+      } else if (i > 0) {
+        inputRefs[i - 1].current?.focus()
+      }
+    }
+    if (e.key === 'ArrowLeft' && i > 0) inputRefs[i - 1].current?.focus()
+    if (e.key === 'ArrowRight' && i < 5) inputRefs[i + 1].current?.focus()
   }
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
-    const t = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (t) onChange(t)
+    const digits = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (!digits) return
+    onChange(digits)
+    // Focus the next empty box or last box
+    const focusIdx = Math.min(digits.length, 5)
+    setTimeout(() => inputRefs[focusIdx].current?.focus(), 20)
   }
 
-  const drumBarHeights = [8, 14, 20, 16, 10, 12]
-  const drumDelays = ['0s', '0.18s', '0.36s', '0.24s', '0.06s', '0.3s']
+  // Click already-filled box → focus it so user can overwrite
+  const handleClick = (i: number) => {
+    inputRefs[i].current?.select()
+  }
+
+  // Drum bars — height varies per bar for visual rhythm
+  const barHeights = [10, 16, 22, 18, 12, 14]
+  const barDelays  = ['0s', '0.16s', '0.32s', '0.22s', '0.08s', '0.27s']
 
   return (
-    <div>
+    <div
+      style={{
+        // CSS custom prop consumed by otpGlow keyframe
+        ['--otp-accent' as string]: `${accentColor}80`,
+        animation: shake ? 'otpShake .5s ease' : 'none',
+      }}
+    >
       <style>{DRUM_CSS}</style>
-      {/* Label row */}
-      <div style={{ fontSize: 10, fontWeight: 800, color: '#d4a017', textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: 12, textAlign: 'center' }}>
-        🥁 TALKING DRUM CODE
-      </div>
 
-      {/* Boxes */}
-      <div style={{ display: 'flex', gap: 8 }} onPaste={handlePaste}>
-        {refs.map((ref, i) => {
-          const filled = !!value[i]
+      {/* Label */}
+      {label && (
+        <div style={{
+          fontSize: 10, fontWeight: 800, color: '#d4a017',
+          textTransform: 'uppercase', letterSpacing: '0.18em',
+          marginBottom: 16, textAlign: 'center',
+        }}>
+          {label}
+        </div>
+      )}
+
+      {/* Six digit boxes */}
+      <div
+        style={{ display: 'flex', gap: 8 }}
+        onPaste={handlePaste}
+      >
+        {inputRefs.map((ref, i) => {
+          const filled   = !!value[i]
+          const isCursor = value.length === i  // next box to fill
+
           return (
             <input
               key={i}
               ref={ref}
               type="text"
               inputMode="numeric"
-              maxLength={1}
+              pattern="[0-9]*"
+              maxLength={2}  // allow 2 so replace to single-digit works on Android
               value={value[i] ?? ''}
-              placeholder="•"
-              onChange={e => handle(i, e.target.value)}
-              onKeyDown={e => handleKey(i, e)}
-              autoFocus={i === 0}
+              placeholder="·"
+              onChange={e => handleChange(i, e.target.value)}
+              onKeyDown={e => handleKeyDown(i, e)}
+              onClick={() => handleClick(i)}
               style={{
+                // Square — flex-grow but capped by aspect-ratio
                 flex: 1,
-                height: 68,
-                borderRadius: 16,
+                minWidth: 0,
+                aspectRatio: '1 / 1',
+                maxWidth: 64,
+                borderRadius: 14,
                 textAlign: 'center',
                 fontSize: 22,
                 fontWeight: 900,
-                color: filled ? '#fff' : 'rgba(255,255,255,.22)',
-                background: filled
-                  ? `linear-gradient(135deg, ${accentColor}30, ${accentColor}15)`
-                  : 'rgba(255,255,255,.04)',
-                border: filled
-                  ? `2.5px solid ${accentColor}`
-                  : '2px solid rgba(255,255,255,.1)',
+                lineHeight: 1,
+                color: filled ? '#ffffff' : 'rgba(255,255,255,.22)',
+                background: allFilled
+                  ? `linear-gradient(145deg, ${accentColor}45, ${accentColor}22)`
+                  : filled
+                    ? `linear-gradient(145deg, ${accentColor}30, ${accentColor}14)`
+                    : isCursor
+                      ? `rgba(255,255,255,.06)`
+                      : 'rgba(255,255,255,.03)',
+                border: `2.5px solid ${
+                  allFilled
+                    ? accentColor
+                    : filled
+                      ? `${accentColor}cc`
+                      : isCursor
+                        ? `${accentColor}55`
+                        : 'rgba(255,255,255,.1)'
+                }`,
                 outline: 'none',
                 boxShadow: allFilled
-                  ? `0 0 28px ${accentColor}70, 0 0 10px ${accentColor}50`
+                  ? `0 0 22px ${accentColor}55, inset 0 1px 0 rgba(255,255,255,.18)`
                   : filled
-                    ? `0 0 20px ${accentColor}50`
+                    ? `0 0 14px ${accentColor}35`
                     : 'none',
-                animation: filled ? 'drumFill .35s ease both' : 'none',
-                transition: 'border-color .15s, background .15s, box-shadow .15s',
+                animation: filled ? 'drumFill .32s cubic-bezier(.34,1.56,.64,1) both' : 'none',
+                transition: 'border-color .15s, background .15s, box-shadow .18s',
+                caretColor: 'transparent',
+                WebkitAppearance: 'none',
+                cursor: 'pointer',
               }}
             />
           )
         })}
       </div>
 
-      {/* Mini drum wave bars */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        {drumBarHeights.map((h, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+      {/* Drum-wave bars — one under each box */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+        {barHeights.map((h, i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1, display: 'flex',
+              justifyContent: 'center', alignItems: 'flex-end',
+              height: 22,
+            }}
+          >
             <div
               style={{
-                width: 3,
-                height: h,
-                borderRadius: 2,
-                background: `${accentColor}99`,
-                animation: `drumPulse 1.3s ease-in-out ${drumDelays[i]} infinite`,
+                width: 3, height: h, borderRadius: 3,
+                background: value[i]
+                  ? accentColor
+                  : `${accentColor}55`,
+                animation: `drumPulse 1.35s ease-in-out ${barDelays[i]} infinite`,
+                transition: 'background .2s',
               }}
             />
           </div>
         ))}
       </div>
 
-      {/* Inline error */}
+      {/* Error message */}
       {error && (
-        <div style={{ fontSize: 12, color: '#f87171', textAlign: 'center', marginTop: 10, padding: '8px 14px', background: 'rgba(178,34,34,.1)', borderRadius: 10, border: '1px solid rgba(178,34,34,.2)' }}>
+        <div style={{
+          fontSize: 12, color: '#f87171', textAlign: 'center',
+          marginTop: 12, padding: '9px 14px',
+          background: 'rgba(178,34,34,.12)',
+          borderRadius: 10, border: '1px solid rgba(178,34,34,.28)',
+          lineHeight: 1.5,
+        }}>
           {error}
         </div>
       )}
