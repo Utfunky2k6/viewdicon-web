@@ -18,8 +18,6 @@ import FaceLiveness from '@/components/onboarding/FaceLiveness'
 import { CanonicalVillage } from '@/constants/villages'
 import { isAfricanDialCode, AFRICAN_DIAL_CODES, WORLD_DIAL_CODES, type UserCircle, type DialCodeEntry } from '@/lib/dial-codes'
 import { useThemeStore } from '@/stores/themeStore'
-import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
-import { DrumDatePicker } from '@/components/ui/DrumDatePicker'
 
 // ── THEME CONSTANTS ──────────────────────────────────────────
 // LIGHT: Warm ivory parchment — premium, Africa-inspired, AA-contrast throughout
@@ -99,19 +97,19 @@ type Step = 'TERMS'|'PRIVACY'|'PHONE'|'OTP'|'CIRCLES'|'HERITAGE_VERIFY'|'DEVICE'
  */
 function buildSequence(circle: UserCircle | null): Step[] {
   if (circle === 1) {
-    // Continental African — full sovereign path, name/DOB first, then biometrics
-    return ['TERMS','PHONE','OTP','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
+    // Continental African — full sovereign path, no circles check
+    return ['TERMS','PHONE','OTP','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
   }
   if (circle === 2) {
-    // Diaspora African — heritage verify first, then name/DOB, then biometrics
-    return ['TERMS','PHONE','OTP','CIRCLES','HERITAGE_VERIFY','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
+    // Diaspora African — must prove heritage via Griot, then full access
+    return ['TERMS','PHONE','OTP','CIRCLES','HERITAGE_VERIFY','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
   }
   if (circle === 3) {
     // Friend / Ally — STRIPPED of ALL African-specific steps
     return ['TERMS','PHONE','OTP','CIRCLES','DEVICE','ALLY_NAME','ALLY_CORONATION']
   }
-  // Default before phone step complete — name/DOB before biometrics
-  return ['TERMS','PHONE','OTP','CIRCLES','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
+  // Default before phone step complete
+  return ['TERMS','PHONE','OTP','CIRCLES','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
 }
 
 const STEP_LABELS: Record<Step,string> = {
@@ -356,7 +354,6 @@ function PhoneStep({ onSendDrum, theme }: { onSendDrum:(d:string, p:string)=>voi
   const [selected, setSelected] = React.useState(AFRICAN_CODES[0])
   const [showPicker, setShowPicker] = React.useState(false)
   const [search, setSearch] = React.useState('')
-  const [phoneFocused, setPhoneFocused] = React.useState(false)
 
   const isAfrican = isAfricanDialCode(selected.dial)
 
@@ -376,57 +373,22 @@ function PhoneStep({ onSendDrum, theme }: { onSendDrum:(d:string, p:string)=>voi
       </div>
 
       <div style={{ background:theme.card, border:`1px solid ${theme.border}`, borderRadius:20, padding:20, marginBottom:16 }}>
-        <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:12 }}>Your Phone Number</div>
-
-        {/* ── UNIFIED phone input: country + number in one container ── */}
-        <div style={{
-          display:'flex', alignItems:'stretch', borderRadius:14, overflow:'hidden',
-          border: phoneFocused
-            ? `1.5px solid ${isAfrican ? '#1a7c3e' : theme.accent}`
-            : `1.5px solid ${isAfrican ? 'rgba(26,124,62,.5)' : theme.border}`,
-          background: theme.muted,
-          transition:'border-color .2s',
-          height:54,
-        }}>
-          {/* Country button */}
-          <button
-            type="button"
-            onClick={() => setShowPicker(true)}
-            style={{
-              display:'flex', alignItems:'center', gap:8, padding:'0 14px',
-              background:'none', border:'none', cursor:'pointer', flexShrink:0,
-              color:theme.text,
-            }}
-          >
-            <span style={{ fontSize:20 }}>{selected.flag}</span>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', lineHeight:1 }}>
-              <span style={{ fontSize:12, fontWeight:800, color:theme.subText, fontFamily:'monospace' }}>{selected.dial}</span>
-              {isAfrican && <span style={{ fontSize:8, fontWeight:800, color:'#1a7c3e', textTransform:'uppercase', letterSpacing:'.04em', marginTop:2 }}>🌍 African</span>}
-            </div>
-            <span style={{ fontSize:9, color:theme.subText, marginLeft:2 }}>▾</span>
-          </button>
-
-          {/* Divider */}
-          <div style={{ width:1, background:theme.border, alignSelf:'center', height:28, flexShrink:0 }} />
-
-          {/* Phone number input */}
-          <input
-            type="tel"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            placeholder="8XX XXX XXXX"
-            value={phone}
-            onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-            onFocus={() => setPhoneFocused(true)}
-            onBlur={() => setPhoneFocused(false)}
-            style={{
-              flex:1, minWidth:0, padding:'0 16px',
-              background:'transparent', border:'none',
-              color:theme.text, fontSize:17, fontWeight:700,
-              outline:'none', letterSpacing:'.02em',
-            }}
-          />
+        <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:12 }}>Select Your Nation</div>
+        <div onClick={()=>setShowPicker(true)} style={{ display:'flex', alignItems:'center', gap:12, padding:14, background:theme.muted, borderRadius:12, border:`1.5px solid ${isAfrican ? '#1a7c3e' : theme.border}`, cursor:'pointer', marginBottom:18, transition:'border-color .2s' }}>
+          <span style={{ fontSize:22 }}>{selected.flag}</span>
+          <span style={{ fontSize:15, fontWeight:700, flex:1, color:theme.text }}>{selected.name}</span>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3 }}>
+            <span style={{ color:theme.subText, fontSize:13 }}>{selected.dial} ▾</span>
+            {isAfrican && <span style={{ fontSize:9, fontWeight:800, color:'#1a7c3e', textTransform:'uppercase', letterSpacing:'.06em' }}>🌍 African SIM</span>}
+          </div>
         </div>
+
+        <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:8 }}>Phone Number</div>
+        <input
+          type="tel" placeholder="812 345 6789" value={phone}
+          onChange={(e)=>setPhone(e.target.value.replace(/[^0-9]/g,''))}
+          style={{ width:'100%', padding:14, background:theme.muted, border:`1.5px solid ${theme.border}`, borderRadius:12, color:theme.text, fontSize:18, fontWeight:700, outline:'none' }}
+        />
       </div>
 
       {/* Heritage notice — only for non-African numbers */}
@@ -515,33 +477,54 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
   const [verified, setVerified] = React.useState(false)
   const [error, setError] = React.useState('')
   const [countdown, setCountdown] = React.useState(60)
+  const r0=React.useRef<HTMLInputElement>(null), r1=React.useRef<HTMLInputElement>(null)
+  const r2=React.useRef<HTMLInputElement>(null), r3=React.useRef<HTMLInputElement>(null)
+  const r4=React.useRef<HTMLInputElement>(null), r5=React.useRef<HTMLInputElement>(null)
+  const refs = [r0,r1,r2,r3,r4,r5]
 
   React.useEffect(() => {
     if (countdown > 0) { const t = setTimeout(() => setCountdown(c => c - 1), 1000); return () => clearTimeout(t) }
   }, [countdown])
 
-  // Fires when DrumOtpBoxes calls onComplete (6 digits entered)
-  const handleComplete = React.useCallback(() => {
-    if (verifying || verified) return
-    setVerifying(true); setError('')
-    ;(async () => {
-      try {
-        await authApi.verifyPhone({ phone, otp })
-        setVerified(true); setVerifying(false)
-        setTimeout(onNext, 600)
-      } catch {
-        // Backend down or mismatch — fall back to local dev code
-        if (devOtp && otp === devOtp) {
+  React.useEffect(() => {
+    if (otp.length === 6 && !verifying && !verified) {
+      setVerifying(true); setError('')
+      ;(async () => {
+        try {
+          await authApi.verifyPhone({ phone, otp })
           setVerified(true); setVerifying(false)
           setTimeout(onNext, 600)
-        } else {
-          setVerifying(false)
-          setOtp('')
-          setError('Invalid code — try again')
+        } catch {
+          // Backend down or OTP mismatch — try local match
+          if (devOtp && otp === devOtp) {
+            setVerified(true); setVerifying(false)
+            setTimeout(onNext, 600)
+          } else {
+            setVerifying(false)
+            setOtp('')
+            setError('Invalid code — try again')
+            refs[0].current?.focus()
+          }
         }
-      }
-    })()
-  }, [verifying, verified, phone, otp, devOtp, onNext])
+      })()
+    }
+  }, [otp, verifying, verified, onNext, phone, devOtp])
+
+  const handleDigit = (i:number, v:string) => {
+    if (!/^\d?$/.test(v)) return
+    const arr = (otp + '      ').split('').slice(0,6)
+    arr[i] = v
+    setOtp(arr.join('').trimEnd())
+    if (v && i < 5) refs[i+1].current?.focus()
+  }
+  const handleKey = (i:number, e:React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[i] && i > 0) refs[i-1].current?.focus()
+  }
+  const handlePaste = (e:React.ClipboardEvent) => {
+    e.preventDefault()
+    const t = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6)
+    if (t) setOtp(t)
+  }
 
   // Drum-beat animation bars
   const drumBars = [.45,.7,1,.85,.6,.5,.75,.4]
@@ -577,9 +560,25 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
         </div>
       )}
 
-      {/* DrumOtpBoxes */}
+      {/* 6-box OTP input */}
       <div style={{ background:theme.card, border:`1px solid ${theme.border}`, borderRadius:16, padding:16, marginBottom:12 }}>
-        <DrumOtpBoxes value={otp} onChange={setOtp} onComplete={handleComplete} accentColor={theme.accent} error={error} />
+        <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.12em', marginBottom:10, textAlign:'center' }}>6-Digit Talking Drum Code</div>
+        <div style={{ display:'flex', gap:6 }} onPaste={handlePaste}>
+          {refs.map((ref,i) => (
+            <input key={i} ref={ref} type="text" inputMode="numeric" maxLength={1}
+              value={otp[i] ?? ''} onChange={e => handleDigit(i,e.target.value)} onKeyDown={e => handleKey(i,e)}
+              autoFocus={i===0}
+              style={{
+                flex:1, height:44, borderRadius:10, textAlign:'center', fontSize:18, fontWeight:900,
+                color: otp[i] ? theme.text : theme.subText,
+                background: otp[i] ? `${theme.accent}20` : theme.muted,
+                border: `2.5px solid ${otp[i] ? theme.accent : theme.border}`,
+                outline:'none', transition:'all .15s',
+                boxShadow: otp[i] ? `0 0 12px ${theme.accent}33` : 'none',
+              }}
+            />
+          ))}
+        </div>
 
         {/* Status */}
         <div style={{ marginTop:16, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
@@ -601,6 +600,11 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
           )}
         </div>
       </div>
+
+      {/* Error display */}
+      {error && (
+        <div style={{ fontSize:12, color:'#f87171', textAlign:'center', padding:'8px 14px', background:'rgba(178,34,34,.1)', borderRadius:10, border:'1px solid rgba(178,34,34,.2)', marginBottom:8 }}>{error}</div>
+      )}
 
       {/* Drum animation */}
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:14, background:`${theme.accent}08`, border:`1px solid ${theme.accent}22`, marginBottom:'auto' }}>
@@ -853,10 +857,10 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:11, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Country of Residence</div>
               <select value={currentCountry} onChange={e=>setCurrentCountry(e.target.value)}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:13, background: theme.text === '#f0f7f0' ? '#0d1a0f' : theme.card,
+                style={{ width:'100%', padding:'12px 14px', borderRadius:13, background:theme.card,
                   border:`2px solid ${currentCountry ? meta.bg+'88' : theme.border}`,
                   color: currentCountry ? theme.text : theme.subText, fontSize:14, outline:'none',
-                  cursor:'pointer', appearance:'auto', transition:'border .2s', colorScheme: theme.text === '#f0f7f0' ? 'dark' : 'light' }}>
+                  cursor:'pointer', appearance:'none', transition:'border .2s' }}>
                 <option value=''>Select your country…</option>
                 {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -1052,7 +1056,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:2 }}>Ancestral Nation *</div>
              <select value={ancestralNation} onChange={e=>{setAncestralNation(e.target.value);setTabError('')}}
-               style={{ width:'100%', padding:'13px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:ancestralNation?theme.text:theme.subText, background: theme.text === '#f0f7f0' ? '#0d1a0f' : theme.card, border:`1.5px solid ${ancestralNation?theme.accent:theme.border}`, outline:'none', appearance:'auto', colorScheme: theme.text === '#f0f7f0' ? 'dark' : 'light' }}>
+               style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:ancestralNation?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${theme.border}`, outline:'none', appearance:'auto' }}>
                <option value="">Select your ancestral nation…</option>
                {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
              </select>
@@ -1073,21 +1077,12 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
         {tab===2 && (
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
             <div>
-              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>Date of Birth *</div>
-              <DrumDatePicker
-                value={dob}
-                onChange={v => { setDob(v); setTabError('') }}
-                accentColor={theme.accent || '#1a7c3e'}
-                bgColor={theme.bg || '#060b07'}
-                textColor={theme.text || '#f0f7f0'}
-                maxYear={new Date().getFullYear() - 13}
-                minYear={new Date().getFullYear() - 110}
+              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Date of Birth *</div>
+              <input type="date" value={dob} min={minDob} max={maxDob}
+                onChange={e=>{setDob(e.target.value);setTabError('')}}
+                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:dob?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${dob?theme.accent:theme.border}`, outline:'none', boxSizing:'border-box', colorScheme:'dark' }}
               />
-              {dob && (
-                <div style={{ fontSize:10, color:theme.accent, marginTop:8, textAlign:'center', padding:'6px 12px', background:`${theme.accent}10`, borderRadius:8 }}>
-                  ✓ Born {new Date(dob + 'T12:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} — Birth year encoded in Afro-ID
-                </div>
-              )}
+              {dob && <div style={{ fontSize:10, color:theme.accent, marginTop:4 }}>✓ Birth year {new Date(dob).getFullYear()} will be encoded in your Afro-ID</div>}
             </div>
             <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:2 }}>Birth Season</div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
@@ -1148,7 +1143,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
             <div>
               <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Country of Residence *</div>
               <select value={currentCountry} onChange={e=>{setCurrentCountry(e.target.value);setTabError('')}}
-                style={{ width:'100%', padding:'13px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:currentCountry?theme.text:theme.subText, background: theme.text === '#f0f7f0' ? '#0d1a0f' : theme.card, border:`1.5px solid ${currentCountry?theme.accent:theme.border}`, outline:'none', appearance:'auto', colorScheme: theme.text === '#f0f7f0' ? 'dark' : 'light' }}>
+                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:currentCountry?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${theme.border}`, outline:'none', appearance:'auto' }}>
                 <option value="">Select your country…</option>
                 {WORLD_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -1856,7 +1851,7 @@ function FamilyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:9, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6 }}>Phone Number *</div>
         <div style={{ display:'flex', gap:8 }}>
-          <select value={dialCode} onChange={e=>setDialCode(e.target.value)} style={{ padding:'10px 8px', borderRadius:12, background: theme.text === '#f0f7f0' ? '#0d1a0f' : theme.card, border:`1.5px solid ${dialCode?theme.accent:theme.border}`, color:theme.text, fontSize:13, outline:'none', cursor:'pointer', colorScheme: theme.text === '#f0f7f0' ? 'dark' : 'light', appearance:'auto' }}>
+          <select value={dialCode} onChange={e=>setDialCode(e.target.value)} style={{ padding:'10px 8px', borderRadius:12, background:theme.card, border:`1.5px solid ${theme.border}`, color:theme.text, fontSize:13, outline:'none', cursor:'pointer' }}>
             {AFRICAN_DIAL_CODES.map((c: DialCodeEntry)=><option key={c.dial} value={c.dial}>{c.flag} {c.dial}</option>)}
             {WORLD_CODES.map((c: DialCodeEntry)=><option key={c.dial+c.name} value={c.dial}>{c.flag} {c.dial}</option>)}
           </select>
@@ -1894,25 +1889,6 @@ function FamilyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
 
 // ── STEP: VILLAGE GATE ───────────────────────────────────────
 function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)=>void; theme:any; sovereigntyAllowed:boolean }) {
-  // ALL HOOKS MUST BE BEFORE ANY CONDITIONAL RETURN (React rules)
-  const [selId, setSelId] = React.useState('')
-  const [query, setQuery] = React.useState('')
-
-  const visible = ALL_VILLAGES.filter(v => !v.holding)
-  const holding = ALL_VILLAGES.find(v => v.holding)!
-
-  const filtered = React.useMemo(() => {
-    if (!query.trim()) return visible
-    const q = query.toLowerCase()
-    return visible.filter(v =>
-      v.name.toLowerCase().includes(q) ||
-      v.ancientName.toLowerCase().includes(q) ||
-      (v.nationFull?.toLowerCase().includes(q) ?? false) ||
-      v.category.toLowerCase().includes(q) ||
-      v.guardian.toLowerCase().includes(q)
-    )
-  }, [visible, query])
-
   // LAW 3: Village Gate — requires African soil OR completed Heritage Verification
   if (!sovereigntyAllowed) {
     return (
@@ -1923,54 +1899,38 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
       </div>
     )
   }
+  const [selId, setSelId] = React.useState('')
+  const visible = ALL_VILLAGES.filter(v => !v.holding)
+  const holding = ALL_VILLAGES.find(v => v.holding)!
 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', background:theme.bg }}>
-      {/* Header + search */}
-      <div style={{ padding:'16px 20px 12px', flexShrink:0, borderBottom:`1px solid ${theme.border}`, background:theme.card }}>
-        <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:20, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
-        <div style={{ fontSize:12, color:theme.subText, marginBottom:12 }}>20 ancient African civilisations — select your lineage.</div>
-        <div style={{ position:'relative' }}>
-          <input value={query} onChange={e=>setQuery(e.target.value)}
-            placeholder="Search by name, empire, guardian…"
-            style={{ width:'100%', background:theme.muted, border:`1.5px solid ${query?theme.accent+'66':theme.border}`, borderRadius:12, padding:'10px 36px 10px 36px', color:theme.text, fontSize:13, outline:'none', transition:'border .2s', boxSizing:'border-box' }} />
-          <span style={{ position:'absolute', left:12, top:11, fontSize:14 }}>🔍</span>
-          {query && <button onClick={()=>setQuery('')} style={{ position:'absolute', right:12, top:10, background:'none', border:'none', color:theme.subText, cursor:'pointer', fontSize:14 }}>✕</button>}
-        </div>
+       <div style={{ padding:20, flexShrink:0 }}>
+        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
+        <div style={{ fontSize:13, color:theme.subText }}>The professional guild where you will grow your legacy.</div>
       </div>
 
-      <div style={{ flex:1, overflowY:'auto', padding:'12px 16px 20px' }}>
-        {filtered.length === 0 && (
-          <div style={{ textAlign:'center', marginTop:60, color:theme.subText, fontSize:13 }}>No villages matched — try a different search.</div>
-        )}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-          {filtered.map(v => (
-            <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}18`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:18, padding:'14px 12px', cursor:'pointer', transition:'all .2s', display:'flex', flexDirection:'column', gap:5 }}>
-              <div style={{ fontSize:26 }}>{v.emoji}</div>
-              <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:13, fontWeight:900, color:v.color, letterSpacing:'0.03em', lineHeight:1.2 }}>{v.ancientName}</div>
-              <div style={{ fontSize:11, fontWeight:700, color:theme.text, lineHeight:1.2 }}>{v.name}</div>
-              <div style={{ fontSize:9, color:theme.subText, fontWeight:600, lineHeight:1.3 }}>{v.era}</div>
-              <div style={{ fontSize:9, color:v.color, fontWeight:700, marginTop:2, lineHeight:1.3 }}>🛡 {v.guardian}</div>
-              <div style={{ fontSize:9, color:theme.subText, lineHeight:1.4, marginTop:2, fontStyle:'italic' }}>{v.tagline}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Holdings/Griot card — only shown when not searching */}
-        {!query && (
-          <div onClick={()=>setSelId(holding.id)} style={{ marginTop:10, padding:'14px 16px', background:selId===holding.id?`${holding.color}15`:theme.card, border:`2px dashed ${selId===holding.id?holding.color:theme.border}`, borderRadius:18, display:'flex', alignItems:'center', gap:14, cursor:'pointer', transition:'all .2s' }}>
-            <div style={{ fontSize:30 }}>{holding.emoji}</div>
+      <div style={{ flex:1, overflowY:'auto', padding:'0 20px 20px' }}>
+         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {visible.map(v => (
+              <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}15`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:20, padding:18, cursor:'pointer', transition:'all .2s' }}>
+                 <div style={{ fontSize:28, marginBottom:10 }}>{v.emoji}</div>
+                 <div style={{ fontSize:14, fontWeight:900, color:theme.text }}>{v.name}</div>
+                 <div style={{ fontSize:10, color:v.color, fontWeight:800, marginTop:2 }}>{v.yoruba}</div>
+              </div>
+            ))}
+         </div>
+         <div onClick={()=>setSelId(holding.id)} style={{ marginTop:12, padding:20, background:selId===holding.id?`${holding.color}15`:theme.card, border:`2px dashed ${selId===holding.id?holding.color:theme.border}`, borderRadius:20, display:'flex', alignItems:'center', gap:16, cursor:'pointer' }}>
+            <div style={{ fontSize:32 }}>{holding.emoji}</div>
             <div>
-              <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:14, fontWeight:900, color:holding.color }}>{holding.ancientName}</div>
-              <div style={{ fontSize:11, fontWeight:700, color:theme.text, marginTop:2 }}>{holding.name}</div>
-              <div style={{ fontSize:10, color:theme.subText, marginTop:2, lineHeight:1.4 }}>The Griot will guide you to your path.</div>
+               <div style={{ fontSize:15, fontWeight:900, color:theme.text }}>{holding.name} Village</div>
+               <div style={{ fontSize:11, color:theme.subText }}>The Griot will guide you to your path.</div>
             </div>
-          </div>
-        )}
+         </div>
       </div>
 
-      <div style={{ padding:'16px 20px', background:theme.card, borderTop:`1px solid ${theme.border}`, flexShrink:0 }}>
-        <GradBtn onClick={()=>{ const v=ALL_VILLAGES.find(vv=>vv.id===selId); if(v) onNext(v) }} style={!selId?{opacity:0.4, pointerEvents:'none'}:{ height:52 }}>Enter the Village →</GradBtn>
+      <div style={{ padding:20, background:theme.card, borderTop:`1px solid ${theme.border}` }}>
+        <GradBtn onClick={()=>{ const v=ALL_VILLAGES.find(vv=>vv.id===selId); if(v) onNext(v) }} style={!selId?{opacity:0.4, pointerEvents:'none'}:{ height:56 }}>Enter the Village →</GradBtn>
       </div>
     </div>
   )
@@ -2030,7 +1990,7 @@ function RoleStep({ village, onNext, theme }: { village:Village; onNext:(role:st
           `🏅 Earns the "${selected.name}" Sovereign Role Badge`,
           `🥁 Receives village-specific Drum Feed posts and opportunities`,
           `🔑 Unlocks ${village.name} Village roles, rooms, and market access`,
-          `⚡ Afro-ID prefix tied to ${village.ancientName} lineage`,
+          `⚡ Afro-ID prefix tied to ${village.yoruba ?? village.name} lineage`,
         ].map((perk, i) => (
           <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 14px', borderRadius:14, background:theme.card, border:`1px solid ${theme.border}` }}>
             <div style={{ fontSize:12, lineHeight:1.65, color:theme.text }}>{perk}</div>
@@ -2150,38 +2110,23 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
             {village.emoji}
           </div>
           <div>
-            <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'0.04em' }}>
-              {village.ancientName}
+            <div style={{ fontFamily:'Sora,sans-serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'-0.01em' }}>
+              {village.name}
             </div>
-            <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.75)', marginTop:2 }}>
-              {village.nationFull?.split('·')[0]?.trim() || village.category}
-            </div>
-            <div style={{ fontSize:9, color:'rgba(255,255,255,.55)', marginTop:3, fontStyle:'italic' }}>
-              {village.language} · {village.era}
+            <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.7)', marginTop:2 }}>
+              {village.yoruba}
             </div>
           </div>
         </div>
 
         {/* Role section */}
-        <div style={{ padding:'16px 20px 10px' }}>
+        <div style={{ padding:'16px 20px' }}>
           <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>Your Sovereign Role</div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:38, height:38, borderRadius:10, background:`${village.color}14`, border:`1.5px solid ${village.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>⚔</div>
             <div>
               <div style={{ fontFamily:'Sora,sans-serif', fontSize:15, fontWeight:800, color:theme.text }}>{role}</div>
               <div style={{ fontSize:11, color:village.color, fontWeight:700, marginTop:1 }}>{village.name}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Guardian & Meaning */}
-        <div style={{ padding:'0 20px 16px' }}>
-          <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Village Guardian</div>
-          <div style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 12px', borderRadius:12, background:`${village.color}08`, border:`1px solid ${village.color}22` }}>
-            <span style={{ fontSize:20, flexShrink:0 }}>🛡</span>
-            <div>
-              <div style={{ fontSize:12, fontWeight:800, color:village.color, marginBottom:3 }}>{village.guardian}</div>
-              <div style={{ fontSize:11, color:theme.subText, lineHeight:1.55 }}>{village.meaning}</div>
             </div>
           </div>
         </div>
@@ -2226,16 +2171,13 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
         </div>
       </div>
 
-      {/* ── Village Saying Card ── */}
+      {/* ── Proverb Card ── */}
       <div style={{ background:'rgba(212,160,23,.07)', border:'1px solid rgba(212,160,23,.18)', borderRadius:16, padding:'14px 18px', textAlign:'center', marginBottom:20 }}>
-        <div style={{ fontSize:10, fontWeight:800, color:'rgba(212,160,23,.6)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>
-          🛡 {village.guardian} — Guardian of {village.name}
-        </div>
         <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.65 }}>
-          &ldquo;{village.tagline}&rdquo;
+          &ldquo;The road that leads to a worthy destination is never easy.&rdquo;
         </div>
         <div style={{ fontSize:9, color:'rgba(212,160,23,.5)', marginTop:6, fontWeight:700 }}>
-          — {village.ancientName} · {village.era}
+          — African Proverb
         </div>
       </div>
 
@@ -2253,13 +2195,6 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
   const [afroId, setAfroId] = React.useState('')
   const [loading, setLoading] = React.useState(true)
   const [confetti, setConfetti] = React.useState<{x:number;y:number;color:string;delay:number;size:number;drift:number}[]>([])
-  const [autoCount, setAutoCount] = React.useState(6)
-  React.useEffect(() => {
-    if (!revealed) return
-    if (autoCount <= 0) { onDone(); return }
-    const t = setTimeout(() => setAutoCount(c => c - 1), 1000)
-    return () => clearTimeout(t)
-  }, [revealed, autoCount, onDone])
 
   // Fetch from production backend using authenticated API client
   React.useEffect(() => {
@@ -2329,7 +2264,7 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
 
         <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:'#f0f7f0', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .4s' }}>Welcome Home!</div>
         <div style={{ fontSize:13, color:'#7da882', textAlign:'center', lineHeight:1.65, marginBottom:8 }}>You are now a citizen of<br/>the Digital Motherland.</div>
-        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.4)', borderRadius:99, padding:'5px 14px', fontSize:11, fontWeight:700, color:'#4ade80', marginBottom:18 }}>✦ <span style={{ fontFamily:'"Cinzel","Palatino",serif', letterSpacing:'0.06em' }}>{village.ancientName}</span> · {role}</div>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.4)', borderRadius:99, padding:'5px 14px', fontSize:11, fontWeight:700, color:'#4ade80', marginBottom:18 }}>✦ {village.name} Village · {role}</div>
 
         <div style={{ width:'100%', background:'rgba(26,124,62,.08)', border:'1px solid rgba(26,124,62,.25)', borderRadius:16, padding:16, marginBottom:12, textAlign:'center' }}>
           <div style={{ fontSize:11, fontWeight:800, color:'rgba(255,255,255,.4)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>🔒 Your Afro-ID (Private)</div>
@@ -2361,19 +2296,12 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
           ))}
         </div>
 
-        {/* Village guardian & tagline */}
+        {/* Proverb */}
         <div style={{ width:'100%', background:'rgba(212,160,23,.07)', border:'1px solid rgba(212,160,23,.18)', borderRadius:14, padding:'12px 16px', textAlign:'center', marginBottom:16 }}>
-          <div style={{ fontSize:10, fontWeight:800, color:'rgba(212,160,23,.7)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>🛡 Guardian — {village.guardian}</div>
-          <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.6 }}>&ldquo;{village.tagline}&rdquo;</div>
-          <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>{village.ancientName} · {village.language} · {village.era}</div>
+          <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.6 }}>&ldquo;Ọmọ tí a kọ ni yóò ta ilé tì wa&rdquo;</div>
+          <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>The child we do not teach will sell our house — Yoruba Proverb</div>
         </div>
         <GradBtn onClick={onDone} style={{ width:'100%' }}>Enter the Motherland 🌍 →</GradBtn>
-        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', border: `3px solid ${theme.accent || '#1a7c3e'}40`, borderTopColor: theme.accent || '#1a7c3e', animation: 'spin 1s linear infinite' }} />
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>
-            Entering Motherland in <strong style={{ color: theme.accent || '#1a7c3e' }}>{autoCount}s</strong>…
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -2664,16 +2592,10 @@ export default function CeremonyPage() {
 
   const handleGriotSelection = (v: CanonicalVillage) => {
     setShowGriot(false)
-    const matched = ALL_VILLAGES.find(vv => vv.id === v.id)
-    if (!matched) {
-      // Griot returned unknown id — go to village selection so user can pick manually
-      setIdx(SEQUENCE.indexOf('VILLAGE'))
-      return
-    }
+    const matched = ALL_VILLAGES.find(vv => vv.id === v.id) || ALL_VILLAGES[0]
     setVillage(matched)
-    // Navigate directly to ROLE step — avoids React state-batching race with next()
-    const villageIdx = SEQUENCE.indexOf('VILLAGE')
-    setIdx(villageIdx >= 0 ? villageIdx + 1 : idx + 1)
+    setIdx(SEQUENCE.indexOf('VILLAGE'))
+    next()
   }
 
   const handleSendDrum = async (dialCode: string, _phone: string) => {
@@ -2693,33 +2615,22 @@ export default function CeremonyPage() {
     authApi.sendOtp(fullPhone, 'en').then(res => {
       if (res.devCode) setDevOtp(res.devCode)
     }).catch(() => { /* backend down — local code will be used */ })
-    // Background geo-detect (non-blocking, best-effort — 404/offline is expected)
+    // Background geo-detect (non-blocking)
     setGeoLoading(true)
-    ;(async () => {
-      try {
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
-        const locale = typeof navigator !== 'undefined' ? navigator.language : 'en'
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-        const res = await fetch(`${apiBase}/api/v1/geo/detect`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dialCode, timezone: tz, locale }),
-          signal: AbortSignal.timeout(4000), // don't hang for >4s
-        })
-        if (res.ok) {
-          const d = await res.json()
-          setGeoResult(d)
-        } else {
-          // Non-2xx (e.g. 404 if backend lacks geo endpoint) — use phone-based fallback
-          setGeoResult({ circle: autoCircle ?? 3, isAfrican: autoCircle === 1 })
-        }
-      } catch {
-        // Network offline or timeout — silently fall back, no console error
-        setGeoResult({ circle: autoCircle ?? 3, isAfrican: autoCircle === 1 })
-      } finally {
-        setGeoLoading(false)
-      }
-    })()
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const locale = typeof navigator !== 'undefined' ? navigator.language : 'en'
+      const res = await fetch('/api/v1/geo/detect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dialCode, timezone: tz, locale }),
+      })
+      if (res.ok) { const d = await res.json(); setGeoResult(d) }
+    } catch {
+      setGeoResult({ circle: autoCircle ?? 3, isAfrican: autoCircle === 1 })
+    } finally {
+      setGeoLoading(false)
+    }
   }
 
   const handleRegister = async (overrideDisplayName?: string) => {
@@ -2749,8 +2660,7 @@ export default function CeremonyPage() {
       })
       setTokens(res.accessToken, res.refreshToken)
       if (typeof document !== 'undefined') {
-        const secure = location.protocol === 'https:' ? '; Secure' : ''
-        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${secure}`
+        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
       }
       // Fetch full profile and hydrate store so profile page shows real data
       try {
@@ -2786,18 +2696,13 @@ export default function CeremonyPage() {
       setUser({ id: res.userId })
       setCeremonyComplete(true)
       if (typeof document !== 'undefined') {
-        const secure = location.protocol === 'https:' ? '; Secure' : ''
-        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${secure}`
+        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
       }
     } catch {
-      // Registration failed — still let user into dashboard with a ceremony token
+      // Registration failed — still route user, they can retry login
       setCeremonyComplete(true)
-      if (typeof document !== 'undefined') {
-        const secure = location.protocol === 'https:' ? '; Secure' : ''
-        document.cookie = `afk_token=ceremony-${Date.now().toString(36)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${secure}`
-      }
     }
-    router.push('/dashboard')
+    router.push(circle === 3 ? '/dashboard' : '/dashboard')
   }
 
   return (
