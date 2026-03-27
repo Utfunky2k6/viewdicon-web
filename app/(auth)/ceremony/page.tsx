@@ -97,19 +97,19 @@ type Step = 'TERMS'|'PRIVACY'|'PHONE'|'OTP'|'CIRCLES'|'HERITAGE_VERIFY'|'DEVICE'
  */
 function buildSequence(circle: UserCircle | null): Step[] {
   if (circle === 1) {
-    // Continental African — full sovereign path, no circles check
-    return ['TERMS','PHONE','OTP','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
+    // Continental African — name/DOB first, then biometrics
+    return ['TERMS','PHONE','OTP','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
   }
   if (circle === 2) {
-    // Diaspora African — must prove heritage via Griot, then full access
-    return ['TERMS','PHONE','OTP','CIRCLES','HERITAGE_VERIFY','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
+    // Diaspora African — heritage verify first, then name/DOB, then biometrics
+    return ['TERMS','PHONE','OTP','CIRCLES','HERITAGE_VERIFY','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
   }
   if (circle === 3) {
     // Friend / Ally — STRIPPED of ALL African-specific steps
     return ['TERMS','PHONE','OTP','CIRCLES','DEVICE','ALLY_NAME','ALLY_CORONATION']
   }
-  // Default before phone step complete
-  return ['TERMS','PHONE','OTP','CIRCLES','DEVICE','FINGERPRINT','BIOMETRIC','NAMING','FAMILY','VILLAGE','ROLE','CONFIRM','CORONATION']
+  // Default before phone step complete — name/DOB before biometrics
+  return ['TERMS','PHONE','OTP','CIRCLES','NAMING','FAMILY','DEVICE','FINGERPRINT','BIOMETRIC','VILLAGE','ROLE','CONFIRM','CORONATION']
 }
 
 const STEP_LABELS: Record<Step,string> = {
@@ -916,7 +916,10 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
   const [tab, setTab] = React.useState(0)
   const [first, setFirst] = React.useState('')
   const [last, setLast] = React.useState('')
+  const [displayName, setDisplayName] = React.useState('')
   const [ancestralNation, setAncestralNation] = React.useState('')
+  const [originState, setOriginState] = React.useState('')
+  const [originVillage, setOriginVillage] = React.useState('')
   const [ethnicGroup, setEthnicGroup] = React.useState('')
   const [clanLineage, setClanLineage] = React.useState('')
   const [dob, setDob] = React.useState('')
@@ -927,6 +930,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
   const [currentCountry, setCurrentCountry] = React.useState('')
   const [currentCity, setCurrentCity] = React.useState('')
   const [occupation, setOccupation] = React.useState('')
+  const [altContact, setAltContact] = React.useState('')
   // localHeritage: pre-filled from parent (Circle 2 HeritageStep) or selected in-step (Circle 1)
   const [localHeritage, setLocalHeritage] = React.useState(heritage ?? '')
   const [tabError, setTabError] = React.useState('')
@@ -975,11 +979,14 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
       onNamingData?.({
         first: first.trim(), last: last.trim(),
         fullName: `${first.trim()} ${last.trim()}`,
+        displayName: displayName.trim() || first.trim(),
         dateOfBirth: dob, birthYear,
-        ancestralNation, ethnicGroup, clanLineage,
+        ancestralNation, originState: originState.trim(), originVillage: originVillage.trim(),
+        ethnicGroup, clanLineage,
         birthSeason, motherName: motherName.trim(), fatherName: fatherName.trim(),
         totemAnimal, currentCountry, currentCity: currentCity.trim(),
-        occupation: occupation.trim(), heritage: localHeritage,
+        occupation: occupation.trim(), altContact: altContact.trim(),
+        heritage: localHeritage,
       })
       onNext()
     }
@@ -1039,6 +1046,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
             )}
             <DField label="Forename(s) *" placeholder="e.g. Umoh Utibe" value={first} onChange={setFirst} theme={theme} />
             <DField label="Surname *" placeholder="e.g. Akpan" value={last} onChange={setLast} theme={theme} />
+            <DField label="Display Name — How the village will know you" placeholder="e.g. Umoh or @MarketKing" value={displayName} onChange={setDisplayName} theme={theme} />
             <div style={{ background:`${theme.accent}08`, border:`1px solid ${theme.accent}33`, borderRadius:16, padding:14, color:theme.accent, fontSize:11, lineHeight:1.6 }}>
                {localHeritage && config !== UBUNTU_CEREMONY ? (
                  <>
@@ -1060,6 +1068,8 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
                <option value="">Select your ancestral nation…</option>
                {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
              </select>
+             <DField label="State or Region" placeholder="e.g. Lagos, Ashanti, Nairobi..." value={originState} onChange={v=>{setOriginState(v);setTabError('')}} theme={theme} />
+             <DField label="Village or Town of Origin" placeholder="e.g. Eket, Kumasi, Kisumu..." value={originVillage} onChange={v=>{setOriginVillage(v);setTabError('')}} theme={theme} />
              <DField label="Ethnic Group / Tribe" placeholder="e.g. Yoruba, Igbo, Zulu" value={ethnicGroup} onChange={v=>{setEthnicGroup(v);setTabError('')}} theme={theme} />
              <DField label="Clan / Lineage" placeholder="e.g. Ikot Abasi" value={clanLineage} onChange={v=>{setClanLineage(v);setTabError('')}} theme={theme} />
              {ancestralNation && (
@@ -1150,6 +1160,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
             </div>
             <DField label="City / Town *" placeholder="e.g. London" value={currentCity} onChange={v=>{setCurrentCity(v);setTabError('')}} theme={theme} />
             <DField label="Occupation / Calling *" placeholder="e.g. Software Engineer, Farmer, Student" value={occupation} onChange={v=>{setOccupation(v);setTabError('')}} theme={theme} />
+            <DField label="Alternative Contact — Optional" placeholder="e.g. +234 801 234 5678" type="tel" value={altContact} onChange={v=>{setAltContact(v);setTabError('')}} theme={theme} />
             {currentCountry && currentCity && occupation && (
               <div style={{ background:`linear-gradient(135deg, #1a7c3e10, #1a7c3e05)`, border:`1px solid #1a7c3e30`, borderRadius:16, padding:16, marginTop:6, display:'flex', alignItems:'center', gap:14 }}>
                 <div style={{ width:48, height:48, borderRadius:'50%', background:'#1a7c3e15', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{'\uD83D\uDCCD'}</div>
