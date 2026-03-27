@@ -55,7 +55,6 @@ function VillageCard({
   griotSuggested?: boolean
   memberCount?: number
 }) {
-  const [rolesOpen, setRolesOpen] = React.useState(false)
   const vc = village.color
   const isHolding = village.holding === true
 
@@ -94,106 +93,87 @@ function VillageCard({
     )
   }
 
-  // ── Standard village card — ancient name IS the hero ──────────
+  // ── Standard village card — premium redesign ──────────────────
   return (
     <div
-      onClick={() => setRolesOpen(o => !o)}
       style={{
         borderRadius: 16, overflow: 'hidden', position: 'relative',
-        background: '#070a07', cursor: 'pointer',
+        background: '#070a07',
         border: `1.5px solid ${active ? vc + '70' : joined ? vc + '40' : 'rgba(255,255,255,.07)'}`,
         boxShadow: active ? `0 0 0 1px ${vc}30, 0 6px 24px ${vc}28` : joined ? `0 2px 12px ${vc}16` : 'none',
         transition: 'border-color .2s, box-shadow .2s',
       }}
     >
-      {/* ── FLAG HERO — 120px ───────────────────────────────── */}
-      <div style={{ position: 'relative', height: 120, overflow: 'hidden' }}>
+      {/* ── FLAG HERO — 160px ── */}
+      <div style={{ position: 'relative', height: 160, overflow: 'hidden' }}>
         <VillageFlagBg id={village.id} color={vc} />
-        {/* Dark gradient — heavier at bottom so name reads clearly */}
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(7,10,7,.82) 55%, #070a07 100%)` }} />
+        {/* heavy gradient overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.3) 45%, rgba(5,8,5,.97) 100%)` }} />
 
-        {/* Top badges row */}
-        <div style={{ position: 'absolute', top: 7, left: 7, right: 7, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          {/* Active or Griot badge */}
-          {active && <div style={{ fontSize: 7.5, fontWeight: 900, padding: '3px 7px', borderRadius: 99, background: vc, color: '#fff', letterSpacing: '.06em' }}>● ACTIVE</div>}
-          {!active && griotSuggested && <div style={{ fontSize: 7.5, fontWeight: 900, padding: '3px 7px', borderRadius: 99, background: '#d4a017', color: '#0a0a0a', letterSpacing: '.06em' }}>🦅 GRIOT PICK</div>}
+        {/* Top row badges */}
+        <div style={{ position: 'absolute', top: 10, left: 10, right: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          {active && <div style={{ fontSize: 8, fontWeight: 900, padding: '3px 8px', borderRadius: 99, background: vc, color: '#fff', letterSpacing: '.06em', boxShadow: `0 2px 8px ${vc}80` }}>● ACTIVE</div>}
+          {!active && griotSuggested && <div style={{ fontSize: 8, fontWeight: 900, padding: '3px 8px', borderRadius: 99, background: '#d4a017', color: '#0a0a0a', letterSpacing: '.06em' }}>🦅 GRIOT</div>}
           {!active && !griotSuggested && <div />}
-          {/* Member count */}
-          {memberCount != null && <div style={{ fontSize: 7.5, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: 'rgba(0,0,0,.6)', color: 'rgba(255,255,255,.6)', backdropFilter: 'blur(4px)' }}>{memberCount.toLocaleString()} members</div>}
+          {memberCount != null && <div style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: 'rgba(0,0,0,.65)', color: 'rgba(255,255,255,.65)', backdropFilter: 'blur(6px)' }}>{memberCount.toLocaleString()} members</div>}
         </div>
 
-        {/* ── ANCIENT NAME — the real hero ── */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 10px 10px' }}>
-          {/* Nation flags */}
-          <div style={{ fontSize: 10, marginBottom: 2, letterSpacing: 1 }}>{village.nation.split('').slice(0,6).join('')}</div>
-          {/* The NAME — large, Cinzel, glowing */}
+        {/* Ancient name block — bottom of hero */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 12px 12px' }}>
+          {/* nation flags */}
+          <div style={{ fontSize: 11, marginBottom: 3, letterSpacing: 2, lineHeight: 1 }}>{village.nation.slice(0,8)}</div>
+          {/* THE NAME */}
           <div style={{
             fontFamily: '"Cinzel","Palatino","Georgia",serif',
-            fontSize: 20, fontWeight: 900, color: '#fff',
+            fontSize: 22, fontWeight: 900, color: '#fff',
             letterSpacing: '0.07em', lineHeight: 1,
-            textShadow: `0 0 24px ${vc}, 0 0 6px ${vc}80, 0 2px 10px rgba(0,0,0,.98)`,
+            textShadow: `0 0 30px ${vc}, 0 0 8px ${vc}80, 0 2px 14px rgba(0,0,0,1)`,
           }}>{village.ancientName}</div>
-          {/* Era */}
-          <div style={{ fontSize: 8, color: vc, fontWeight: 700, letterSpacing: '0.08em', marginTop: 3, opacity: 0.9 }}>{village.era}</div>
+          {/* era pill */}
+          <div style={{ marginTop: 5, display: 'inline-block', padding: '2px 9px', borderRadius: 99, background: `${vc}25`, border: `1px solid ${vc}50`, fontSize: 8.5, color: vc, fontWeight: 700, letterSpacing: '0.06em' }}>{village.era}</div>
         </div>
       </div>
 
       {/* ── CARD BODY ── */}
-      <div style={{ padding: '8px 10px 10px' }}>
-        {/* Civilisation full name */}
-        <div style={{ fontSize: 8.5, fontWeight: 700, color: 'rgba(255,255,255,.42)', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 4 }}>{village.nationFull}</div>
-
-        {/* Meaning — italic, the soul of the name */}
-        <div style={{ fontSize: 9, color: vc, fontStyle: 'italic', lineHeight: 1.45, marginBottom: 6, opacity: 0.85 }}>
-          {village.meaning.split('—')[0].trim().slice(0, 60)}
+      <div style={{ padding: '10px 12px 12px' }}>
+        {/* Civilisation */}
+        <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.38)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 5, lineHeight: 1.3 }}>
+          {village.nationFull?.split('·')[0]?.trim()}
         </div>
-
-        {/* Guardian + sector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7 }}>
-          <span style={{ fontSize: 8, color: 'rgba(255,255,255,.28)' }}>⚡ {village.guardian}</span>
-          <span style={{ fontSize: 7, fontWeight: 800, padding: '1px 5px', borderRadius: 3, background: `${vc}18`, color: vc, border: `1px solid ${vc}28`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{village.category}</span>
+        {/* Meaning */}
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,.62)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 8 }}>
+          {village.meaning?.split('—')[0]?.trim()?.slice(0, 72)}…
         </div>
-
-        {/* Role emoji strip */}
-        <div style={{ fontSize: 12, letterSpacing: 3, marginBottom: 7, color: 'rgba(255,255,255,.35)' }}>
-          {village.roles.slice(0,4).map(r => ROLE_EMOJI[r.key] ?? '◆').join('')}
-          <span style={{ fontSize: 8, marginLeft: 2, color: 'rgba(255,255,255,.22)' }}>+{village.roles.length - 4} roles</span>
+        {/* Guardian + category */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,.35)', flex: 1 }}>⚡ {village.guardian}</span>
+          <span style={{ fontSize: 7.5, fontWeight: 800, padding: '2px 7px', borderRadius: 4, background: `${vc}18`, color: vc, border: `1px solid ${vc}30`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{village.category}</span>
         </div>
-
-        {/* Expanded roles list */}
-        {rolesOpen && (
-          <div style={{ borderTop: '1px solid rgba(255,255,255,.05)', paddingTop: 7, marginBottom: 7 }}>
-            {village.roles.map(r => (
-              <div key={r.key} style={{ display: 'flex', gap: 6, marginBottom: 5, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 12, flexShrink: 0, marginTop: 1 }}>{ROLE_EMOJI[r.key] ?? '◆'}</span>
-                <div>
-                  <div style={{ fontSize: 9.5, fontWeight: 700, color: 'rgba(255,255,255,.75)' }}>{r.name}</div>
-                  <div style={{ fontSize: 8, color: 'rgba(255,255,255,.28)', lineHeight: 1.4, marginTop: 1 }}>{r.desc.slice(0, 72)}…</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 5 }}>
+        {/* Roles strip */}
+        <div style={{ fontSize: 13, letterSpacing: 4, marginBottom: 10, color: 'rgba(255,255,255,.4)', lineHeight: 1 }}>
+          {village.roles.slice(0,5).map((r: any) => ROLE_EMOJI[r.key] ?? '◆').join('')}
+          <span style={{ fontSize: 8, color: 'rgba(255,255,255,.2)', marginLeft: 3 }}>+{village.roles.length - 5}</span>
+        </div>
+        {/* CTA buttons */}
+        <div style={{ display: 'flex', gap: 6 }}>
           <button
             onClick={e => { e.stopPropagation(); onJoin() }}
             style={{
-              flex: '0 0 auto', padding: '8px 11px', borderRadius: 10,
+              flex: '0 0 auto', padding: '9px 13px', borderRadius: 11,
               border: `1.5px solid ${joined ? vc + '60' : 'rgba(255,255,255,.1)'}`,
-              background: joined ? `${vc}22` : 'rgba(255,255,255,.04)',
-              color: joined ? vc : 'rgba(255,255,255,.45)',
-              fontSize: 10, fontWeight: 800, cursor: 'pointer', minHeight: 'unset',
+              background: joined ? `${vc}28` : 'rgba(255,255,255,.04)',
+              color: joined ? vc : 'rgba(255,255,255,.4)',
+              fontSize: 11, fontWeight: 800, cursor: 'pointer',
             }}
-          >{joined ? '✓ Joined' : '+ Join'}</button>
+          >{joined ? '✓' : '+'}</button>
           <button
             onClick={e => { e.stopPropagation(); onOpen() }}
             style={{
-              flex: 1, padding: '8px 0', borderRadius: 10,
-              background: `linear-gradient(135deg, ${vc}30, ${vc}10)`,
-              border: `1.5px solid ${vc}45`, color: vc,
-              fontSize: 10, fontWeight: 800, cursor: 'pointer', minHeight: 'unset',
+              flex: 1, padding: '9px 0', borderRadius: 11,
+              background: `linear-gradient(135deg, ${vc}40, ${vc}18)`,
+              border: `1.5px solid ${vc}55`, color: '#fff',
+              fontSize: 11, fontWeight: 800, cursor: 'pointer',
+              textShadow: `0 0 12px ${vc}`,
             }}
           >Enter {village.ancientName} →</button>
         </div>

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
 import { AFRICAN_DIAL_CODES, DIASPORA_DIAL_CODES } from '@/lib/dial-codes'
 
 // ── Keyframes (module-level — parsed once, never on re-render) ──
@@ -126,50 +127,7 @@ function CountryPicker({ value, onChange }: { value:string; onChange:(v:string)=
   )
 }
 
-// ── OTP Boxes ──────────────────────────────────────────────────
-function OtpBoxes({ value, onChange, onComplete }: { value:string; onChange:(v:string)=>void; onComplete:()=>void }) {
-  // FIXED: individual useRef calls at top level — Rules of Hooks compliant
-  const r0=React.useRef<HTMLInputElement>(null), r1=React.useRef<HTMLInputElement>(null)
-  const r2=React.useRef<HTMLInputElement>(null), r3=React.useRef<HTMLInputElement>(null)
-  const r4=React.useRef<HTMLInputElement>(null), r5=React.useRef<HTMLInputElement>(null)
-  const refs = [r0,r1,r2,r3,r4,r5]
-
-  React.useEffect(() => {
-    if (value.length === 6) onComplete()
-  }, [value, onComplete])
-
-  const handle = (i:number, v:string) => {
-    if (!/^\d?$/.test(v)) return
-    const arr = (value + '      ').split('').slice(0,6)
-    arr[i] = v
-    onChange(arr.join('').trimEnd())
-    if (v && i < 5) refs[i+1].current?.focus()
-  }
-  const handleKey = (i:number, e:React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !value[i] && i > 0) refs[i-1].current?.focus()
-  }
-  const handlePaste = (e:React.ClipboardEvent) => {
-    e.preventDefault()
-    const t = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6)
-    if (t) onChange(t)
-  }
-
-  return (
-    <div style={{ display:'flex', gap:8 }} onPaste={handlePaste}>
-      {refs.map((ref,i) => (
-        <input key={i} ref={ref} type="text" inputMode="numeric" maxLength={1}
-          value={value[i] ?? ''} onChange={e => handle(i,e.target.value)} onKeyDown={e => handleKey(i,e)}
-          autoFocus={i===0}
-          style={{ flex:1, height:44, borderRadius:10, textAlign:'center', fontSize:18, fontWeight:900,
-            color: value[i] ? '#fff' : 'rgba(255,255,255,.3)',
-            background: value[i] ? 'rgba(26,124,62,.2)' : 'rgba(255,255,255,.04)',
-            border: `2.5px solid ${value[i] ? '#1a7c3e' : 'rgba(255,255,255,.1)'}`,
-            outline:'none', transition:'all .15s', boxShadow: value[i] ? '0 0 12px rgba(26,124,62,.3)' : 'none' }}
-        />
-      ))}
-    </div>
-  )
-}
+// OtpBoxes replaced by DrumOtpBoxes (imported from @/components/ui/DrumOtpBoxes)
 
 // ── Main ───────────────────────────────────────────────────────
 type Step = 'INPUT' | 'OTP'
@@ -359,8 +317,7 @@ export default function LoginPage() {
 
                 {/* OTP card */}
                 <div style={{ background:'rgba(255,255,255,.035)', border:'1px solid rgba(255,255,255,.09)', borderRadius:22, padding:24, marginBottom:16 }}>
-                  <div style={{ fontSize:10, fontWeight:800, color:'rgba(255,255,255,.35)', textTransform:'uppercase', letterSpacing:'.12em', marginBottom:14, textAlign:'center' }}>6-Digit Talking Drum Code</div>
-                  <OtpBoxes value={otp} onChange={setOtp} onComplete={handleOtpComplete} />
+                  <DrumOtpBoxes value={otp} onChange={setOtp} onComplete={handleOtpComplete} accentColor="#1a7c3e" error={error} />
 
                   {/* Status bar */}
                   <div style={{ marginTop:16, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
@@ -392,7 +349,6 @@ export default function LoginPage() {
                   </div>
                 )}
 
-                {error && <div style={{ fontSize:12, color:'#f87171', textAlign:'center', marginBottom:12 }}>{error}</div>}
 
                 {/* Back */}
                 <button onClick={() => { setStep('INPUT'); setOtp(''); setError('') }} style={{ width:'100%', padding:14, borderRadius:14, background:'none', border:'1px solid rgba(255,255,255,.08)', color:'rgba(255,255,255,.35)', fontSize:13, fontWeight:600, cursor:'pointer' }}>

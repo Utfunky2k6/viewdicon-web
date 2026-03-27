@@ -18,6 +18,7 @@ import FaceLiveness from '@/components/onboarding/FaceLiveness'
 import { CanonicalVillage } from '@/constants/villages'
 import { isAfricanDialCode, AFRICAN_DIAL_CODES, WORLD_DIAL_CODES, type UserCircle, type DialCodeEntry } from '@/lib/dial-codes'
 import { useThemeStore } from '@/stores/themeStore'
+import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
 
 // ── THEME CONSTANTS ──────────────────────────────────────────
 // LIGHT: Warm ivory parchment — premium, Africa-inspired, AA-contrast throughout
@@ -560,25 +561,9 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
         </div>
       )}
 
-      {/* 6-box OTP input */}
+      {/* DrumOtpBoxes */}
       <div style={{ background:theme.card, border:`1px solid ${theme.border}`, borderRadius:16, padding:16, marginBottom:12 }}>
-        <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.12em', marginBottom:10, textAlign:'center' }}>6-Digit Talking Drum Code</div>
-        <div style={{ display:'flex', gap:6 }} onPaste={handlePaste}>
-          {refs.map((ref,i) => (
-            <input key={i} ref={ref} type="text" inputMode="numeric" maxLength={1}
-              value={otp[i] ?? ''} onChange={e => handleDigit(i,e.target.value)} onKeyDown={e => handleKey(i,e)}
-              autoFocus={i===0}
-              style={{
-                flex:1, height:44, borderRadius:10, textAlign:'center', fontSize:18, fontWeight:900,
-                color: otp[i] ? theme.text : theme.subText,
-                background: otp[i] ? `${theme.accent}20` : theme.muted,
-                border: `2.5px solid ${otp[i] ? theme.accent : theme.border}`,
-                outline:'none', transition:'all .15s',
-                boxShadow: otp[i] ? `0 0 12px ${theme.accent}33` : 'none',
-              }}
-            />
-          ))}
-        </div>
+        <DrumOtpBoxes value={otp} onChange={setOtp} onComplete={() => {}} accentColor={theme.accent} error={error} />
 
         {/* Status */}
         <div style={{ marginTop:16, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
@@ -600,11 +585,6 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
           )}
         </div>
       </div>
-
-      {/* Error display */}
-      {error && (
-        <div style={{ fontSize:12, color:'#f87171', textAlign:'center', padding:'8px 14px', background:'rgba(178,34,34,.1)', borderRadius:10, border:'1px solid rgba(178,34,34,.2)', marginBottom:8 }}>{error}</div>
-      )}
 
       {/* Drum animation */}
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:14, background:`${theme.accent}08`, border:`1px solid ${theme.accent}22`, marginBottom:'auto' }}>
@@ -2195,6 +2175,13 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
   const [afroId, setAfroId] = React.useState('')
   const [loading, setLoading] = React.useState(true)
   const [confetti, setConfetti] = React.useState<{x:number;y:number;color:string;delay:number;size:number;drift:number}[]>([])
+  const [autoCount, setAutoCount] = React.useState(6)
+  React.useEffect(() => {
+    if (!revealed) return
+    if (autoCount <= 0) { onDone(); return }
+    const t = setTimeout(() => setAutoCount(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [revealed, autoCount, onDone])
 
   // Fetch from production backend using authenticated API client
   React.useEffect(() => {
@@ -2264,7 +2251,7 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
 
         <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:'#f0f7f0', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .4s' }}>Welcome Home!</div>
         <div style={{ fontSize:13, color:'#7da882', textAlign:'center', lineHeight:1.65, marginBottom:8 }}>You are now a citizen of<br/>the Digital Motherland.</div>
-        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.4)', borderRadius:99, padding:'5px 14px', fontSize:11, fontWeight:700, color:'#4ade80', marginBottom:18 }}>✦ {village.name} Village · {role}</div>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.4)', borderRadius:99, padding:'5px 14px', fontSize:11, fontWeight:700, color:'#4ade80', marginBottom:18 }}>✦ <span style={{ fontFamily:'"Cinzel","Palatino",serif', letterSpacing:'0.06em' }}>{village.ancientName}</span> · {role}</div>
 
         <div style={{ width:'100%', background:'rgba(26,124,62,.08)', border:'1px solid rgba(26,124,62,.25)', borderRadius:16, padding:16, marginBottom:12, textAlign:'center' }}>
           <div style={{ fontSize:11, fontWeight:800, color:'rgba(255,255,255,.4)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>🔒 Your Afro-ID (Private)</div>
@@ -2302,6 +2289,12 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
           <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>The child we do not teach will sell our house — Yoruba Proverb</div>
         </div>
         <GradBtn onClick={onDone} style={{ width:'100%' }}>Enter the Motherland 🌍 →</GradBtn>
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', border: `3px solid ${theme.accent || '#1a7c3e'}40`, borderTopColor: theme.accent || '#1a7c3e', animation: 'spin 1s linear infinite' }} />
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>
+            Entering Motherland in <strong style={{ color: theme.accent || '#1a7c3e' }}>{autoCount}s</strong>…
+          </div>
+        </div>
       </div>
     </div>
   )
