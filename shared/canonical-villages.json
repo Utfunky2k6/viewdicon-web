@@ -1,0 +1,403 @@
+[
+  {
+    "id": "commerce",
+    "name": "Commerce Village",
+    "yoruba": "Ìlú Oníṣòwò",
+    "emoji": "🧺",
+    "color": "#e07b00",
+    "guardian": "Ọṣun",
+    "category": "economy",
+    "tagline": "The market that feeds the nation. Every trade, every stall, every deal.",
+    "roles": [
+      { "key": "market_vendor", "name": "Market Vendor / Mama Put Seller", "desc": "Physical market stall, roadside food seller, neighbourhood market trader across all 54 nations" },
+      { "key": "import_export", "name": "Import / Export Agent", "desc": "Cross-border trade, customs clearing, freight forwarding, container logistics" },
+      { "key": "mobile_money", "name": "Mobile Money & POS Agent", "desc": "M-Pesa agent, POS operator, airtime vendor, cash transfer service, mobile wallet agent" },
+      { "key": "wholesale", "name": "Wholesaler / Bulk Distributor", "desc": "Bulk commodity trading, warehouse operations, supply to retailers across regions" },
+      { "key": "ecommerce", "name": "E-Commerce & Social Seller", "desc": "Jumia/Konga seller, TikTok shop, Instagram commerce, WhatsApp business trader" },
+      { "key": "forex", "name": "Bureau de Change / Forex Trader", "desc": "Currency exchange, international remittance, forex trading, hawala operations" },
+      { "key": "second_hand", "name": "Second-Hand Goods Dealer", "desc": "Bend-down boutique, Gikomba trader, mitumba clothing, refurbished electronics reseller" },
+      { "key": "auctioneer", "name": "Auctioneer / Commodity Broker", "desc": "Livestock auctioneer, grain broker, commodity exchange trader, real estate auction" }
+    ]
+  },
+  {
+    "id": "agriculture",
+    "name": "Agriculture Village",
+    "yoruba": "Ìlú Àgbẹ̀",
+    "emoji": "🌾",
+    "color": "#1a7c3e",
+    "guardian": "Ògún",
+    "category": "economy",
+    "tagline": "The soil that feeds 1.4 billion souls.",
+    "roles": [
+      { "key": "crop_farmer", "name": "Crop Farmer", "desc": "Smallholder and commercial farmer — maize, cassava, yam, sorghum, millet, rice, cocoa, coffee, tea, khat" },
+      { "key": "livestock", "name": "Pastoralist / Livestock Keeper", "desc": "Cattle herder (Fulani/Maasai), goat farmer, poultry farmer, dairy farmer, pig farmer, camel herder" },
+      { "key": "fisher", "name": "Artisanal Fisher / Aquaculture", "desc": "Lake Victoria fisher, Atlantic coastal fisherman, fish farmer, shrimp farmer, oyster grower" },
+      { "key": "agro_processor", "name": "Agro-Processor", "desc": "Palm oil processor, cassava flour miller, groundnut paste maker, dairy processor, juice bottler" },
+      { "key": "irrigation", "name": "Irrigation & Water Engineer", "desc": "Borehole driller, canal builder, drip irrigation installer, dam maintenance, water harvesting" },
+      { "key": "seed_guardian", "name": "Seed Bank Guardian / Agronomist", "desc": "Heritage seed keeper, soil scientist, crop geneticist, agricultural extension officer" },
+      { "key": "rain_watcher", "name": "Rain Watcher / Weather Monitor", "desc": "Community climate observer, flood early warning officer, drought response coordinator, NDVI analyst" },
+      { "key": "farm_logistics", "name": "Farm-to-Market Coordinator", "desc": "Produce aggregator, cold chain manager, rural transport coordinator, warehouse receipt manager" }
+    ]
+  },
+  {
+    "id": "health",
+    "name": "Health Village",
+    "yoruba": "Ìlú Aláwọ̀ṣan",
+    "emoji": "⚕",
+    "color": "#0369a1",
+    "guardian": "Osun",
+    "category": "people",
+    "tagline": "Where bodies are healed and lives are saved.",
+    "roles": [
+      { "key": "medical_doctor", "name": "Medical Doctor / Physician", "desc": "GP, specialist surgeon, gynaecologist, paediatrician, psychiatrist, oncologist, cardiologist across all African health systems" },
+      { "key": "nurse_midwife", "name": "Nurse / Midwife / Birth Attendant", "desc": "Registered nurse, enrolled nurse, certified midwife, traditional birth attendant (TBA), auxiliary nurse" },
+      { "key": "traditional_healer", "name": "Traditional Healer / Herbalist", "desc": "Sangoma (South Africa), Babalawo (Yoruba), Nganga (Bantu), Dibia (Igbo), Fetish priest (Ghana) — licensed practitioners" },
+      { "key": "community_health", "name": "Community Health Worker", "desc": "Village health volunteer, vaccination outreach worker, malaria net distributor, HIV counsellor, nutrition educator" },
+      { "key": "pharmacist", "name": "Pharmacist / Drug Dispenser", "desc": "Hospital pharmacist, community pharmacy owner, NAFDAC agent, drug distribution officer, pharmaceutical rep" },
+      { "key": "mental_health", "name": "Mental Health Practitioner", "desc": "Clinical psychologist, trauma counsellor, substance abuse counsellor, safe-house guardian, social psychiatry worker" },
+      { "key": "lab_diagnostics", "name": "Lab Scientist / Diagnostician", "desc": "Medical laboratory scientist, pathologist, radiology technician, haematologist, molecular diagnostics specialist" },
+      { "key": "public_health", "name": "Public Health Officer / Epidemiologist", "desc": "Disease surveillance officer, WHO field worker, contact tracer, environmental health officer, one health practitioner" }
+    ]
+  },
+  {
+    "id": "education",
+    "name": "Education Village",
+    "yoruba": "Ìlú Ọmọ́wé",
+    "emoji": "🎓",
+    "color": "#4f46e5",
+    "guardian": "Ọrúnmìlà",
+    "category": "people",
+    "tagline": "The village where minds are sharpened for Africa.",
+    "roles": [
+      { "key": "classroom_teacher", "name": "Classroom Teacher", "desc": "Primary, secondary, and vocational school teacher across all 54 African nations including madrasas, mission schools, public and private" },
+      { "key": "university_lecturer", "name": "University Lecturer / Researcher", "desc": "Professor, associate lecturer, research fellow, PhD candidate, academic journal publisher, curriculum developer" },
+      { "key": "edtech", "name": "EdTech Developer / Digital Educator", "desc": "Learning app builder, online tutor, YouTube teacher, USSD learning system operator, radio school presenter" },
+      { "key": "language_keeper", "name": "Language Keeper / Linguist", "desc": "Mother tongue teacher, indigenous language preservationist, Swahili/Hausa/Amharic/Arabic language instructor, translator" },
+      { "key": "vocational_trainer", "name": "Vocational & Skills Trainer", "desc": "Artisan master, apprenticeship supervisor, TVET instructor, trade skills facilitator, entrepreneurship coach" },
+      { "key": "community_tutor", "name": "Community Tutor / Literacy Worker", "desc": "Adult literacy teacher, after-school programme operator, non-formal education facilitator, refugee camp educator" },
+      { "key": "cultural_educator", "name": "Cultural Historian / Oral Archivist", "desc": "Griot, storyteller, museum educator, cultural practices analyst, oral tradition archivist, folklore documenter" },
+      { "key": "special_needs", "name": "Special Needs Educator", "desc": "Inclusive education specialist, sign language interpreter, deaf school teacher, visual impairment educator, autism support specialist" }
+    ]
+  },
+  {
+    "id": "arts",
+    "name": "Arts Village",
+    "yoruba": "Ìlú Akéwì",
+    "emoji": "🎨",
+    "color": "#7c3aed",
+    "guardian": "Ọya",
+    "category": "creative",
+    "tagline": "Where Africa speaks in colour, rhythm, sound, and story.",
+    "roles": [
+      { "key": "musician_griot", "name": "Musician / Griot / Oral Poet", "desc": "Afrobeats, highlife, makossa, bongo flava, soukous, ndombolo, mbalax, jùjú music, gnawa, kora player, mbira player, griot storyteller" },
+      { "key": "visual_artist", "name": "Visual Artist / Sculptor", "desc": "Painter, muralist, Oshogbo artist, Tingatinga artist, digital artist, traditional bronze caster, wood carver, stone sculptor" },
+      { "key": "filmmaker", "name": "Filmmaker / Animator", "desc": "Nollywood director, Ghallywood producer, African animation creator, documentary filmmaker, short film director, TikTok filmmaker" },
+      { "key": "dancer", "name": "Dancer / Choreographer", "desc": "Kpanlogo dancer, Adumu jumper (Maasai), Agbadza dancer, pantsula, gwara gwara, azonto, sabar, traditional court dancer" },
+      { "key": "author_poet", "name": "Author / Poet / Playwright", "desc": "Novelist, short story writer, spoken word artist, playwright, screenwriter, comic book creator, children's book author in African languages" },
+      { "key": "artisan", "name": "Master Artisan / Craft Maker", "desc": "Kente weaver, adinkra stamper, beadwork artist, calabash carver, bogolan (mudcloth) maker, Moroccan zellige craftsman, Maasai bead worker" },
+      { "key": "photographer", "name": "Photographer / Visual Journalist", "desc": "Portrait photographer, documentary photographer, wedding photographer, fashion photographer, photojournalist, drone aerial photographer" },
+      { "key": "theatre", "name": "Theatre Practitioner / Puppeteer", "desc": "Stage actor, community theatre director, puppet theatre maker, Koteba performer (Mali), theatre for development practitioner" }
+    ]
+  },
+  {
+    "id": "builders",
+    "name": "Builders Village",
+    "yoruba": "Ìlú Ọ̀nà",
+    "emoji": "🏗",
+    "color": "#b45309",
+    "guardian": "Ògún",
+    "category": "economy",
+    "tagline": "The hands that raise the cities of tomorrow.",
+    "roles": [
+      { "key": "mason_labourer", "name": "Mason / Construction Labourer", "desc": "Site worker, bricklayer, concrete mixer, block moulder, foundation digger — the majority workforce building African cities" },
+      { "key": "architect_engineer", "name": "Architect / Civil Engineer", "desc": "Building designer, structural engineer, urban planner, quantity surveyor, housing architect, bridge engineer, dam builder" },
+      { "key": "electrician", "name": "Electrician / Solar Installer", "desc": "Building wiring, generator installation, solar panel mounting, transformer technician, street light installer" },
+      { "key": "plumber", "name": "Plumber / Water Technician", "desc": "Water pipe fitter, sanitation system builder, borehole pump installer, sewage treatment technician" },
+      { "key": "carpenter_welder", "name": "Carpenter / Welder / Metalworker", "desc": "Furniture maker, steel fabricator, aluminium door and window maker, roofing contractor, iron bender" },
+      { "key": "interior_designer", "name": "Interior Designer / Decorator", "desc": "Home decoration, office fit-out, hotel interior design, tiling specialist, painting contractor, renovation specialist" },
+      { "key": "road_builder", "name": "Road Builder / Infrastructure Worker", "desc": "Road grading, tarmac laying, bridge construction, culvert installation, rural road maintenance worker" },
+      { "key": "housing_developer", "name": "Housing Developer / Estate Manager", "desc": "Affordable housing developer, estate developer, facility manager, property manager, estate caretaker" }
+    ]
+  },
+  {
+    "id": "energy",
+    "name": "Energy Village",
+    "yoruba": "Ìlú Àṣẹ Iná",
+    "emoji": "⚡",
+    "color": "#b91c1c",
+    "guardian": "Ṣàngó",
+    "category": "civic",
+    "tagline": "Powering Africa's sovereign future — from the grid to the sun.",
+    "roles": [
+      { "key": "solar_installer", "name": "Solar Installer / Off-Grid Technician", "desc": "Rooftop solar, solar home system installer, mini-grid operator, pay-as-you-go solar agent (M-KOPA, d.light agents)" },
+      { "key": "petroleum_engineer", "name": "Petroleum Engineer / Upstream Worker", "desc": "Oil and gas exploration, refinery operator, pipeline technician, drilling engineer, LPG distribution worker" },
+      { "key": "grid_engineer", "name": "Power Grid Engineer / Utility Worker", "desc": "National grid maintenance, transformer installation, rural electrification engineer, KPLC/NEPA/ENEO utility worker" },
+      { "key": "battery_storage", "name": "Battery Tech / Energy Storage Specialist", "desc": "Battery bank installer, mini-grid storage manager, EV battery technician, energy management system operator" },
+      { "key": "biomass_biogas", "name": "Biomass / Biogas Practitioner", "desc": "Biogas plant operator, charcoal alternative producer, bioethanol producer, waste-to-energy plant worker, biomass cookstove distributor" },
+      { "key": "hydro_operator", "name": "Hydro Power Operator", "desc": "Large dam operator (Akosombo, Kariba, Aswan), micro-hydro installer, run-of-river operator, tidal energy technician" },
+      { "key": "energy_auditor", "name": "Energy Auditor / Efficiency Consultant", "desc": "Building energy auditor, industrial energy efficiency consultant, carbon credit analyst, green building certifier" },
+      { "key": "energy_policy", "name": "Energy Policy Advisor / Regulator", "desc": "NERC regulator, IRENA expert, energy ministry official, rural energy access planner, energy finance specialist" }
+    ]
+  },
+  {
+    "id": "transport",
+    "name": "Transport Village",
+    "yoruba": "Ìlú Gbígbe",
+    "emoji": "🚛",
+    "color": "#0891b2",
+    "guardian": "Ògún",
+    "category": "economy",
+    "tagline": "Every road, every route, every sky, every sea.",
+    "roles": [
+      { "key": "road_driver", "name": "Road Driver / Commercial Haulier", "desc": "Danfo driver, matatu operator, tro-tro driver, inter-city bus driver, long-haul truck driver, tanker driver, school bus driver" },
+      { "key": "okada_rider", "name": "Motorcycle Taxi / Last-Mile Rider", "desc": "Okada (Nigeria), boda-boda (Uganda/Kenya), zemidjan (Benin), moto-taxi rider, bajaj tuk-tuk driver, delivery rider" },
+      { "key": "aviation", "name": "Aviation Professional", "desc": "Commercial pilot, air traffic controller, aircraft mechanic, flight attendant, cargo loader, airport ground crew, drone pilot" },
+      { "key": "marine", "name": "Marine Crew / River Transport", "desc": "Ferry operator, river boat captain, fishing vessel crew, lake transport worker, coastal cargo ship crew, port stevedore" },
+      { "key": "railway", "name": "Railway Crew / Train Operator", "desc": "Train driver, station master, ticket collector, railway maintenance engineer, SGR operator, heritage railway crew" },
+      { "key": "logistics_coord", "name": "Logistics Coordinator / Dispatcher", "desc": "Fleet manager, route planner, warehouse logistics coordinator, supply chain analyst, last-mile delivery dispatcher" },
+      { "key": "mechanic", "name": "Vehicle Mechanic / Auto Technician", "desc": "Auto mechanic, truck fitter, motorcycle repairer, tyre fixer, roadside recovery operator, panel beater, auto electrician" },
+      { "key": "traffic_marshal", "name": "Traffic Marshal / Road Safety Officer", "desc": "LASTMA officer (Nigeria), traffic warden, road safety inspector, NTSA enforcement officer, highway patrol officer" }
+    ]
+  },
+  {
+    "id": "technology",
+    "name": "Technology Village",
+    "yoruba": "Ìlú Ìmọ̀ẹ̀rọ",
+    "emoji": "💻",
+    "color": "#0f766e",
+    "guardian": "Ọrúnmìlà",
+    "category": "creative",
+    "tagline": "Africa's silicon savannahs. Code is the new cowrie.",
+    "roles": [
+      { "key": "software_engineer", "name": "Software Engineer / Developer", "desc": "Frontend, backend, fullstack, mobile app developer — building African platforms, fintech, agritech, healthtech, edtech" },
+      { "key": "ai_engineer", "name": "AI / ML / Data Scientist", "desc": "Machine learning engineer, data scientist, NLP researcher, computer vision expert, AI product builder for African markets" },
+      { "key": "cybersecurity", "name": "Cybersecurity Analyst / Ethical Hacker", "desc": "Network security engineer, penetration tester, data protection officer, SIEM analyst, digital forensics expert" },
+      { "key": "cloud_devops", "name": "Cloud Engineer / DevOps", "desc": "AWS/Azure/GCP architect, Kubernetes engineer, CI/CD pipeline builder, site reliability engineer, infrastructure-as-code specialist" },
+      { "key": "telecom_engineer", "name": "Telecom Engineer / Network Specialist", "desc": "Mobile network engineer, fibre rollout technician, ISP operations engineer, BTS tower technician, spectrum engineer" },
+      { "key": "blockchain", "name": "Blockchain / DeFi Developer", "desc": "Smart contract developer, DeFi protocol builder, NFT platform creator, CBDC technical advisor, tokenisation engineer" },
+      { "key": "hardware_iot", "name": "Hardware Engineer / IoT Maker", "desc": "Electronics engineer, IoT device maker, embedded systems developer, robotics engineer, 3D printing technician, drone builder" },
+      { "key": "product_manager", "name": "Tech Product Manager / UX Designer", "desc": "Product manager for African tech products, UX/UI designer, user researcher, digital accessibility specialist, design system builder" }
+    ]
+  },
+  {
+    "id": "media",
+    "name": "Media Village",
+    "yoruba": "Ìlú Ọ̀rọ̀",
+    "emoji": "📰",
+    "color": "#6d28d9",
+    "guardian": "Ọya",
+    "category": "creative",
+    "tagline": "The voice of the Motherland. Truth before power.",
+    "roles": [
+      { "key": "journalist", "name": "Print / Digital Journalist", "desc": "Newspaper reporter, online journalist, investigative journalist, data journalist, solutions journalist, press freedom advocate" },
+      { "key": "broadcaster", "name": "Radio / TV Broadcaster", "desc": "FM radio host, community radio presenter, television news anchor, talk show host, sports commentator, weather presenter" },
+      { "key": "content_creator", "name": "Video Content Creator", "desc": "YouTube creator, TikTok creator, Instagram Reels producer, Jollof TV original creator, Facebook Watch publisher, streaming content maker" },
+      { "key": "podcaster", "name": "Podcaster / Audio Journalist", "desc": "Podcast host, audio documentary maker, news audio producer, sound journalist, Spotify Africa creator, voice-first content maker" },
+      { "key": "photojournalist", "name": "Photojournalist / Visual Storyteller", "desc": "News photographer, documentary photographer, conflict zone visual journalist, social media photographer, stock photography contributor" },
+      { "key": "editor", "name": "Editor / Publisher", "desc": "News editor, sub-editor, fact-checker, media house publisher, digital news curator, newsletter publisher, opinion editor" },
+      { "key": "advertising", "name": "Advertising / PR Practitioner", "desc": "Brand manager, advertising creative, public relations consultant, digital marketing specialist, media buyer, campaign manager" },
+      { "key": "citizen_reporter", "name": "Citizen Reporter / Community Correspondent", "desc": "Witness streamer, community blogger, WhatsApp broadcast journalist, tipster network coordinator, local news gatherer" }
+    ]
+  },
+  {
+    "id": "finance",
+    "name": "Finance Village",
+    "yoruba": "Ìlú Owó",
+    "emoji": "💰",
+    "color": "#047857",
+    "guardian": "Ọṣun",
+    "category": "economy",
+    "tagline": "The Cowrie flows where trust is earned.",
+    "roles": [
+      { "key": "bank_officer", "name": "Bank Officer / Branch Manager", "desc": "Retail banking officer, SME lending manager, microfinance loan officer, bank teller, credit analyst — across African banking systems" },
+      { "key": "financial_analyst", "name": "Financial Analyst / Investment Manager", "desc": "Equity analyst, portfolio manager, investment banker, asset manager, pension fund manager, stock broker, securities trader" },
+      { "key": "microfinance", "name": "Microfinance / VSLA Facilitator", "desc": "Susu collector (Ghana), esusu organiser (Nigeria), chama coordinator (Kenya), tontine facilitator (Francophone Africa), VSLA group leader" },
+      { "key": "fintech", "name": "Fintech Entrepreneur / Payment Specialist", "desc": "Mobile money operator, payment gateway builder, digital lending platform founder, insurtech developer, remittance service operator" },
+      { "key": "accountant", "name": "Accountant / Auditor / Tax Consultant", "desc": "Chartered accountant, management accountant, external auditor, tax practitioner, IFRS specialist, forensic accountant" },
+      { "key": "insurance", "name": "Insurance Agent / Actuary", "desc": "Life insurance agent, health insurance broker, crop insurance officer, microinsurance distributor, actuarial analyst" },
+      { "key": "crypto_defi", "name": "Crypto / Digital Currency Expert", "desc": "Cryptocurrency trader, DeFi yield farmer, CBDC implementation specialist, stablecoin economist, blockchain finance architect" },
+      { "key": "real_estate_finance", "name": "Real Estate Finance / Mortgage Officer", "desc": "Mortgage banker, real estate investment trust manager, land valuation officer, property finance consultant, housing fund administrator" }
+    ]
+  },
+  {
+    "id": "justice",
+    "name": "Justice Village",
+    "yoruba": "Ìlú Ìdájọ́",
+    "emoji": "⚖️",
+    "color": "#4338ca",
+    "guardian": "Ọbàtálá",
+    "category": "civic",
+    "tagline": "Truth before power. The law serves the people.",
+    "roles": [
+      { "key": "lawyer", "name": "Lawyer / Advocate / Barrister", "desc": "Civil litigator, criminal defence lawyer, human rights lawyer, corporate lawyer, pro bono advocate, public interest lawyer across African jurisdictions" },
+      { "key": "judge_magistrate", "name": "Judge / Magistrate / Arbitrator", "desc": "High court judge, magistrate court officer, traditional court chief, commercial arbitrator, family court judge, ECOWAS court official" },
+      { "key": "investigator", "name": "Investigator / Anti-Corruption Officer", "desc": "EFCC officer, ICPC investigator, SARS special agent, forensic investigator, financial crimes detective, Interpol African liaison" },
+      { "key": "legal_aid", "name": "Legal Aid Worker / Paralegal", "desc": "Legal aid clinic worker, paralegal, access to justice advocate, community legal educator, court companion, legal literacy trainer" },
+      { "key": "human_rights", "name": "Human Rights Defender", "desc": "Human rights activist, NGO legal advocate, UN treaty body expert, refugee rights lawyer, press freedom defender, women's rights campaigner" },
+      { "key": "traditional_justice", "name": "Traditional Justice Keeper", "desc": "Gacaca facilitator (Rwanda), community mediator, elder dispute resolver, ubuntu circle facilitator, customary law practitioner" },
+      { "key": "court_admin", "name": "Court Administrator / Registrar", "desc": "Court registrar, judicial secretary, case management officer, court interpreter, evidence custodian, process server" },
+      { "key": "prison_reform", "name": "Prison Reform / Corrections Officer", "desc": "Correctional officer, prison welfare worker, rehabilitation programme facilitator, re-entry support worker, juvenile justice officer" }
+    ]
+  },
+  {
+    "id": "government",
+    "name": "Government Village",
+    "yoruba": "Ìlú Aláṣẹ",
+    "emoji": "🏛",
+    "color": "#1e3a5f",
+    "guardian": "Ọbàtálá",
+    "category": "civic",
+    "tagline": "The people's power, held in trust for all.",
+    "roles": [
+      { "key": "elected_official", "name": "Elected Official / Political Leader", "desc": "Councillor, senator, member of parliament, governor, mayor, ward representative, continental union official, traditional ruler" },
+      { "key": "civil_servant", "name": "Civil Servant / Public Administrator", "desc": "Ministry official, local government officer, district administrator, public sector manager, government secretary, permanent secretary" },
+      { "key": "diplomat", "name": "Diplomat / International Relations Officer", "desc": "Ambassador, high commissioner, consular officer, AU representative, ECOWAS official, bilateral trade attaché, protocol officer" },
+      { "key": "community_organiser", "name": "Community Organiser / Activist", "desc": "Ward development committee chair, community development officer, civil society leader, citizens' assembly facilitator, voter mobiliser" },
+      { "key": "policy_analyst", "name": "Policy Analyst / Technocrat", "desc": "Government policy researcher, think-tank expert, ministerial advisor, budget analyst, national planning commission officer, statistics officer" },
+      { "key": "traditional_ruler", "name": "Traditional Ruler / Chief", "desc": "Oba, Emir, Chief, Okyenhene, Limpopo Chief, Maasai Laibon, Rwandan Umuryango head — custodian of customary governance" },
+      { "key": "public_finance", "name": "Public Finance Officer / Treasury", "desc": "Treasury officer, budget director, revenue authority officer, customs commissioner, public debt manager, government auditor" },
+      { "key": "elections_officer", "name": "Electoral Officer / Democracy Worker", "desc": "INEC/IEC/NEC officer, election observer, voter registration officer, returning officer, ballot processor, democracy watchdog" }
+    ]
+  },
+  {
+    "id": "security",
+    "name": "Security Village",
+    "yoruba": "Ìlú Jagunjagun",
+    "emoji": "🛡",
+    "color": "#374151",
+    "guardian": "Ògún",
+    "category": "civic",
+    "tagline": "The guardian at every gate. Africa protects her own.",
+    "roles": [
+      { "key": "police", "name": "Police Officer / Detective", "desc": "Community policing officer, CID detective, anti-robbery squad, SWAT operative, police reservist, neighbourhood watch commander" },
+      { "key": "military", "name": "Military Personnel", "desc": "Army soldier, naval officer, air force pilot, peacekeeping operative (AMISOM, ECOMOG), military intelligence officer, special forces" },
+      { "key": "fire_rescue", "name": "Fire & Rescue / Paramedic", "desc": "Firefighter, emergency medical technician, search and rescue operative, disaster response team member, ambulance crew" },
+      { "key": "border_customs", "name": "Border Guard / Customs Officer", "desc": "Immigration officer, customs inspector, port security officer, border patrol agent, anti-smuggling officer, passport control officer" },
+      { "key": "private_security", "name": "Private Security Agent / Guard", "desc": "Estate guard, bank security officer, event security, VIP protection agent, close protection officer, CCTV monitoring operator" },
+      { "key": "cybersecurity_gov", "name": "National Cybersecurity Officer", "desc": "National CERT officer, government cybersecurity analyst, digital crime investigator, critical infrastructure protector, intelligence analyst" },
+      { "key": "wildlife_ranger", "name": "Wildlife Ranger / Conservation Officer", "desc": "Anti-poaching ranger, national park warden, marine conservation officer, CITES enforcement officer, community game guard" },
+      { "key": "emergency_mgmt", "name": "Emergency Management Officer", "desc": "NEMA officer, disaster risk reduction coordinator, flood relief manager, drought response officer, civil protection officer" }
+    ]
+  },
+  {
+    "id": "spirituality",
+    "name": "Spirituality Village",
+    "yoruba": "Ìlú Àwọn Amọ́nà",
+    "emoji": "🙏",
+    "color": "#5b21b6",
+    "guardian": "Ọbàtálá",
+    "category": "spirit",
+    "tagline": "Where the ancestors speak and the spirit is fed.",
+    "roles": [
+      { "key": "islamic_scholar", "name": "Islamic Scholar / Imam / Marabout", "desc": "Mosque imam, Quran teacher, Islamic jurist, Sufi sheikh, marabout (West Africa), mufti, waqf administrator, Islamic finance scholar" },
+      { "key": "christian_minister", "name": "Christian Minister / Pastor / Priest", "desc": "Pentecostal pastor, Catholic priest, Orthodox priest (Ethiopia/Egypt), Anglican minister, mission church leader, healing minister, apostle" },
+      { "key": "traditional_priest", "name": "Traditional Priest / Priestess / Spirit Medium", "desc": "Babalawo (Yoruba), Sangoma (Zulu/Xhosa), Dibia (Igbo), Fetish priest (Ghana), Svikiro (Shona), N'anga (Zimbabwe), Wadaad (Somali)" },
+      { "key": "spiritual_herbalist", "name": "Spiritual Herbalist / Medicine Keeper", "desc": "Sacred plant medicine keeper, ancestral healing practitioner, ritual cleansing specialist, protection charm maker, spiritual bath preparer" },
+      { "key": "shrine_keeper", "name": "Shrine Keeper / Sacred Site Guardian", "desc": "Sacred grove keeper, ancestral shrine guardian, ritual ceremony facilitator, feast day organiser, libation pour master" },
+      { "key": "interfaith_worker", "name": "Interfaith Peace Worker", "desc": "Interfaith dialogue facilitator, religious tolerance educator, faith-based conflict mediator, Salam/Shalom peace builder, multi-faith chaplain" },
+      { "key": "worship_leader", "name": "Worship Leader / Gospel Artist", "desc": "Gospel musician, choir director, praise and worship leader, Islamic nasheed artist, traditional praise singer, liturgical music director" },
+      { "key": "spiritual_educator", "name": "Religious Educator / Seminary Teacher", "desc": "Madrasa teacher, Sunday school teacher, seminary lecturer, Torah/Bible/Quran teacher, catechism instructor, Islamic studies professor" }
+    ]
+  },
+  {
+    "id": "sports",
+    "name": "Sports Village",
+    "yoruba": "Ìlú Eré",
+    "emoji": "⚽",
+    "color": "#9d174d",
+    "guardian": "Ṣàngó",
+    "category": "creative",
+    "tagline": "Africa runs. Africa wins. Africa rises.",
+    "roles": [
+      { "key": "footballer", "name": "Footballer / Futsal Player", "desc": "Professional football player, semi-pro footballer, futsal player, beach soccer player — from AFCON to local Sunday leagues" },
+      { "key": "track_field", "name": "Track & Field / Marathon Athlete", "desc": "Sprinter, marathon runner, long-distance runner (Ethiopian/Kenyan tradition), high jumper, javelin thrower, heptathlete" },
+      { "key": "combat_athlete", "name": "Combat Athlete / Martial Artist", "desc": "Boxer, wrestler (Senegalese laamb wrestling, Nuba wrestling), MMA fighter, taekwondo, judo, traditional African combat sports" },
+      { "key": "team_sport", "name": "Team Sport Athlete", "desc": "Basketball player, volleyball player, handball player, rugby player, cricket player, netball player, water polo player" },
+      { "key": "coach_trainer", "name": "Sports Coach / Physical Trainer", "desc": "Football coach, athletics coach, strength and conditioning coach, sports scientist, performance analyst, youth academy coach" },
+      { "key": "sports_admin", "name": "Sports Administrator / Federation Official", "desc": "Football association official, national sports council officer, AFCON logistics coordinator, Olympic committee member, sports lawyer" },
+      { "key": "sports_media", "name": "Sports Journalist / Commentator", "desc": "Sports broadcaster, match commentator, football analyst, sports writer, podcast host, social media sports content creator" },
+      { "key": "esports", "name": "Esports Player / Gaming Creator", "desc": "Competitive gamer, game streamer, esports team manager, mobile gaming champion, African gaming tournament organiser" }
+    ]
+  },
+  {
+    "id": "fashion",
+    "name": "Fashion Village",
+    "yoruba": "Ìlú Oníṣẹ́-Ọ̀wọ́",
+    "emoji": "👗",
+    "color": "#c2410c",
+    "guardian": "Ọṣun",
+    "category": "creative",
+    "tagline": "Dressing Africa in its own glory — from kente to kitenge.",
+    "roles": [
+      { "key": "fashion_designer", "name": "Fashion Designer / Couturier", "desc": "High fashion designer, ready-to-wear label founder, traditional attire designer (agbada, boubou, kitenge suit, kaftan, shweshwe, kanga designer)" },
+      { "key": "tailor_seamstress", "name": "Tailor / Seamstress / Fundi", "desc": "Custom clothing tailor, alterations expert, traditional garment maker, wedding dress maker, school uniform supplier, market tailor" },
+      { "key": "fabric_merchant", "name": "Fabric Merchant / Textile Trader", "desc": "Ankara trader, kente cloth seller, adire tie-dye maker, bogolan mudcloth producer, kitenge importer, lace and aso-oke distributor" },
+      { "key": "hair_beauty", "name": "Hair Stylist / Beauty Practitioner", "desc": "Natural hair stylist, loctician, braider, barber, MUA (makeup artist), nail technician, skincare specialist, waxing practitioner" },
+      { "key": "shoe_accessories", "name": "Shoe Maker / Accessories Designer", "desc": "Cobbler, leather sandal maker, beaded jewellery designer, handbag maker, head wrap designer, traditional bead artist (Maasai, Zulu, Yoruba)" },
+      { "key": "fashion_photographer", "name": "Fashion Photographer / Stylist", "desc": "Editorial fashion photographer, fashion stylist, lookbook director, runway photographer, magazine cover photographer, brand campaign creator" },
+      { "key": "fashion_retailer", "name": "Fashion Retailer / Boutique Owner", "desc": "Boutique owner, online fashion store operator, thrift/vintage shop owner, fashion curator, mall fashion outlet manager" },
+      { "key": "fashion_tech", "name": "Fashion Tech / Sustainable Fabric Maker", "desc": "Sustainable textile innovator, African fashion app developer, recycled fabric designer, fashion logistics operator, virtual fitting room builder" }
+    ]
+  },
+  {
+    "id": "family",
+    "name": "Family Village",
+    "yoruba": "Ìlú Ìdílé",
+    "emoji": "🏠",
+    "color": "#065f46",
+    "guardian": "Ọbàtálá",
+    "category": "spirit",
+    "tagline": "The root of every village is the family circle.",
+    "roles": [
+      { "key": "family_counselor", "name": "Family Counsellor / Marriage Therapist", "desc": "Marriage guidance counsellor, family therapist, divorce mediator, lobola/bride price negotiation facilitator, family conflict resolver" },
+      { "key": "child_welfare", "name": "Child Welfare Worker / Social Worker", "desc": "Child protection officer, orphan care worker, foster care coordinator, street children outreach worker, child labour inspector" },
+      { "key": "elderly_care", "name": "Elderly Care Provider / Gerontologist", "desc": "Old age home staff, community elder support worker, dementia care specialist, palliative care worker, elder dignity advocate" },
+      { "key": "early_childhood", "name": "Early Childhood Educator / Crèche Operator", "desc": "Crèche/ECD centre operator, nursery school teacher, play therapist, childminder, after-school care provider, baby day care manager" },
+      { "key": "womens_rights", "name": "Women's Rights Advocate / Gender Officer", "desc": "GBV prevention officer, femicide campaigner, FGM eradication worker, women's economic empowerment facilitator, gender equality trainer" },
+      { "key": "genealogist", "name": "Genealogist / Family Historian", "desc": "DNA ancestry researcher, oral family history keeper, clan tree documenter, African diaspora roots tracer, lineage verification specialist" },
+      { "key": "marriage_coord", "name": "Marriage Coordinator / Dowry Negotiator", "desc": "Traditional wedding planner, lobola/bride price negotiator, introduction ceremony coordinator, white wedding planner, nikah/church ceremony organiser" },
+      { "key": "youth_worker", "name": "Youth Worker / Mentorship Leader", "desc": "Youth centre coordinator, boys/girls club leader, school counsellor, after-school mentor, gang diversion worker, youth entrepreneurship trainer" }
+    ]
+  },
+  {
+    "id": "hospitality",
+    "name": "Hospitality Village",
+    "yoruba": "Ìlú Àlejò",
+    "emoji": "🍽",
+    "color": "#92400e",
+    "guardian": "Ọṣun",
+    "category": "economy",
+    "tagline": "No visitor leaves an African home hungry. Hospitality is our birthright.",
+    "roles": [
+      { "key": "chef_cook", "name": "Chef / Cook / Street Food Vendor", "desc": "Restaurant chef, hotel executive chef, street food seller (suya, jollof, injera, bunny chow, thieboudienne), catering company cook, palace chef" },
+      { "key": "hotel_manager", "name": "Hotel Manager / Lodge Operator", "desc": "Hotel general manager, guesthouse owner, safari lodge manager, Airbnb superhost, camping site operator, resort operations director" },
+      { "key": "tour_guide", "name": "Tour Guide / Safari Guide", "desc": "Cultural heritage tour guide, game drive ranger, gorilla trekking guide, city walking tour guide, historical site interpreter, adventure tourism guide" },
+      { "key": "events_coordinator", "name": "Events Coordinator / Wedding Planner", "desc": "Corporate events planner, wedding coordinator, festival organiser, conference manager, trade fair organiser, cultural event producer" },
+      { "key": "bartender_mixologist", "name": "Bartender / Drink Specialist", "desc": "Hotel bar manager, craft spirits bartender, palm wine tapper, tej (Ethiopian honey wine) maker, cocktail innovator with African ingredients" },
+      { "key": "receptionist_concierge", "name": "Hotel Receptionist / Concierge", "desc": "Front desk officer, guest relations manager, concierge, reservations specialist, hospitality customer service professional" },
+      { "key": "travel_agent", "name": "Travel Agent / Tourism Operator", "desc": "Package holiday designer, airline ticketing agent, visa facilitation officer, African diaspora roots tour operator, cruise booking specialist" },
+      { "key": "housekeeping", "name": "Housekeeping Supervisor / Facilities Manager", "desc": "Hotel housekeeper, lodge facilities manager, cleaning supervisor, linen manager, property maintenance coordinator, hygiene compliance officer" }
+    ]
+  },
+  {
+    "id": "holdings",
+    "name": "Holdings Village",
+    "yoruba": "Ìlú Àbọ̀rìná",
+    "emoji": "🚪",
+    "color": "#6b7280",
+    "guardian": "Èṣù",
+    "category": "spirit",
+    "tagline": "The gate for those still finding their path. The Griot will guide you home.",
+    "isHolding": true,
+    "roles": [
+      { "key": "explorer", "name": "Explorer", "desc": "Still discovering your craft and calling — the Griot AI is mapping your journey" },
+      { "key": "career_changer", "name": "Career Changer", "desc": "Transitioning between industries — your new village is being identified" },
+      { "key": "new_graduate", "name": "New Graduate", "desc": "Fresh from education — building skills before declaring a village" },
+      { "key": "entrepreneur", "name": "Entrepreneur in Formation", "desc": "Building an idea that does not yet fit one village — you may span multiple" },
+      { "key": "volunteer", "name": "Community Volunteer", "desc": "Serving the community while your craft finds its village" },
+      { "key": "multi_skilled", "name": "Multi-Skilled Worker", "desc": "Your work spans more than one village — the Griot will help you find your primary home" },
+      { "key": "navigator", "name": "Navigator", "desc": "Using Griot AI guidance to find the right village match through conversation" },
+      { "key": "returning_citizen", "name": "Returning Citizen", "desc": "Re-entering the workforce or returning from abroad — your village assignment is being recalibrated" }
+    ]
+  }
+]

@@ -1,4 +1,4 @@
-import rawCanonicalVillages from '../../shared/canonical-villages.json'
+import rawCanonicalVillages from '../shared/canonical-villages.json'
 
 interface CanonicalRoleSource {
   key: string

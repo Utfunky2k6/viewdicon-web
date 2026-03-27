@@ -1,4 +1,4 @@
-import routingKeywordSource from '../../shared/village-routing-keywords.json'
+import routingKeywordSource from '../shared/village-routing-keywords.json'
 import { VILLAGE_MAP } from '@/constants/villages'
 
 export interface RouteResult {
