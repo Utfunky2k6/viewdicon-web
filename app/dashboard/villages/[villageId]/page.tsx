@@ -322,11 +322,11 @@ export default function VillageDetailPage() {
               <h1 style={{ fontFamily: '"Cinzel","Palatino",serif', fontSize: 22, fontWeight: 900, margin: 0, color: vc, letterSpacing: '0.06em', textShadow: `0 0 20px ${vc}60` }}>{village.ancientName}</h1>
               <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{village.nation}</span>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: C.text, margin: 0, opacity: 0.8 }}>{village.name}</div>
-            <p style={{ fontSize: 10, color: vc, fontWeight: 700, fontStyle: 'italic', margin: '2px 0 0', opacity: 0.8 }}>{village.yoruba}</p>
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: 'rgba(255,255,255,.55)', margin: 0 }}>{village.nationFull}</div>
+            <div style={{ fontSize: 9.5, color: vc, fontWeight: 600, margin: '2px 0 0', opacity: 0.8 }}>{village.language}</div>
             <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 8, fontWeight: 800, padding: '2px 7px', borderRadius: 4, background: `${vc}18`, color: vc, border: `1px solid ${vc}30`, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{village.era}</span>
-              <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,255,255,0.05)', color: C.textDim, border: '1px solid rgba(255,255,255,0.08)', textTransform: 'uppercase' }}>{village.language}</span>
+              <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 4, background: 'rgba(255,255,255,0.05)', color: C.textDim, border: '1px solid rgba(255,255,255,0.08)', textTransform: 'uppercase' }}>{village.category}</span>
             </div>
           </div>
         </div>
