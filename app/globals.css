@@ -1,0 +1,376 @@
+/* Ubuntu — Africa's typeface. Renders clearly at 12px on low-DPI screens. */
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400&display=swap');
+/* Cinzel — classical serif for ancient village names */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DESIGN TOKENS — single source of truth
+   Dark mode is the default (African night-use context).
+   Light mode activated by [data-theme="light"] on <html>.
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* Pan-African identity palette — permanent, never per-theme */
+    --green-primary:  #1a7c3e;  /* sovereign green */
+    --green-dark:     #0f5028;
+    --green-light:    #e8f5ee;
+    --gold:           #d4a017;  /* royalty, harvest */
+    --amber:          #e07b00;
+    --crimson:        #b22222;  /* courage, sacrifice */
+    --earth:          #8B6914;  /* soil, foundation */
+    --cream:          #faf3e0;  /* parchment, ancestral */
+
+    /* 5 Orisha AI agent colours */
+    --agent-griot:    #1a7c3e;
+    --agent-elder:    #d4a017;
+    --agent-healer:   #0d9488;
+    --agent-guardian: #b22222;
+    --agent-oracle:   #5b2d8a;
+
+    /* Typography — fluid scale */
+    --font-body:    'Ubuntu', 'Noto Sans', system-ui, sans-serif;
+    --font-mono:    'Courier New', monospace;
+    --text-xs:    11px;
+    --text-sm:    13px;
+    --text-base:  15px;
+    --text-lg:    18px;
+    --text-xl:    22px;
+    --text-2xl:   28px;
+    --text-display: 36px;
+
+    /* Radius scale */
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    /* Spacing rhythm */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+
+    /* ── DARK MODE (default) ─────────────────────────────── */
+    --bg:             #0d1117;
+    --bg-card:        #111a12;   /* forest-dark — NOT pure black */
+    --bg-raised:      #1a2d1b;
+    --bg-subtle:      #1e3520;
+    --text-primary:   #f0f7f0;
+    --text-secondary: #c8e6c9;
+    --text-muted:     #7da882;
+    --border:         #2d4a2e;
+    --border-strong:  #4a7c4e;
+
+    /* Prompt-spec aliases (--text / --text-2 / --text-3) */
+    --text:           var(--text-primary);
+    --text-2:         var(--text-secondary);
+    --text-3:         var(--text-muted);
+
+    /* Kente brand tokens — same in both modes */
+    --kente-gold:    #D7A85F;
+    --kente-fire:    #E85D04;
+    --kente-forest:  #2D6A4F;
+    --kente-kola:    #C1440E;
+    --kente-sky:     #00C2FF;
+    --nkisi-green:   #22C55E;
+    --nkisi-amber:   #F59E0B;
+    --nkisi-red:     #EF4444;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
+    --shadow-glow-green: 0 0 30px rgba(26,124,62,0.25);
+    --shadow-glow-gold: 0 0 20px rgba(212,160,23,0.2);
+  }
+
+  /* ── LIGHT MODE — [data-theme="light"] ────────────────── */
+  [data-theme="light"] {
+    --bg:             #fafafa;
+    --bg-card:        #ffffff;
+    --bg-raised:      #ffffff;
+    --bg-subtle:      #f0f7f0;
+    --text-primary:   #0d1117;
+    --text-secondary: #444444;
+    --text-muted:     #888888;
+    --border:         #e0e0e0;
+    --border-strong:  #b0b0b0;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+  }
+
+  /* ── Base resets ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior: none;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    /* Mobile viewport fix — prevent horizontal scroll */
+    overflow-x: hidden;
+    min-height: 100dvh;
+  }
+
+  /* Better tap targets for mobile — minimum 44x44 touch targets */
+  button, a, [role="button"] {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Allow small inline links/buttons */
+  span > a, p > a, .inline-link { min-height: unset; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+  /* Hide scrollbar but keep scrollable */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Focus ring — green for all modes */
+  :focus-visible {
+    outline: 2px solid var(--green-primary);
+    outline-offset: 2px;
+  }
+
+  /* Safe area for iOS */
+  .pb-safe { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
+  .pt-safe { padding-top: max(0.5rem, env(safe-area-inset-top)); }
+
+  /* Selection color — brand green */
+  ::selection {
+    background: rgba(26,124,62,0.3);
+    color: #f0f7f0;
+  }
+
+  /* Smooth image rendering */
+  img { max-width: 100%; display: block; }
+}
+
+/* ============================================================
+   ADINKRA PATTERNS
+   ============================================================ */
+
+/* Gye Nyame symbol — supremacy of God, used sparingly at 4% opacity */
+.bg-adinkra {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='16' fill='none' stroke='%231a7c3e' stroke-width='1.5'/%3E%3Ccircle cx='40' cy='40' r='8' fill='none' stroke='%231a7c3e' stroke-width='1'/%3E%3Cline x1='40' y1='20' x2='40' y2='60' stroke='%231a7c3e' stroke-width='1'/%3E%3Cline x1='20' y1='40' x2='60' y2='40' stroke='%231a7c3e' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+  background-repeat: repeat;
+}
+.bg-adinkra-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+}
+
+/* ============================================================
+   GRADIENT UTILITIES
+   ============================================================ */
+
+@layer utilities {
+  .grad-kente {
+    background: linear-gradient(135deg,
+      #1a7c3e 0%, #145f30 30%,
+      #d4a017 60%, #b22222 100%
+    );
+  }
+
+  .grad-sunrise {
+    background: linear-gradient(180deg,
+      #f59e0b 0%, #d97706 50%, #92400e 100%
+    );
+  }
+
+  .grad-pan-african {
+    background: linear-gradient(to right, #1a7c3e, #b22222);
+  }
+
+  .glass {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  [data-theme="light"] .glass {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+
+  .afk-gradient {
+    background: linear-gradient(135deg, #D7A85F 0%, #E85D04 50%, #2D6A4F 100%);
+  }
+
+  .afk-gradient-text {
+    background: linear-gradient(135deg, #D7A85F, #E85D04, #22C55E);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .kente-border {
+    border-image: repeating-linear-gradient(
+      90deg,
+      #D7A85F 0px, #D7A85F 8px,
+      #E85D04 8px, #E85D04 16px,
+      #2D6A4F 16px, #2D6A4F 24px
+    ) 1;
+  }
+
+  /* Card hover lift — for interactive cards */
+  .card-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-lift:active {
+    transform: scale(0.97);
+  }
+  @media (hover: hover) {
+    .card-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  /* Stagger animation for lists */
+  .stagger-in > * {
+    animation: slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .stagger-in > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-in > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-in > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-in > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-in > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-in > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-in > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger-in > *:nth-child(8) { animation-delay: 350ms; }
+
+  /* Skeleton shimmer */
+  @keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position:  400px 0; }
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-raised) 25%,
+      var(--bg-subtle) 50%,
+      var(--bg-raised) 75%
+    );
+    background-size: 800px 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  /* Drum pulse keyframes */
+  @keyframes drum-pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(26, 124, 62, 0.4);
+    }
+    50% {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 8px rgba(26, 124, 62, 0);
+    }
+  }
+
+  /* Slide animations */
+  @keyframes slideUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  @keyframes pulse-ring {
+    0%   { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  .animate-slide-up  { animation: slideUp  0.35s cubic-bezier(0.16,1,0.3,1); }
+  .animate-slide-down{ animation: slideDown 0.3s ease-out; }
+  .animate-fade-in   { animation: fadeIn   0.3s ease-out; }
+  .animate-scale-in  { animation: scaleIn  0.3s cubic-bezier(0.16,1,0.3,1); }
+  .animate-pulse-ring{ animation: pulse-ring 1.5s ease-out infinite; }
+
+  /* Griot AI & Sòrò Sókè Animations */
+  @keyframes pulse-slow {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes glow-gold {
+    0%, 100% { box-shadow: 0 0 15px rgba(212,160,23,0.3); }
+    50% { box-shadow: 0 0 35px rgba(212,160,23,0.6); }
+  }
+
+  .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
+  .animate-spin-slow { animation: spin-slow 12s linear infinite; }
+  .animate-spin-reverse-slow { animation: spin-slow 18s linear infinite reverse; }
+  .animate-glow-gold { animation: glow-gold 3s ease-in-out infinite; }
+
+  /* Skin flash transition — plays on every masquerade skin switch */
+  @keyframes skinFlash {
+    0%   { opacity: 0; }
+    30%  { opacity: 0.8; }
+    100% { opacity: 0; }
+  }
+
+  /* Ceremony — floating icon animation */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  /* Ceremony — shield glow pulse */
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 30px rgba(26,124,62,0.3); }
+    50%      { box-shadow: 0 0 70px rgba(26,124,62,0.6); }
+  }
+
+  /* Horizontal scroll snap for carousels */
+  .snap-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .snap-x > * {
+    scroll-snap-align: start;
+  }
+}
