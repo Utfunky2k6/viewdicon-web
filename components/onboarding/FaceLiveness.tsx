@@ -1,13 +1,15 @@
 'use client'
 import * as React from 'react'
 
-type Challenge = 'BLINK' | 'TURN_LEFT' | 'SMILE'
+type Challenge = 'BLINK' | 'TURN_LEFT' | 'SMILE' | 'NOD' | 'LOOK_UP'
 type ChallengeState = 'waiting' | 'active' | 'passed' | 'timeout'
 
-const CHALLENGES: { type: Challenge; instruction: string; emoji: string }[] = [
-  { type: 'BLINK',     instruction: 'Blink your eyes twice',        emoji: '👁' },
-  { type: 'TURN_LEFT', instruction: 'Turn your head slowly to the left', emoji: '↩️' },
-  { type: 'SMILE',     instruction: 'Give us a smile!',             emoji: '😊' },
+const CHALLENGES: { type: Challenge; instruction: string; emoji: string; voice: string }[] = [
+  { type: 'BLINK',      instruction: 'Blink your eyes twice slowly',      emoji: '👁️',  voice: 'Now… blink your eyes twice slowly.' },
+  { type: 'SMILE',      instruction: 'Give us a big smile',               emoji: '😄',  voice: 'Beautiful. Now give us a big, warm smile.' },
+  { type: 'TURN_LEFT',  instruction: 'Turn your head slowly to the left', emoji: '↩️',  voice: 'Wonderful. Now slowly turn your head to the left.' },
+  { type: 'NOD',        instruction: 'Nod your head up and down',         emoji: '↕️',  voice: 'Almost done. Gently nod your head up and down.' },
+  { type: 'LOOK_UP',    instruction: 'Look up briefly, then look forward', emoji: '👆',  voice: 'Last one. Look up briefly, then look back at me.' },
 ]
 
 const CHALLENGE_TIMEOUT_MS = 10_000
@@ -17,6 +19,15 @@ interface Props {
   onComplete: (token: string) => void
   onSkip?: () => void
   theme?: { bg?: string; text?: string; accent?: string; subText?: string }
+}
+
+function speak(text: string) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  window.speechSynthesis.cancel()
+  const u = new SpeechSynthesisUtterance(text)
+  u.rate = 0.9
+  u.pitch = 1.1
+  window.speechSynthesis.speak(u)
 }
 
 function avgBrightness(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): number {
@@ -40,6 +51,20 @@ function luminanceCentroidX(ctx: CanvasRenderingContext2D, w: number, h: number)
     }
   }
   return sumL > 0 ? sumLx / sumL / w : 0.5
+}
+
+function luminanceCentroidY(ctx: CanvasRenderingContext2D, w: number, h: number): number {
+  const data = ctx.getImageData(0, 0, w, h).data
+  let sumLy = 0, sumL = 0
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4
+      const lum = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
+      sumLy += lum * y
+      sumL += lum
+    }
+  }
+  return sumL > 0 ? sumLy / sumL / h : 0.5
 }
 
 async function hashToken(input: string): Promise<string> {
@@ -67,6 +92,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
   const prevEyeBrightnessRef = React.useRef(0)
   const eyeClosedRef = React.useRef(false)
   const baseCentroidRef = React.useRef(0.5)
+  const baseCentroidYRef = React.useRef(0.5)
   const baseSmileBrightnessRef = React.useRef(0)
   const sampleCountRef = React.useRef(0)
 
@@ -74,6 +100,23 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
   const text = theme?.text || '#f0f7f0'
   const accent = theme?.accent || '#1a7c3e'
   const subText = theme?.subText || 'rgba(255,255,255,.5)'
+
+  // Speak challenge voice when state becomes active
+  React.useEffect(() => {
+    if (challengeState === 'active' && !allPassed) {
+      const challenge = CHALLENGES[currentChallenge]
+      if (challenge) {
+        speak(challenge.voice)
+      }
+    }
+  }, [challengeState, currentChallenge, allPassed])
+
+  // Speak completion message
+  React.useEffect(() => {
+    if (allPassed) {
+      speak('Face verified. Welcome to the Motherland.')
+    }
+  }, [allPassed])
 
   // Start camera
   React.useEffect(() => {
@@ -112,6 +155,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
     prevEyeBrightnessRef.current = 0
     eyeClosedRef.current = false
     baseCentroidRef.current = 0
+    baseCentroidYRef.current = 0
     baseSmileBrightnessRef.current = 0
     sampleCountRef.current = 0
 
@@ -200,6 +244,37 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
           setTimeout(() => advanceChallenge(), 800)
         }
       }
+
+      if (challenge.type === 'NOD') {
+        const cy = luminanceCentroidY(ctx, w, h)
+        if (sampleCountRef.current <= 5) {
+          baseCentroidYRef.current = cy
+          return
+        }
+        const shift = Math.abs(cy - baseCentroidYRef.current)
+        if (shift > 0.05) {
+          clearInterval(intervalId)
+          clearTimeout(timeoutId)
+          setChallengeState('passed')
+          setTimeout(() => advanceChallenge(), 800)
+        }
+      }
+
+      if (challenge.type === 'LOOK_UP') {
+        const cy = luminanceCentroidY(ctx, w, h)
+        if (sampleCountRef.current <= 5) {
+          baseCentroidYRef.current = cy
+          return
+        }
+        // Looking up = centroid shifts upward (smaller Y)
+        const shift = baseCentroidYRef.current - cy
+        if (shift > 0.05) {
+          clearInterval(intervalId)
+          clearTimeout(timeoutId)
+          setChallengeState('passed')
+          setTimeout(() => advanceChallenge(), 800)
+        }
+      }
     }, SAMPLE_INTERVAL_MS)
 
     return () => {
@@ -264,7 +339,9 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
   const challenge = CHALLENGES[currentChallenge]
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', background: bg, padding: '16px 20px', overflow: 'auto' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', background: bg, padding: '16px 20px', overflow: 'auto', position: 'relative' }}>
+      <style>{`@keyframes scanLine { 0% { transform:translateY(-200%) } 100% { transform:translateY(500%) } }`}</style>
+
       {/* Header */}
       <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 18, fontWeight: 900, color: text, marginBottom: 4, textAlign: 'center' }}>
         Face Verification
@@ -275,7 +352,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
 
       {/* Camera feed */}
       <div style={{
-        position: 'relative', width: 260, height: 260,
+        position: 'relative', width: 280, height: 280,
         borderRadius: '50%', overflow: 'hidden',
         border: `3px solid ${challengeState === 'passed' ? '#4ade80' : challengeState === 'active' ? accent : 'rgba(255,255,255,.15)'}`,
         marginBottom: 20, transition: 'border-color .3s',
@@ -292,6 +369,13 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
         {challengeState === 'active' && (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <div style={{ width: 80, height: 80, borderRadius: '50%', border: `2px dashed ${accent}88` }} />
+          </div>
+        )}
+        {/* Scan-line overlay when challenge is active */}
+        {challengeState === 'active' && (
+          <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '50%', pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, animation: 'scanLine 2s linear infinite', top: '30%' }} />
+            <div style={{ position: 'absolute', left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${accent}60, transparent)`, animation: 'scanLine 2s linear .5s infinite', top: '50%' }} />
           </div>
         )}
         {/* Challenge passed overlay */}
@@ -314,7 +398,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
         ))}
       </div>
 
-      {/* Challenge instruction */}
+      {/* Challenge instruction — speech bubble style */}
       {challengeState === 'waiting' && cameraReady && (
         <>
           <div style={{ fontSize: 13, color: subText, marginBottom: 16, textAlign: 'center' }}>
@@ -335,14 +419,10 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
       )}
 
       {challengeState === 'active' && challenge && (
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>{challenge.emoji}</div>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 800, color: text, marginBottom: 4 }}>
-            {challenge.instruction}
-          </div>
-          <div style={{ fontSize: 11, color: subText }}>
-            Challenge {currentChallenge + 1} of {CHALLENGES.length}
-          </div>
+        <div style={{ background: 'rgba(255,255,255,.05)', border: `1px solid ${accent}40`, borderRadius: 16, padding: '12px 20px', marginTop: 16, textAlign: 'center', maxWidth: 280 }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>{challenge.emoji}</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 3 }}>{challenge.instruction}</div>
+          <div style={{ fontSize: 10, color: accent, letterSpacing: '.08em', textTransform: 'uppercase' }}>AI is watching • Challenge {currentChallenge + 1} of {CHALLENGES.length}</div>
         </div>
       )}
 
@@ -358,6 +438,20 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
           <div style={{ fontSize: 12, color: subText }}>Initializing camera...</div>
         </div>
       )}
+
+      {/* Skip button — always visible */}
+      <button
+        onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); onSkip?.() || onComplete('SKIPPED') }}
+        style={{
+          position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+          padding: '10px 28px', borderRadius: 99,
+          background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.15)',
+          color: 'rgba(255,255,255,.5)', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          zIndex: 10,
+        }}
+      >
+        Skip for now →
+      </button>
     </div>
   )
 }

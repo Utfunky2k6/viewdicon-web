@@ -19,6 +19,7 @@ import { CanonicalVillage } from '@/constants/villages'
 import { isAfricanDialCode, AFRICAN_DIAL_CODES, WORLD_DIAL_CODES, type UserCircle, type DialCodeEntry } from '@/lib/dial-codes'
 import { useThemeStore } from '@/stores/themeStore'
 import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
+import { DrumDatePicker } from '@/components/ui/DrumDatePicker'
 
 // ── THEME CONSTANTS ──────────────────────────────────────────
 // LIGHT: Warm ivory parchment — premium, Africa-inspired, AA-contrast throughout
@@ -837,10 +838,10 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
             <div style={{ marginBottom:16 }}>
               <div style={{ fontSize:11, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Country of Residence</div>
               <select value={currentCountry} onChange={e=>setCurrentCountry(e.target.value)}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:13, background:theme.card,
-                  border:`2px solid ${currentCountry ? meta.bg+'88' : theme.border}`,
-                  color: currentCountry ? theme.text : theme.subText, fontSize:14, outline:'none',
-                  cursor:'pointer', appearance:'none', transition:'border .2s' }}>
+                style={{ width:'100%', padding:'12px 14px', borderRadius:13, background:'#0d1a0f',
+                  border:`2px solid ${currentCountry ? meta.bg+'88' : 'rgba(255,255,255,.12)'}`,
+                  color: currentCountry ? '#f0f7f0' : 'rgba(255,255,255,.35)', fontSize:14, outline:'none',
+                  cursor:'pointer', appearance:'auto', transition:'border .2s', colorScheme:'dark' }}>
                 <option value=''>Select your country…</option>
                 {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -1036,7 +1037,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:2 }}>Ancestral Nation *</div>
              <select value={ancestralNation} onChange={e=>{setAncestralNation(e.target.value);setTabError('')}}
-               style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:ancestralNation?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${theme.border}`, outline:'none', appearance:'auto' }}>
+               style={{ width:'100%', padding:'13px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:ancestralNation?'#f0f7f0':'rgba(255,255,255,.35)', background:'#0d1a0f', border:`1.5px solid ${ancestralNation?theme.accent:'rgba(255,255,255,.12)'}`, outline:'none', appearance:'auto', colorScheme:'dark' }}>
                <option value="">Select your ancestral nation…</option>
                {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
              </select>
@@ -1057,12 +1058,19 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
         {tab===2 && (
           <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
             <div>
-              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Date of Birth *</div>
-              <input type="date" value={dob} min={minDob} max={maxDob}
-                onChange={e=>{setDob(e.target.value);setTabError('')}}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:dob?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${dob?theme.accent:theme.border}`, outline:'none', boxSizing:'border-box', colorScheme:'dark' }}
+              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>Date of Birth *</div>
+              <DrumDatePicker
+                value={dob}
+                onChange={v => { setDob(v); setTabError('') }}
+                accentColor={theme.accent || '#1a7c3e'}
+                maxYear={new Date().getFullYear() - 13}
+                minYear={new Date().getFullYear() - 110}
               />
-              {dob && <div style={{ fontSize:10, color:theme.accent, marginTop:4 }}>✓ Birth year {new Date(dob).getFullYear()} will be encoded in your Afro-ID</div>}
+              {dob && (
+                <div style={{ fontSize:10, color:theme.accent, marginTop:8, textAlign:'center', padding:'6px 12px', background:`${theme.accent}10`, borderRadius:8 }}>
+                  ✓ Born {new Date(dob + 'T12:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })} — Birth year encoded in Afro-ID
+                </div>
+              )}
             </div>
             <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:2 }}>Birth Season</div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
@@ -1123,7 +1131,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
             <div>
               <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Country of Residence *</div>
               <select value={currentCountry} onChange={e=>{setCurrentCountry(e.target.value);setTabError('')}}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:currentCountry?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${theme.border}`, outline:'none', appearance:'auto' }}>
+                style={{ width:'100%', padding:'13px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:currentCountry?'#f0f7f0':'rgba(255,255,255,.35)', background:'#0d1a0f', border:`1.5px solid ${currentCountry?theme.accent:'rgba(255,255,255,.12)'}`, outline:'none', appearance:'auto', colorScheme:'dark' }}>
                 <option value="">Select your country…</option>
                 {WORLD_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -1831,7 +1839,7 @@ function FamilyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
       <div style={{ marginBottom:16 }}>
         <div style={{ fontSize:9, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.1em', marginBottom:6 }}>Phone Number *</div>
         <div style={{ display:'flex', gap:8 }}>
-          <select value={dialCode} onChange={e=>setDialCode(e.target.value)} style={{ padding:'10px 8px', borderRadius:12, background:theme.card, border:`1.5px solid ${theme.border}`, color:theme.text, fontSize:13, outline:'none', cursor:'pointer' }}>
+          <select value={dialCode} onChange={e=>setDialCode(e.target.value)} style={{ padding:'10px 8px', borderRadius:12, background:'#0d1a0f', border:`1.5px solid ${dialCode?theme.accent:'rgba(255,255,255,.12)'}`, color:'#f0f7f0', fontSize:13, outline:'none', cursor:'pointer', colorScheme:'dark', appearance:'auto' }}>
             {AFRICAN_DIAL_CODES.map((c: DialCodeEntry)=><option key={c.dial} value={c.dial}>{c.flag} {c.dial}</option>)}
             {WORLD_CODES.map((c: DialCodeEntry)=><option key={c.dial+c.name} value={c.dial}>{c.flag} {c.dial}</option>)}
           </select>
