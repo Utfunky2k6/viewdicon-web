@@ -223,11 +223,11 @@ function VillageTransferPage() {
             <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.06em' }}>
               Your Current Village
             </div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: '#f0f7f0', marginTop: 2 }}>
-              {fromVillage.name}
+            <div style={{ fontFamily: '"Cinzel","Palatino",serif', fontSize: 15, fontWeight: 800, color: fromVillage.color, marginTop: 2, letterSpacing: '0.04em' }}>
+              {fromVillage.ancientName}
             </div>
-            <div style={{ fontSize: 10, color: fromVillage.color, fontWeight: 700, marginTop: 1 }}>
-              {fromVillage.yoruba}
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.45)', fontWeight: 600, marginTop: 1 }}>
+              {fromVillage.nationFull?.split('·')[0]?.trim() || fromVillage.category}
             </div>
           </div>
         </div>

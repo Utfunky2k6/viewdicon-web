@@ -738,8 +738,8 @@ export default function CalendarPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, padding: '12px 14px', background: '#13131b', borderRadius: 14, border: `1px solid ${v.color}40` }}>
                   <div style={{ fontSize: 32 }}>{v.emoji}</div>
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#f5f5f0' }}>{v.name}</div>
-                    <div style={{ fontSize: 11, color: v.color }}>{v.yoruba}</div>
+                    <div style={{ fontFamily: '"Cinzel","Palatino",serif', fontSize: 16, fontWeight: 800, color: v.color, letterSpacing: '0.04em' }}>{v.ancientName}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)' }}>{v.nationFull?.split('·')[0]?.trim() || v.category}</div>
                     {isMarketDay && <div style={{ fontSize: 10, fontWeight: 800, color: '#fbbf24', marginTop: 4 }}>⚡ ACTIVE MARKET DAY</div>}
                   </div>
                 </div>

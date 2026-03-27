@@ -18,10 +18,10 @@ const COMMERCE_TOOLS = [
 ]
 
 const JOINABLE_VILLAGES = [
-  { id: 'agriculture', name: 'Agriculture Village', yoruba: 'Ìlú Àgbẹ̀',       emoji: '🌾', color: '#1a7c3e', roles: 8 },
-  { id: 'arts',        name: 'Arts Village',        yoruba: 'Ìlú Akéwì',        emoji: '🎨', color: '#7c3aed', roles: 8 },
-  { id: 'health',      name: 'Health Village',      yoruba: 'Ìlú Aláwọ̀ṣan',    emoji: '⚕',  color: '#0369a1', roles: 8 },
-  { id: 'energy',      name: 'Energy Village',      yoruba: 'Ìlú Àṣẹ Iná',     emoji: '⚡', color: '#b45309', roles: 8 },
+  { id: 'agriculture', ancientName: 'NOK',       name: 'Agriculture Village', emoji: '🌾', color: '#1a7c3e', roles: 8, nation: 'Nigeria · Cameroon · Benin' },
+  { id: 'arts',        ancientName: 'BIDA',      name: 'Arts Village',        emoji: '🎨', color: '#7c3aed', roles: 8, nation: 'Nupe Kingdom · Nigeria' },
+  { id: 'health',      ancientName: 'WABET',     name: 'Health Village',      emoji: '⚕',  color: '#0369a1', roles: 8, nation: 'Ancient Egypt · Nubia' },
+  { id: 'energy',      ancientName: 'INGA',      name: 'Energy Village',      emoji: '⚡', color: '#b45309', roles: 8, nation: 'DR Congo · Central Africa' },
 ]
 
 // Recent work log
@@ -228,8 +228,8 @@ function IseVillagesTab() {
           <div key={v.id} style={{ background: 'var(--bg)', border: `1px solid ${joinedIds.has(v.id) ? v.color : 'var(--border)'}`, borderRadius: 12, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, opacity: joinedIds.has(v.id) ? 1 : 0.6, transition: 'all .3s' }}>
             <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, background: v.color, flexShrink: 0 }}>{v.emoji}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>{v.name}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.yoruba} · {v.roles} roles available</div>
+              <div style={{ fontFamily: '"Cinzel","Palatino",serif', fontSize: 12, fontWeight: 700, color: v.color, letterSpacing: '0.04em' }}>{v.ancientName}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{v.nation} · {v.roles} roles available</div>
             </div>
             <button
               onClick={() => handleJoin(v.id)}

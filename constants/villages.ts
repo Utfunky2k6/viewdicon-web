@@ -8,11 +8,21 @@ interface CanonicalRoleSource {
 
 interface CanonicalVillageSource {
   id: string
+  ancientName: string
   name: string
   yoruba: string
   emoji: string
   color: string
+  nation?: string
+  nationFull?: string
+  language?: string
+  era?: string
+  meaning?: string
+  history?: string
   guardian: string
+  guardianDesc?: string
+  guardianOrigin?: string
+  origin?: string
   category: string
   tagline: string
   isHolding?: boolean
@@ -24,6 +34,7 @@ export interface VillageRole extends CanonicalRoleSource {
 }
 
 export interface CanonicalVillage extends CanonicalVillageSource {
+  ancientName: string
   yorubaName: string
   yorubaTranslation: string
   bgColor: string

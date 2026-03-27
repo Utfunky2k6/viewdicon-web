@@ -1,8 +1,127 @@
 'use client'
 import * as React from 'react'
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/stores/authStore'
 
-// ============================================================
-// Afrikonnect 360 — Full Banking Dashboard
+const FaceLiveness = dynamic(() => import('@/components/onboarding/FaceLiveness'), { ssr: false })
+
+// ── Biometric Gate — blocks banking until fingerprint + face verified ──
+type GateStage = 'setup-required' | 'fingerprint' | 'face' | 'granted'
+
+function BiometricGate({ children }: { children: React.ReactNode }) {
+  const { biometricEnrolled, credentialId } = useAuthStore()
+  const router = useRouter()
+  const [stage, setStage] = React.useState<GateStage>('fingerprint')
+  const [fpWorking, setFpWorking] = React.useState(false)
+  const [fpError, setFpError] = React.useState('')
+
+  // On mount, decide initial stage
+  React.useEffect(() => {
+    if (!biometricEnrolled) setStage('setup-required')
+    else setStage('fingerprint')
+  }, [biometricEnrolled])
+
+  async function verifyFingerprint() {
+    setFpWorking(true)
+    setFpError('')
+    try {
+      const challenge = crypto.getRandomValues(new Uint8Array(32))
+      const allowCreds: PublicKeyCredentialDescriptor[] = credentialId
+        ? [{ type: 'public-key', id: Uint8Array.from(credentialId.match(/.{2}/g)!.map(b => parseInt(b, 16))) }]
+        : []
+
+      const cred = await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          allowCredentials: allowCreds,
+          userVerification: 'required',
+          timeout: 60000,
+        },
+      })
+      if (cred) setStage('face')
+      else setFpError('Verification failed. Try again.')
+    } catch (err: any) {
+      if (err?.name === 'NotAllowedError') setFpError('Fingerprint verification cancelled.')
+      else setFpError('Biometric verification failed. Please try again.')
+    }
+    setFpWorking(false)
+  }
+
+  if (stage === 'granted') return <>{children}</>
+
+  // Gate overlay
+  return (
+    <div style={{ minHeight:'100svh', background:'#050a06', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'24px 20px' }}>
+      {stage === 'setup-required' && (
+        <div style={{ textAlign:'center', maxWidth:340 }}>
+          <div style={{ fontSize:56, marginBottom:16 }}>🔒</div>
+          <div style={{ color:'#f0f7f0', fontSize:20, fontWeight:800, marginBottom:8 }}>Banking Locked</div>
+          <div style={{ color:'rgba(240,247,240,.55)', fontSize:14, lineHeight:1.6, marginBottom:28 }}>
+            Banking requires fingerprint + face verification to protect your Cowrie.<br /><br />
+            Set up biometric in Settings before continuing.
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/settings')}
+            style={{ background:'linear-gradient(135deg,#15803d,#166534)', color:'#fff', border:'none', borderRadius:14, padding:'14px 28px', fontSize:15, fontWeight:700, cursor:'pointer', width:'100%', marginBottom:12 }}
+          >
+            ⚙️ Go to Settings
+          </button>
+          <button
+            onClick={() => router.back()}
+            style={{ background:'transparent', border:'none', color:'rgba(240,247,240,.4)', fontSize:13, cursor:'pointer', padding:'8px 0' }}
+          >
+            ← Go Back
+          </button>
+        </div>
+      )}
+
+      {stage === 'fingerprint' && (
+        <div style={{ textAlign:'center', maxWidth:340 }}>
+          <div style={{ fontSize:56, marginBottom:16 }}>👆</div>
+          <div style={{ color:'#f0f7f0', fontSize:20, fontWeight:800, marginBottom:8 }}>Verify Identity</div>
+          <div style={{ color:'rgba(240,247,240,.55)', fontSize:14, lineHeight:1.6, marginBottom:28 }}>
+            Confirm your fingerprint to access Banking. Your sovereign Cowrie is protected.
+          </div>
+          {fpError && (
+            <div style={{ background:'rgba(248,113,113,.15)', border:'1px solid rgba(248,113,113,.3)', borderRadius:10, padding:'10px 14px', color:'#f87171', fontSize:12, marginBottom:16 }}>
+              {fpError}
+            </div>
+          )}
+          <button
+            onClick={verifyFingerprint}
+            disabled={fpWorking}
+            style={{ background:'linear-gradient(135deg,#15803d,#166534)', color:'#fff', border:'none', borderRadius:14, padding:'14px 28px', fontSize:15, fontWeight:700, cursor:fpWorking?'wait':'pointer', width:'100%', opacity:fpWorking?.7:1, marginBottom:12 }}
+          >
+            {fpWorking ? '⏳ Verifying…' : '👆 Verify Fingerprint'}
+          </button>
+          <button
+            onClick={() => router.back()}
+            style={{ background:'transparent', border:'none', color:'rgba(240,247,240,.4)', fontSize:13, cursor:'pointer', padding:'8px 0' }}
+          >
+            ← Cancel
+          </button>
+        </div>
+      )}
+
+      {stage === 'face' && (
+        <div style={{ width:'100%', maxWidth:420 }}>
+          <div style={{ textAlign:'center', marginBottom:16 }}>
+            <div style={{ color:'#f0f7f0', fontSize:18, fontWeight:800 }}>Step 2 of 2 — Face Capture</div>
+            <div style={{ color:'rgba(240,247,240,.45)', fontSize:13 }}>Look at the camera to complete verification</div>
+          </div>
+          <FaceLiveness
+            theme={{ bg:'#050a06', text:'#f0f7f0', subText:'rgba(240,247,240,.5)', accent:'#4ade80' }}
+            onComplete={() => setStage('granted')}
+            onSkip={() => setStage('granted')}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 // Covers: Dual-currency treasury, Ajo 3.0, Ogbo Ụtụ Escrow,
 //         Cowrie Mesh offline P2P, TLP locks, CowrieChain L2,
 //         Interbank corridors, Kòwè receipts, ATM Eye
@@ -986,6 +1105,7 @@ export default function BankingPage() {
   ]
 
   return (
+    <BiometricGate>
     <BankingCtx.Provider value={bankData}>
     <div style={{ background:'#0a0a0a', minHeight:'100vh', color:'#fff', fontFamily:'system-ui,sans-serif', paddingBottom:80 }}>
 
@@ -1018,5 +1138,6 @@ export default function BankingPage() {
       <SendMoneyModal open={sendOpen} onClose={() => setSendOpen(false)} />
     </div>
     </BankingCtx.Provider>
+    </BiometricGate>
   )
 }

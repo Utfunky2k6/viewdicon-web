@@ -211,7 +211,7 @@ export default function VillageRouter({ onSelect, onCancel, theme }: VillageRout
         {
           id: 'griot-reveal',
           role: 'griot',
-          text: `The path is clear! The ancestors have spoken. You belong in ${village?.name || 'a great village'}...`,
+          text: `The path is clear! The ancestors have spoken. You belong in ${village?.ancientName || village?.name || 'a great village'}...`,
         },
       ])
       setResult(data)
@@ -742,27 +742,28 @@ export default function VillageRouter({ onSelect, onCancel, theme }: VillageRout
                         style={{
                           fontSize: 24,
                           fontWeight: 900,
-                          fontFamily: "'Sora', sans-serif",
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(255,255,255,0.95)',
+                          fontFamily: '"Cinzel","Palatino",serif',
+                          letterSpacing: '0.06em',
+                          color: `${villageColor}`,
                           lineHeight: 1.2,
+                          textShadow: `0 0 20px ${villageColor}60`,
                         }}
                       >
-                        {VILLAGE_MAP[result.villageId]?.name ||
+                        {VILLAGE_MAP[result.villageId]?.ancientName ||
+                          VILLAGE_MAP[result.villageId]?.name ||
                           'Unknown Village'}
                       </div>
                       <div
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: 'rgba(255,255,255,0.4)',
+                          color: 'rgba(255,255,255,0.5)',
                           textTransform: 'uppercase' as const,
                           letterSpacing: '0.16em',
-                          fontStyle: 'italic',
                           marginTop: 4,
                         }}
                       >
-                        {VILLAGE_MAP[result.villageId]?.yorubaName || ''}
+                        {VILLAGE_MAP[result.villageId]?.nationFull?.split('·')[0]?.trim() || ''}
                       </div>
                     </div>
 

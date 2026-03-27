@@ -258,11 +258,11 @@ export default function VillageApplyPage() {
             {village.emoji}
           </div>
           <div>
-            <h1 style={{ fontFamily: 'Sora, sans-serif', fontSize: 18, fontWeight: 800, color: TEXT, margin: 0 }}>
-              Apply to {village.name}
+            <h1 style={{ fontFamily: '"Cinzel","Palatino",serif', fontSize: 18, fontWeight: 800, color: village.color, margin: 0, letterSpacing: '0.04em' }}>
+              {village.ancientName}
             </h1>
-            <p style={{ fontSize: 11, color: village.color, fontWeight: 700, margin: '2px 0 0' }}>
-              {village.yoruba}
+            <p style={{ fontSize: 11, color: TEXT, fontWeight: 600, margin: '2px 0 0' }}>
+              Apply · {village.nationFull?.split('·')[0]?.trim() || village.category}
             </p>
           </div>
         </div>

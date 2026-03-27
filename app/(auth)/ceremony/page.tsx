@@ -1906,8 +1906,8 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', background:theme.bg }}>
        <div style={{ padding:20, flexShrink:0 }}>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
-        <div style={{ fontSize:13, color:theme.subText }}>The professional guild where you will grow your legacy.</div>
+        <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
+        <div style={{ fontSize:13, color:theme.subText }}>20 ancient African civilisations — select your lineage.</div>
       </div>
 
       <div style={{ flex:1, overflowY:'auto', padding:'0 20px 20px' }}>
@@ -1915,15 +1915,15 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
             {visible.map(v => (
               <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}15`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:20, padding:18, cursor:'pointer', transition:'all .2s' }}>
                  <div style={{ fontSize:28, marginBottom:10 }}>{v.emoji}</div>
-                 <div style={{ fontSize:14, fontWeight:900, color:theme.text }}>{v.name}</div>
-                 <div style={{ fontSize:10, color:v.color, fontWeight:800, marginTop:2 }}>{v.yoruba}</div>
+                 <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:15, fontWeight:900, color:v.color, letterSpacing:'0.04em' }}>{v.ancientName}</div>
+                 <div style={{ fontSize:10, color:theme.subText, fontWeight:600, marginTop:3 }}>{v.nationFull?.split('·')[0]?.trim() || v.category}</div>
               </div>
             ))}
          </div>
          <div onClick={()=>setSelId(holding.id)} style={{ marginTop:12, padding:20, background:selId===holding.id?`${holding.color}15`:theme.card, border:`2px dashed ${selId===holding.id?holding.color:theme.border}`, borderRadius:20, display:'flex', alignItems:'center', gap:16, cursor:'pointer' }}>
             <div style={{ fontSize:32 }}>{holding.emoji}</div>
             <div>
-               <div style={{ fontSize:15, fontWeight:900, color:theme.text }}>{holding.name} Village</div>
+               <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:15, fontWeight:900, color:holding.color }}>{holding.ancientName}</div>
                <div style={{ fontSize:11, color:theme.subText }}>The Griot will guide you to your path.</div>
             </div>
          </div>
@@ -1990,7 +1990,7 @@ function RoleStep({ village, onNext, theme }: { village:Village; onNext:(role:st
           `🏅 Earns the "${selected.name}" Sovereign Role Badge`,
           `🥁 Receives village-specific Drum Feed posts and opportunities`,
           `🔑 Unlocks ${village.name} Village roles, rooms, and market access`,
-          `⚡ Afro-ID prefix tied to ${village.yoruba ?? village.name} lineage`,
+          `⚡ Afro-ID prefix tied to ${village.ancientName} lineage`,
         ].map((perk, i) => (
           <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 14px', borderRadius:14, background:theme.card, border:`1px solid ${theme.border}` }}>
             <div style={{ fontSize:12, lineHeight:1.65, color:theme.text }}>{perk}</div>
@@ -2110,11 +2110,11 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
             {village.emoji}
           </div>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'-0.01em' }}>
-              {village.name}
+            <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'0.04em' }}>
+              {village.ancientName}
             </div>
             <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.7)', marginTop:2 }}>
-              {village.yoruba}
+              {village.nationFull?.split('·')[0]?.trim() || village.category}
             </div>
           </div>
         </div>

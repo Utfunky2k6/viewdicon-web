@@ -1,403 +1,1262 @@
 [
   {
     "id": "commerce",
+    "ancientName": "WANGARA",
     "name": "Commerce Village",
     "yoruba": "Ìlú Oníṣòwò",
     "emoji": "🧺",
     "color": "#e07b00",
-    "guardian": "Ọṣun",
+    "nation": "🇲🇱",
+    "nationFull": "Mali Empire · Mandé Gold-Trading Guild",
+    "language": "Mandinka · Bambara",
+    "era": "800 – 1600 AD",
+    "meaning": "The Gold Traders — the merchant guild who connected all of West Africa through trans-Saharan trade",
+    "history": "The Wangara were a guild of Mandé-speaking merchants who controlled the trans-Saharan gold trade for 600 years. At the peak of the Mali Empire they moved more gold than any civilisation on earth. Their trade network stretched from Senegal to the Niger Bend. When Mansa Musa made his 1324 pilgrimage to Mecca with 60,000 people and tonnes of gold, it was Wangara trade networks that built that wealth. They were Africa's first merchant bankers, first logistics network, first commodity traders.",
+    "guardianDesc": "Anansi the Spider is the Akan deity of commerce and cunning intelligence from Ghana. He wove the first trade web across West Africa — outwitting gods to give stories and commerce to humanity. Every market stall carries his invisible thread.",
+    "origin": "Mandé Gold-Trading Guild · Mali Empire · c. 700–1600 CE",
+    "guardian": "Anansi",
+    "guardianOrigin": "Akan Pantheon · Ghana",
     "category": "economy",
     "tagline": "The market that feeds the nation. Every trade, every stall, every deal.",
+    "isHolding": false,
     "roles": [
-      { "key": "market_vendor", "name": "Market Vendor / Mama Put Seller", "desc": "Physical market stall, roadside food seller, neighbourhood market trader across all 54 nations" },
-      { "key": "import_export", "name": "Import / Export Agent", "desc": "Cross-border trade, customs clearing, freight forwarding, container logistics" },
-      { "key": "mobile_money", "name": "Mobile Money & POS Agent", "desc": "M-Pesa agent, POS operator, airtime vendor, cash transfer service, mobile wallet agent" },
-      { "key": "wholesale", "name": "Wholesaler / Bulk Distributor", "desc": "Bulk commodity trading, warehouse operations, supply to retailers across regions" },
-      { "key": "ecommerce", "name": "E-Commerce & Social Seller", "desc": "Jumia/Konga seller, TikTok shop, Instagram commerce, WhatsApp business trader" },
-      { "key": "forex", "name": "Bureau de Change / Forex Trader", "desc": "Currency exchange, international remittance, forex trading, hawala operations" },
-      { "key": "second_hand", "name": "Second-Hand Goods Dealer", "desc": "Bend-down boutique, Gikomba trader, mitumba clothing, refurbished electronics reseller" },
-      { "key": "auctioneer", "name": "Auctioneer / Commodity Broker", "desc": "Livestock auctioneer, grain broker, commodity exchange trader, real estate auction" }
+      {
+        "key": "market_vendor",
+        "name": "Market Vendor / Mama Put Seller",
+        "desc": "Physical market stall, roadside food seller, neighbourhood market trader across all 54 nations"
+      },
+      {
+        "key": "import_export",
+        "name": "Import / Export Agent",
+        "desc": "Cross-border trade, customs clearing, freight forwarding, container logistics"
+      },
+      {
+        "key": "mobile_money",
+        "name": "Mobile Money & POS Agent",
+        "desc": "M-Pesa agent, POS operator, airtime vendor, cash transfer service"
+      },
+      {
+        "key": "wholesale",
+        "name": "Wholesaler / Bulk Distributor",
+        "desc": "Bulk commodity trading, warehouse operations, supply to retailers"
+      },
+      {
+        "key": "ecommerce",
+        "name": "E-Commerce & Social Seller",
+        "desc": "Jumia/Konga seller, TikTok shop, Instagram commerce, WhatsApp business"
+      },
+      {
+        "key": "forex",
+        "name": "Bureau de Change / Forex Trader",
+        "desc": "Currency exchange, international remittance, forex trading"
+      },
+      {
+        "key": "second_hand",
+        "name": "Second-Hand Goods Dealer",
+        "desc": "Bend-down boutique, Gikomba trader, mitumba clothing, refurbished electronics"
+      },
+      {
+        "key": "auctioneer",
+        "name": "Auctioneer / Commodity Broker",
+        "desc": "Livestock auctioneer, grain broker, commodity exchange trader"
+      }
     ]
   },
   {
     "id": "agriculture",
+    "ancientName": "KEMET",
     "name": "Agriculture Village",
     "yoruba": "Ìlú Àgbẹ̀",
     "emoji": "🌾",
-    "color": "#1a7c3e",
-    "guardian": "Ògún",
+    "color": "#16a34a",
+    "nation": "🇪🇬",
+    "nationFull": "Ancient Egypt · Nile Valley Civilisation",
+    "language": "Medu Neter (Ancient Egyptian)",
+    "era": "3100 BC – 30 BC",
+    "meaning": "The Black Land — named for the rich Nile silt that fed an empire of five million people for three thousand years",
+    "history": "Kemet is what Ancient Egypt called itself — the black fertile soil of the Nile flood. Egypt developed the first systematic irrigation, the first crop calendars, the first granary management systems. The Edwin Smith Papyrus (1600 BC), the world's oldest agricultural text, was written here. Kemet was the breadbasket of the ancient world, exporting grain to Greece, Rome, and the Mediterranean.",
+    "guardianDesc": "Osiris is the Ancient Egyptian god of agriculture, death, and resurrection. He is killed each year and rises again — like every harvest. He taught humanity to farm, to wait for the season, and to trust the soil. The Nile floods in his name.",
+    "origin": "Ancient Egyptian name for Egypt · The Black Land · c. 3100 BCE",
+    "guardian": "Osiris",
+    "guardianOrigin": "Ancient Egyptian Pantheon",
     "category": "economy",
     "tagline": "The soil that feeds 1.4 billion souls.",
+    "isHolding": false,
     "roles": [
-      { "key": "crop_farmer", "name": "Crop Farmer", "desc": "Smallholder and commercial farmer — maize, cassava, yam, sorghum, millet, rice, cocoa, coffee, tea, khat" },
-      { "key": "livestock", "name": "Pastoralist / Livestock Keeper", "desc": "Cattle herder (Fulani/Maasai), goat farmer, poultry farmer, dairy farmer, pig farmer, camel herder" },
-      { "key": "fisher", "name": "Artisanal Fisher / Aquaculture", "desc": "Lake Victoria fisher, Atlantic coastal fisherman, fish farmer, shrimp farmer, oyster grower" },
-      { "key": "agro_processor", "name": "Agro-Processor", "desc": "Palm oil processor, cassava flour miller, groundnut paste maker, dairy processor, juice bottler" },
-      { "key": "irrigation", "name": "Irrigation & Water Engineer", "desc": "Borehole driller, canal builder, drip irrigation installer, dam maintenance, water harvesting" },
-      { "key": "seed_guardian", "name": "Seed Bank Guardian / Agronomist", "desc": "Heritage seed keeper, soil scientist, crop geneticist, agricultural extension officer" },
-      { "key": "rain_watcher", "name": "Rain Watcher / Weather Monitor", "desc": "Community climate observer, flood early warning officer, drought response coordinator, NDVI analyst" },
-      { "key": "farm_logistics", "name": "Farm-to-Market Coordinator", "desc": "Produce aggregator, cold chain manager, rural transport coordinator, warehouse receipt manager" }
+      {
+        "key": "crop_farmer",
+        "name": "Crop Farmer",
+        "desc": "Smallholder and commercial farmer — maize, cassava, yam, sorghum, millet, rice, cocoa, coffee, tea"
+      },
+      {
+        "key": "livestock",
+        "name": "Pastoralist / Livestock Keeper",
+        "desc": "Cattle herder, goat farmer, poultry farmer, dairy farmer, pig farmer, camel herder"
+      },
+      {
+        "key": "fisher",
+        "name": "Artisanal Fisher / Aquaculture",
+        "desc": "Lake Victoria fisher, Atlantic coastal fisherman, fish farmer, shrimp farmer"
+      },
+      {
+        "key": "agro_processor",
+        "name": "Agro-Processor",
+        "desc": "Palm oil processor, cassava flour miller, groundnut paste maker, dairy processor"
+      },
+      {
+        "key": "irrigation",
+        "name": "Irrigation & Water Engineer",
+        "desc": "Borehole driller, canal builder, drip irrigation installer, dam maintenance"
+      },
+      {
+        "key": "seed_guardian",
+        "name": "Seed Bank Guardian / Agronomist",
+        "desc": "Heritage seed keeper, soil scientist, crop geneticist, agricultural extension officer"
+      },
+      {
+        "key": "rain_watcher",
+        "name": "Rain Watcher / Weather Monitor",
+        "desc": "Community climate observer, flood early warning officer, drought response coordinator"
+      },
+      {
+        "key": "farm_logistics",
+        "name": "Farm-to-Market Coordinator",
+        "desc": "Produce aggregator, cold chain manager, rural transport coordinator"
+      }
     ]
   },
   {
     "id": "health",
+    "ancientName": "WABET",
     "name": "Health Village",
     "yoruba": "Ìlú Aláwọ̀ṣan",
-    "emoji": "⚕",
+    "emoji": "⚕️",
     "color": "#0369a1",
-    "guardian": "Osun",
+    "nation": "🇪🇬",
+    "nationFull": "Ancient Egypt · Sacred Healing Chambers",
+    "language": "Medu Neter · Coptic",
+    "era": "2650 BC – present",
+    "meaning": "The Pure Place — sacred healing sanctuaries where Imhotep, the world's first named physician, practiced medicine",
+    "history": "The Wabet were sacred purification chambers of ancient Egyptian temples where healing priests practiced. The Edwin Smith Papyrus (1600 BC) describes 48 medical cases including brain surgery. Imhotep (2650 BC) was the world's first named physician — later deified as a god of medicine. Africa invented medicine 4,600 years before the Hippocratic oath.",
+    "guardianDesc": "Sekhmet is the Ancient Egyptian lioness goddess of medicine and surgery. She causes disease and cures it — the divine paradox of healing. Her temple complexes were the world's first hospitals. She is the original healer, patron of all who fight illness with knowledge.",
+    "origin": "Sacred healing chamber in every major Egyptian temple · c. 2500 BCE",
+    "guardian": "Sekhmet",
+    "guardianOrigin": "Ancient Egyptian Pantheon · Lioness Goddess",
     "category": "people",
     "tagline": "Where bodies are healed and lives are saved.",
+    "isHolding": false,
     "roles": [
-      { "key": "medical_doctor", "name": "Medical Doctor / Physician", "desc": "GP, specialist surgeon, gynaecologist, paediatrician, psychiatrist, oncologist, cardiologist across all African health systems" },
-      { "key": "nurse_midwife", "name": "Nurse / Midwife / Birth Attendant", "desc": "Registered nurse, enrolled nurse, certified midwife, traditional birth attendant (TBA), auxiliary nurse" },
-      { "key": "traditional_healer", "name": "Traditional Healer / Herbalist", "desc": "Sangoma (South Africa), Babalawo (Yoruba), Nganga (Bantu), Dibia (Igbo), Fetish priest (Ghana) — licensed practitioners" },
-      { "key": "community_health", "name": "Community Health Worker", "desc": "Village health volunteer, vaccination outreach worker, malaria net distributor, HIV counsellor, nutrition educator" },
-      { "key": "pharmacist", "name": "Pharmacist / Drug Dispenser", "desc": "Hospital pharmacist, community pharmacy owner, NAFDAC agent, drug distribution officer, pharmaceutical rep" },
-      { "key": "mental_health", "name": "Mental Health Practitioner", "desc": "Clinical psychologist, trauma counsellor, substance abuse counsellor, safe-house guardian, social psychiatry worker" },
-      { "key": "lab_diagnostics", "name": "Lab Scientist / Diagnostician", "desc": "Medical laboratory scientist, pathologist, radiology technician, haematologist, molecular diagnostics specialist" },
-      { "key": "public_health", "name": "Public Health Officer / Epidemiologist", "desc": "Disease surveillance officer, WHO field worker, contact tracer, environmental health officer, one health practitioner" }
+      {
+        "key": "doctor",
+        "name": "Medical Doctor / Physician",
+        "desc": "GP, specialist surgeon, gynaecologist, paediatrician, psychiatrist, oncologist"
+      },
+      {
+        "key": "nurse",
+        "name": "Nurse / Birth Attendant",
+        "desc": "Registered nurse, enrolled nurse, auxiliary nurse, skilled birth attendant"
+      },
+      {
+        "key": "herbalist",
+        "name": "Traditional Healer / Herbalist",
+        "desc": "Sangoma, Babalawo, Nganga, Dibia, Fetish priest — licensed practitioners"
+      },
+      {
+        "key": "community_health",
+        "name": "Community Health Worker",
+        "desc": "Village health volunteer, vaccination outreach, malaria net distributor, HIV counsellor"
+      },
+      {
+        "key": "pharmacist",
+        "name": "Pharmacist / Drug Dispenser",
+        "desc": "Hospital pharmacist, community pharmacy owner, drug distribution officer"
+      },
+      {
+        "key": "mental_health",
+        "name": "Mental Health Practitioner",
+        "desc": "Clinical psychologist, trauma counsellor, substance abuse counsellor"
+      },
+      {
+        "key": "lab_tech",
+        "name": "Lab Scientist / Diagnostician",
+        "desc": "Medical laboratory scientist, pathologist, radiology technician"
+      },
+      {
+        "key": "midwife",
+        "name": "Midwife / Certified Birth Attendant",
+        "desc": "Certified midwife, traditional birth attendant, postnatal care specialist"
+      }
     ]
   },
   {
     "id": "education",
+    "ancientName": "SANKORE",
     "name": "Education Village",
     "yoruba": "Ìlú Ọmọ́wé",
-    "emoji": "🎓",
-    "color": "#4f46e5",
-    "guardian": "Ọrúnmìlà",
+    "emoji": "📚",
+    "color": "#7c3aed",
+    "nation": "🇲🇱",
+    "nationFull": "Mali Empire · University of Timbuktu",
+    "language": "Arabic · Bambara · Fulfulde",
+    "era": "989 AD – present",
+    "meaning": "The University on the Hill — one of the world's first universities with 25,000 students and 700,000 manuscripts",
+    "history": "The University of Sankore in Timbuktu predates Oxford University by 200 years. At its peak it had 25,000 students studying law, medicine, mathematics, astronomy, and theology. Timbuktu's private libraries held 700,000 manuscripts — more books than anywhere in the medieval world. When colonisers called Africa 'the dark continent,' Sankore was the counter-evidence.",
+    "guardianDesc": "Thoth is the Ancient Egyptian god of knowledge, writing, and wisdom. He invented writing and gave it to humanity. The scribe of the gods — the divine librarian who maintains all records of existence. All who transmit knowledge work under his gaze.",
+    "origin": "Great mosque-university of Timbuktu · founded 989 CE · 25,000 students",
+    "guardian": "Thoth",
+    "guardianOrigin": "Ancient Egyptian Pantheon · Divine Scribe",
     "category": "people",
-    "tagline": "The village where minds are sharpened for Africa.",
+    "tagline": "The library that rewrites the lie that Africa had no knowledge.",
+    "isHolding": false,
     "roles": [
-      { "key": "classroom_teacher", "name": "Classroom Teacher", "desc": "Primary, secondary, and vocational school teacher across all 54 African nations including madrasas, mission schools, public and private" },
-      { "key": "university_lecturer", "name": "University Lecturer / Researcher", "desc": "Professor, associate lecturer, research fellow, PhD candidate, academic journal publisher, curriculum developer" },
-      { "key": "edtech", "name": "EdTech Developer / Digital Educator", "desc": "Learning app builder, online tutor, YouTube teacher, USSD learning system operator, radio school presenter" },
-      { "key": "language_keeper", "name": "Language Keeper / Linguist", "desc": "Mother tongue teacher, indigenous language preservationist, Swahili/Hausa/Amharic/Arabic language instructor, translator" },
-      { "key": "vocational_trainer", "name": "Vocational & Skills Trainer", "desc": "Artisan master, apprenticeship supervisor, TVET instructor, trade skills facilitator, entrepreneurship coach" },
-      { "key": "community_tutor", "name": "Community Tutor / Literacy Worker", "desc": "Adult literacy teacher, after-school programme operator, non-formal education facilitator, refugee camp educator" },
-      { "key": "cultural_educator", "name": "Cultural Historian / Oral Archivist", "desc": "Griot, storyteller, museum educator, cultural practices analyst, oral tradition archivist, folklore documenter" },
-      { "key": "special_needs", "name": "Special Needs Educator", "desc": "Inclusive education specialist, sign language interpreter, deaf school teacher, visual impairment educator, autism support specialist" }
+      {
+        "key": "teacher",
+        "name": "Classroom Teacher",
+        "desc": "Primary, secondary, community education across all 54 African nations"
+      },
+      {
+        "key": "lecturer",
+        "name": "University Lecturer",
+        "desc": "Higher education, research, publication, academic leadership"
+      },
+      {
+        "key": "tutor",
+        "name": "Community Tutor",
+        "desc": "Private tutoring, adult literacy, skills coaching"
+      },
+      {
+        "key": "school_admin",
+        "name": "School Administrator",
+        "desc": "School management, staff coordination, community liaison"
+      },
+      {
+        "key": "vocational",
+        "name": "Vocational Trainer",
+        "desc": "Trade skills, artisan training, apprenticeship coordination"
+      },
+      {
+        "key": "language_keeper",
+        "name": "Language Keeper",
+        "desc": "African language instruction, oral tradition preservation"
+      },
+      {
+        "key": "edtech",
+        "name": "EdTech Developer",
+        "desc": "Digital learning tools, e-learning platforms, educational apps"
+      },
+      {
+        "key": "researcher",
+        "name": "Cultural Historian",
+        "desc": "African history research, manuscript preservation, publication"
+      }
     ]
   },
   {
     "id": "arts",
+    "ancientName": "NOK",
     "name": "Arts Village",
     "yoruba": "Ìlú Akéwì",
     "emoji": "🎨",
-    "color": "#7c3aed",
-    "guardian": "Ọya",
+    "color": "#b45309",
+    "nation": "🇳🇬",
+    "nationFull": "Nigeria · Jos Plateau · Nok Civilisation",
+    "language": "Proto-Chadic",
+    "era": "1500 BC – 500 AD",
+    "meaning": "The First Sculptors — oldest sub-Saharan sculpture tradition and first iron-smelters in West Africa",
+    "history": "The Nok culture flourished in central Nigeria for over 2,000 years. Their terracotta sculptures show remarkable sophistication predating all other West African sculpture by 1,000 years. The Nok were also the first iron-smelters in sub-Saharan Africa. Their tradition influenced all later West African art: the Ife bronzes, the Benin bronzes, the Nupe brasswork. Arts Village draws from 3,500 years of unbroken African creative tradition.",
+    "guardianDesc": "Oya is the Yoruba goddess of storms, transformation, and creative power. She tears down old forms to make space for new creation. Patron of all artists who destroy convention to build something new. She governs all creative destruction.",
+    "origin": "Oldest sub-Saharan African civilisation · First terracotta sculpture · c. 1500 BCE",
+    "guardian": "Oya",
+    "guardianOrigin": "Yoruba Pantheon · Nigeria",
     "category": "creative",
-    "tagline": "Where Africa speaks in colour, rhythm, sound, and story.",
+    "tagline": "Every artist carries a 3,500-year creative lineage.",
+    "isHolding": false,
     "roles": [
-      { "key": "musician_griot", "name": "Musician / Griot / Oral Poet", "desc": "Afrobeats, highlife, makossa, bongo flava, soukous, ndombolo, mbalax, jùjú music, gnawa, kora player, mbira player, griot storyteller" },
-      { "key": "visual_artist", "name": "Visual Artist / Sculptor", "desc": "Painter, muralist, Oshogbo artist, Tingatinga artist, digital artist, traditional bronze caster, wood carver, stone sculptor" },
-      { "key": "filmmaker", "name": "Filmmaker / Animator", "desc": "Nollywood director, Ghallywood producer, African animation creator, documentary filmmaker, short film director, TikTok filmmaker" },
-      { "key": "dancer", "name": "Dancer / Choreographer", "desc": "Kpanlogo dancer, Adumu jumper (Maasai), Agbadza dancer, pantsula, gwara gwara, azonto, sabar, traditional court dancer" },
-      { "key": "author_poet", "name": "Author / Poet / Playwright", "desc": "Novelist, short story writer, spoken word artist, playwright, screenwriter, comic book creator, children's book author in African languages" },
-      { "key": "artisan", "name": "Master Artisan / Craft Maker", "desc": "Kente weaver, adinkra stamper, beadwork artist, calabash carver, bogolan (mudcloth) maker, Moroccan zellige craftsman, Maasai bead worker" },
-      { "key": "photographer", "name": "Photographer / Visual Journalist", "desc": "Portrait photographer, documentary photographer, wedding photographer, fashion photographer, photojournalist, drone aerial photographer" },
-      { "key": "theatre", "name": "Theatre Practitioner / Puppeteer", "desc": "Stage actor, community theatre director, puppet theatre maker, Koteba performer (Mali), theatre for development practitioner" }
+      {
+        "key": "musician",
+        "name": "Musician / Griot",
+        "desc": "Music production, live performance, recording, digital distribution"
+      },
+      {
+        "key": "visual_artist",
+        "name": "Visual Artist",
+        "desc": "Painting, sculpture, digital art, NFTs, gallery representation"
+      },
+      {
+        "key": "writer",
+        "name": "Author / Poet",
+        "desc": "Storytelling, poetry, journalism, narrative, publishing"
+      },
+      {
+        "key": "filmmaker",
+        "name": "Filmmaker",
+        "desc": "Documentary, short film, feature, video production"
+      },
+      {
+        "key": "performer",
+        "name": "Dancer / Performer",
+        "desc": "Dance, theatre, live performance, festival coordination"
+      },
+      {
+        "key": "craftsman",
+        "name": "Master Artisan",
+        "desc": "Kente weaving, adire dyeing, beadwork, pottery, woodcarving"
+      },
+      {
+        "key": "fashion_designer",
+        "name": "Fashion Designer",
+        "desc": "African fashion design, kente, adinkra, ankara patterns"
+      },
+      {
+        "key": "cultural_educator",
+        "name": "Cultural Educator",
+        "desc": "Cultural preservation, arts education, heritage programming"
+      }
     ]
   },
   {
     "id": "builders",
+    "ancientName": "MEROE",
     "name": "Builders Village",
     "yoruba": "Ìlú Ọ̀nà",
-    "emoji": "🏗",
-    "color": "#b45309",
-    "guardian": "Ògún",
+    "emoji": "🏗️",
+    "color": "#92400e",
+    "nation": "🇸🇩",
+    "nationFull": "Sudan · Kingdom of Kush · Meroë",
+    "language": "Meroitic",
+    "era": "800 BC – 350 AD",
+    "meaning": "The City of Pyramids — built 200+ pyramids and conquered Egypt as the 25th Dynasty",
+    "history": "The Kingdom of Kush at Meroë built more pyramids than all of ancient Egypt combined — over 200 pyramids. The Kush Empire conquered and ruled Egypt for 80 years as the 25th Dynasty. Their iron-smelting technology was so advanced that metal tools spread across all of sub-Saharan Africa from Meroë. The Meroitic alphabet they created remains only partially translated.",
+    "guardianDesc": "Dedwen is the Ancient Nubian god of prosperity and construction. The first patron of builders. He provides the incense burned when a new structure is consecrated. The Nubian pyramids were raised in his name.",
+    "origin": "Capital of Kingdom of Kush · 200+ pyramids · Sudan · c. 800 BCE",
+    "guardian": "Dedwen",
+    "guardianOrigin": "Nubian Pantheon · Kush Empire · Sudan",
     "category": "economy",
-    "tagline": "The hands that raise the cities of tomorrow.",
+    "tagline": "Africa built more pyramids than Egypt. Meroë is the proof.",
+    "isHolding": false,
     "roles": [
-      { "key": "mason_labourer", "name": "Mason / Construction Labourer", "desc": "Site worker, bricklayer, concrete mixer, block moulder, foundation digger — the majority workforce building African cities" },
-      { "key": "architect_engineer", "name": "Architect / Civil Engineer", "desc": "Building designer, structural engineer, urban planner, quantity surveyor, housing architect, bridge engineer, dam builder" },
-      { "key": "electrician", "name": "Electrician / Solar Installer", "desc": "Building wiring, generator installation, solar panel mounting, transformer technician, street light installer" },
-      { "key": "plumber", "name": "Plumber / Water Technician", "desc": "Water pipe fitter, sanitation system builder, borehole pump installer, sewage treatment technician" },
-      { "key": "carpenter_welder", "name": "Carpenter / Welder / Metalworker", "desc": "Furniture maker, steel fabricator, aluminium door and window maker, roofing contractor, iron bender" },
-      { "key": "interior_designer", "name": "Interior Designer / Decorator", "desc": "Home decoration, office fit-out, hotel interior design, tiling specialist, painting contractor, renovation specialist" },
-      { "key": "road_builder", "name": "Road Builder / Infrastructure Worker", "desc": "Road grading, tarmac laying, bridge construction, culvert installation, rural road maintenance worker" },
-      { "key": "housing_developer", "name": "Housing Developer / Estate Manager", "desc": "Affordable housing developer, estate developer, facility manager, property manager, estate caretaker" }
+      {
+        "key": "architect",
+        "name": "Architect",
+        "desc": "Building design, structural planning, project leadership"
+      },
+      {
+        "key": "civil_eng",
+        "name": "Civil Engineer",
+        "desc": "Infrastructure design, roads, bridges, drainage, project management"
+      },
+      {
+        "key": "mason",
+        "name": "Mason / Bricklayer",
+        "desc": "Foundation work, wall construction, stonework, tiling"
+      },
+      {
+        "key": "electrician",
+        "name": "Electrician",
+        "desc": "Wiring, solar installation, micro-grid, electrical maintenance"
+      },
+      {
+        "key": "plumber",
+        "name": "Plumber",
+        "desc": "Water systems, sanitation, borehole, drainage"
+      },
+      {
+        "key": "carpenter",
+        "name": "Carpenter / Welder",
+        "desc": "Wood construction, metal fabrication, furniture, joinery"
+      },
+      {
+        "key": "surveyor",
+        "name": "Surveyor",
+        "desc": "Land survey, mapping, boundary demarcation, blueprint verification"
+      },
+      {
+        "key": "heavy_machinery",
+        "name": "Heavy Machinery Operator",
+        "desc": "Excavator, crane, bulldozer, compactor operations"
+      }
     ]
   },
   {
     "id": "energy",
+    "ancientName": "INGA",
     "name": "Energy Village",
     "yoruba": "Ìlú Àṣẹ Iná",
     "emoji": "⚡",
     "color": "#b91c1c",
-    "guardian": "Ṣàngó",
-    "category": "civic",
-    "tagline": "Powering Africa's sovereign future — from the grid to the sun.",
+    "nation": "🇨🇩",
+    "nationFull": "Congo DRC · Congo River Basin · Inga Falls",
+    "language": "Lingala · Kikongo",
+    "era": "Ancient – present",
+    "meaning": "The Eternal Falls — the Congo River carries 40,000 cubic metres per second, the world's greatest untapped power source",
+    "history": "The Congo River at Inga Falls could generate 100,000 megawatts — enough to power all of Africa and export to Europe. The Congo Basin rainforest is the world's second lung. While 600 million Africans have no reliable electricity, the solution sits in Africa's heart. Energy Village exists to build the networks that will change that calculation.",
+    "guardianDesc": "Nzambi Mpungu is the supreme creator of the Kongo people — the force that set the universe in motion. The original energy. The first power before time. The Congo River is Nzambi's spine.",
+    "origin": "Inga Falls · Congo River · World's greatest untapped hydropower · 40,000 MW potential",
+    "guardian": "Nzambi Mpungu",
+    "guardianOrigin": "Kikongo Pantheon · Congo DRC",
+    "category": "economy",
+    "tagline": "Africa does not lack energy. Africa lacks infrastructure. Build it.",
+    "isHolding": false,
     "roles": [
-      { "key": "solar_installer", "name": "Solar Installer / Off-Grid Technician", "desc": "Rooftop solar, solar home system installer, mini-grid operator, pay-as-you-go solar agent (M-KOPA, d.light agents)" },
-      { "key": "petroleum_engineer", "name": "Petroleum Engineer / Upstream Worker", "desc": "Oil and gas exploration, refinery operator, pipeline technician, drilling engineer, LPG distribution worker" },
-      { "key": "grid_engineer", "name": "Power Grid Engineer / Utility Worker", "desc": "National grid maintenance, transformer installation, rural electrification engineer, KPLC/NEPA/ENEO utility worker" },
-      { "key": "battery_storage", "name": "Battery Tech / Energy Storage Specialist", "desc": "Battery bank installer, mini-grid storage manager, EV battery technician, energy management system operator" },
-      { "key": "biomass_biogas", "name": "Biomass / Biogas Practitioner", "desc": "Biogas plant operator, charcoal alternative producer, bioethanol producer, waste-to-energy plant worker, biomass cookstove distributor" },
-      { "key": "hydro_operator", "name": "Hydro Power Operator", "desc": "Large dam operator (Akosombo, Kariba, Aswan), micro-hydro installer, run-of-river operator, tidal energy technician" },
-      { "key": "energy_auditor", "name": "Energy Auditor / Efficiency Consultant", "desc": "Building energy auditor, industrial energy efficiency consultant, carbon credit analyst, green building certifier" },
-      { "key": "energy_policy", "name": "Energy Policy Advisor / Regulator", "desc": "NERC regulator, IRENA expert, energy ministry official, rural energy access planner, energy finance specialist" }
+      {
+        "key": "solar_tech",
+        "name": "Solar Installer",
+        "desc": "Solar panel installation, micro-grid design, maintenance"
+      },
+      {
+        "key": "electrical_eng",
+        "name": "Electrical Engineer",
+        "desc": "Grid design, infrastructure, high-voltage systems"
+      },
+      {
+        "key": "oil_gas",
+        "name": "Petroleum Engineer",
+        "desc": "Oil and gas production, refinery operations, safety"
+      },
+      {
+        "key": "renewable",
+        "name": "Renewable Energy Consultant",
+        "desc": "Wind, solar, hydro project development and advisory"
+      },
+      {
+        "key": "utility",
+        "name": "Utility Worker",
+        "desc": "Grid maintenance, meter reading, last-mile connection"
+      },
+      {
+        "key": "biogas",
+        "name": "Biomass Practitioner",
+        "desc": "Biogas production, organic waste energy conversion"
+      },
+      {
+        "key": "nuclear",
+        "name": "Nuclear Specialist",
+        "desc": "Nuclear energy policy, research, safety compliance"
+      },
+      {
+        "key": "mini_grid",
+        "name": "Mini-Grid Operator",
+        "desc": "Rural mini-grid management, community energy billing"
+      }
     ]
   },
   {
     "id": "transport",
+    "ancientName": "KILWA",
     "name": "Transport Village",
     "yoruba": "Ìlú Gbígbe",
-    "emoji": "🚛",
+    "emoji": "🚢",
     "color": "#0891b2",
-    "guardian": "Ògún",
+    "nation": "🇹🇿",
+    "nationFull": "Tanzania · Swahili Coast · Kilwa Kisiwani",
+    "language": "Swahili (Ki-Swahili)",
+    "era": "800 – 1500 AD",
+    "meaning": "The Pearl of the Coast — greatest Swahili trading port, called 'most beautiful city in the world' by Ibn Battuta",
+    "history": "Kilwa Kisiwani controlled the entire East African gold trade and was the wealthiest city in sub-Saharan Africa at its peak. Chinese porcelain, Indian cloth, Persian pottery, and Arabian glass have all been found in Kilwa's ruins. The Swahili navigators who built Kilwa had mastered monsoon winds centuries before European sailors understood them.",
+    "guardianDesc": "Mami Wata is the pan-African water spirit worshipped from West Africa to East Africa to the Diaspora. Every journey begins with her blessing. She rules all waters between peoples and protects all who cross water for commerce.",
+    "origin": "Greatest Swahili Coast port · Ibn Battuta: 'most beautiful city' · 1331 CE",
+    "guardian": "Mami Wata",
+    "guardianOrigin": "Pan-African Water Spirit",
     "category": "economy",
-    "tagline": "Every road, every route, every sky, every sea.",
+    "tagline": "Africa's navigators connected continents before Europe set sail.",
+    "isHolding": false,
     "roles": [
-      { "key": "road_driver", "name": "Road Driver / Commercial Haulier", "desc": "Danfo driver, matatu operator, tro-tro driver, inter-city bus driver, long-haul truck driver, tanker driver, school bus driver" },
-      { "key": "okada_rider", "name": "Motorcycle Taxi / Last-Mile Rider", "desc": "Okada (Nigeria), boda-boda (Uganda/Kenya), zemidjan (Benin), moto-taxi rider, bajaj tuk-tuk driver, delivery rider" },
-      { "key": "aviation", "name": "Aviation Professional", "desc": "Commercial pilot, air traffic controller, aircraft mechanic, flight attendant, cargo loader, airport ground crew, drone pilot" },
-      { "key": "marine", "name": "Marine Crew / River Transport", "desc": "Ferry operator, river boat captain, fishing vessel crew, lake transport worker, coastal cargo ship crew, port stevedore" },
-      { "key": "railway", "name": "Railway Crew / Train Operator", "desc": "Train driver, station master, ticket collector, railway maintenance engineer, SGR operator, heritage railway crew" },
-      { "key": "logistics_coord", "name": "Logistics Coordinator / Dispatcher", "desc": "Fleet manager, route planner, warehouse logistics coordinator, supply chain analyst, last-mile delivery dispatcher" },
-      { "key": "mechanic", "name": "Vehicle Mechanic / Auto Technician", "desc": "Auto mechanic, truck fitter, motorcycle repairer, tyre fixer, roadside recovery operator, panel beater, auto electrician" },
-      { "key": "traffic_marshal", "name": "Traffic Marshal / Road Safety Officer", "desc": "LASTMA officer (Nigeria), traffic warden, road safety inspector, NTSA enforcement officer, highway patrol officer" }
+      {
+        "key": "driver",
+        "name": "Road Driver",
+        "desc": "Long-haul trucking, intercity transport, goods delivery"
+      },
+      {
+        "key": "logistics",
+        "name": "Logistics Coordinator",
+        "desc": "Fleet management, route optimisation, supply chain"
+      },
+      {
+        "key": "mechanic",
+        "name": "Vehicle Mechanic",
+        "desc": "Motor vehicle repair, fleet maintenance, roadside support"
+      },
+      {
+        "key": "pilot",
+        "name": "Aviation Professional",
+        "desc": "Commercial aviation, cargo pilot, drone operations"
+      },
+      {
+        "key": "marine",
+        "name": "Marine Crew",
+        "desc": "Lake and sea vessel operations, cargo shipping, fishing"
+      },
+      {
+        "key": "rail",
+        "name": "Railway Crew",
+        "desc": "Train operations, track maintenance, station management"
+      },
+      {
+        "key": "boda_boda",
+        "name": "Motorcycle Taxi (Boda)",
+        "desc": "Urban last-mile delivery, passenger transport, courier"
+      },
+      {
+        "key": "fleet_manager",
+        "name": "Fleet Manager",
+        "desc": "Vehicle fleet tracking, maintenance scheduling, cost control"
+      }
     ]
   },
   {
     "id": "technology",
+    "ancientName": "ALEXANDRIA",
     "name": "Technology Village",
     "yoruba": "Ìlú Ìmọ̀ẹ̀rọ",
     "emoji": "💻",
-    "color": "#0f766e",
-    "guardian": "Ọrúnmìlà",
-    "category": "creative",
-    "tagline": "Africa's silicon savannahs. Code is the new cowrie.",
+    "color": "#4f46e5",
+    "nation": "🇪🇬",
+    "nationFull": "Egypt · Ptolemaic Alexandria · Library of the World",
+    "language": "Ancient Greek · Coptic · Demotic Egyptian",
+    "era": "323 BC – 641 AD",
+    "meaning": "The Library of the World — 700,000 scrolls, where Eratosthenes, Hypatia, and Heron invented science",
+    "history": "Eratosthenes calculated the Earth's circumference in 240 BC within 2% accuracy. Hypatia (360–415 AD) invented early astrolabe mathematics. Heron of Alexandria built the first steam engine in 10 AD. The library held 700,000 scrolls — the collected knowledge of the ancient world. Africa did not receive science from the world. Africa gave it.",
+    "guardianDesc": "Thoth is the Ancient Egyptian god of science, mathematics, and knowledge systems. The divine engineer. The first coder. Original architect of all knowledge systems. All who store, process, and transmit information work under his gaze.",
+    "origin": "Library of Alexandria · 700,000 scrolls · Eratosthenes · Hypatia · c. 285 BCE",
+    "guardian": "Thoth",
+    "guardianOrigin": "Ancient Egyptian Pantheon · Divine Scribe",
+    "category": "economy",
+    "tagline": "Hypatia invented mathematics here. You are her heir.",
+    "isHolding": false,
     "roles": [
-      { "key": "software_engineer", "name": "Software Engineer / Developer", "desc": "Frontend, backend, fullstack, mobile app developer — building African platforms, fintech, agritech, healthtech, edtech" },
-      { "key": "ai_engineer", "name": "AI / ML / Data Scientist", "desc": "Machine learning engineer, data scientist, NLP researcher, computer vision expert, AI product builder for African markets" },
-      { "key": "cybersecurity", "name": "Cybersecurity Analyst / Ethical Hacker", "desc": "Network security engineer, penetration tester, data protection officer, SIEM analyst, digital forensics expert" },
-      { "key": "cloud_devops", "name": "Cloud Engineer / DevOps", "desc": "AWS/Azure/GCP architect, Kubernetes engineer, CI/CD pipeline builder, site reliability engineer, infrastructure-as-code specialist" },
-      { "key": "telecom_engineer", "name": "Telecom Engineer / Network Specialist", "desc": "Mobile network engineer, fibre rollout technician, ISP operations engineer, BTS tower technician, spectrum engineer" },
-      { "key": "blockchain", "name": "Blockchain / DeFi Developer", "desc": "Smart contract developer, DeFi protocol builder, NFT platform creator, CBDC technical advisor, tokenisation engineer" },
-      { "key": "hardware_iot", "name": "Hardware Engineer / IoT Maker", "desc": "Electronics engineer, IoT device maker, embedded systems developer, robotics engineer, 3D printing technician, drone builder" },
-      { "key": "product_manager", "name": "Tech Product Manager / UX Designer", "desc": "Product manager for African tech products, UX/UI designer, user researcher, digital accessibility specialist, design system builder" }
+      {
+        "key": "developer",
+        "name": "Software Engineer",
+        "desc": "Backend, frontend, fullstack development across platforms"
+      },
+      {
+        "key": "data_scientist",
+        "name": "AI / Data Scientist",
+        "desc": "Machine learning, data engineering, model development"
+      },
+      {
+        "key": "cybersecurity",
+        "name": "Cybersecurity Analyst",
+        "desc": "Security audits, threat detection, incident response"
+      },
+      {
+        "key": "network_eng",
+        "name": "Network Engineer",
+        "desc": "Infrastructure, connectivity, systems administration"
+      },
+      {
+        "key": "mobile_dev",
+        "name": "Mobile Developer",
+        "desc": "iOS, Android, cross-platform mobile development"
+      },
+      {
+        "key": "cloud_eng",
+        "name": "Cloud Engineer",
+        "desc": "Cloud infrastructure, DevOps, CI/CD, deployment"
+      },
+      {
+        "key": "ux_designer",
+        "name": "UX Designer",
+        "desc": "User experience, interface design, accessibility"
+      },
+      {
+        "key": "tech_support",
+        "name": "Tech Support",
+        "desc": "IT support, hardware, helpdesk, systems troubleshooting"
+      }
     ]
   },
   {
     "id": "media",
+    "ancientName": "TIMBUKTU",
     "name": "Media Village",
     "yoruba": "Ìlú Ọ̀rọ̀",
-    "emoji": "📰",
-    "color": "#6d28d9",
-    "guardian": "Ọya",
+    "emoji": "📺",
+    "color": "#d97706",
+    "nation": "🇲🇱",
+    "nationFull": "Mali · City of Manuscripts and Griots",
+    "language": "Bambara · Mandinka · Wolof · Arabic",
+    "era": "1000 – 1600 AD",
+    "meaning": "Where Stories Are Sacred — home to 700,000 manuscripts and the world's oldest oral media tradition",
+    "history": "The Griot tradition is the world's oldest continuous media system — stretching back 3,000 years. Griots were simultaneously historians, journalists, musicians, diplomats, and archivists. The Kouyaté family of griots can recite 700 years of dynastic genealogy from memory. Today's viral content creators are their direct descendants.",
+    "guardianDesc": "Kouyaté the Griot is the royal genealogist who can recite 700 years of dynasty from memory. The living newspaper. The walking archive. The voice that never dies. Every journalist and broadcaster is a Jeli in this tradition.",
+    "origin": "City of 333 saints · 700,000 manuscripts · Capital of African knowledge · c. 1000 CE",
+    "guardian": "Kouyaté the Griot",
+    "guardianOrigin": "Mandinka tradition · Guinea · Mali",
     "category": "creative",
-    "tagline": "The voice of the Motherland. Truth before power.",
+    "tagline": "The Griot is the centre of African media. Always was.",
+    "isHolding": false,
     "roles": [
-      { "key": "journalist", "name": "Print / Digital Journalist", "desc": "Newspaper reporter, online journalist, investigative journalist, data journalist, solutions journalist, press freedom advocate" },
-      { "key": "broadcaster", "name": "Radio / TV Broadcaster", "desc": "FM radio host, community radio presenter, television news anchor, talk show host, sports commentator, weather presenter" },
-      { "key": "content_creator", "name": "Video Content Creator", "desc": "YouTube creator, TikTok creator, Instagram Reels producer, Jollof TV original creator, Facebook Watch publisher, streaming content maker" },
-      { "key": "podcaster", "name": "Podcaster / Audio Journalist", "desc": "Podcast host, audio documentary maker, news audio producer, sound journalist, Spotify Africa creator, voice-first content maker" },
-      { "key": "photojournalist", "name": "Photojournalist / Visual Storyteller", "desc": "News photographer, documentary photographer, conflict zone visual journalist, social media photographer, stock photography contributor" },
-      { "key": "editor", "name": "Editor / Publisher", "desc": "News editor, sub-editor, fact-checker, media house publisher, digital news curator, newsletter publisher, opinion editor" },
-      { "key": "advertising", "name": "Advertising / PR Practitioner", "desc": "Brand manager, advertising creative, public relations consultant, digital marketing specialist, media buyer, campaign manager" },
-      { "key": "citizen_reporter", "name": "Citizen Reporter / Community Correspondent", "desc": "Witness streamer, community blogger, WhatsApp broadcast journalist, tipster network coordinator, local news gatherer" }
+      {
+        "key": "journalist",
+        "name": "Journalist",
+        "desc": "News reporting, investigative journalism, editorial"
+      },
+      {
+        "key": "broadcaster",
+        "name": "Radio / TV Broadcaster",
+        "desc": "Television, radio, online broadcast, live streaming"
+      },
+      {
+        "key": "photographer",
+        "name": "Photographer",
+        "desc": "Editorial, commercial, documentary, photojournalism"
+      },
+      {
+        "key": "social_media",
+        "name": "Social Media Creator",
+        "desc": "Content creation, digital storytelling, community management"
+      },
+      {
+        "key": "pr_officer",
+        "name": "PR Practitioner",
+        "desc": "Public relations, media strategy, brand communications"
+      },
+      {
+        "key": "radio_host",
+        "name": "Podcast Host",
+        "desc": "Audio content, interview series, documentary podcasting"
+      },
+      {
+        "key": "video_editor",
+        "name": "Video Editor",
+        "desc": "Post-production, motion graphics, visual effects"
+      },
+      {
+        "key": "ad_creative",
+        "name": "Ad Creative",
+        "desc": "Advertising, campaign creative, brand design"
+      }
     ]
   },
   {
     "id": "finance",
+    "ancientName": "SIJILMASA",
     "name": "Finance Village",
     "yoruba": "Ìlú Owó",
     "emoji": "💰",
-    "color": "#047857",
-    "guardian": "Ọṣun",
+    "color": "#059669",
+    "nation": "🇲🇦",
+    "nationFull": "Morocco · Amazigh/Berber · Tafilalt Oasis",
+    "language": "Tamazight (Amazigh) · Arabic",
+    "era": "757 – 1393 AD",
+    "meaning": "The Golden Gateway — all trans-Saharan gold passed through this Amazigh city for 600 years",
+    "history": "Sijilmasa was the Amazigh-founded city at the northern terminus of the trans-Saharan gold trade. For 600 years, virtually all gold from sub-Saharan West Africa passed through Sijilmasa before reaching the Mediterranean. Its merchants developed letters of credit, currency exchange, and partnership contracts — anticipating modern banking by 800 years.",
+    "guardianDesc": "Aje is the Yoruba goddess of wealth and marketplace fortune. She inhabits the marketplace and decides who prospers. She rewards those who treat money as a communal responsibility, not a personal hoard.",
+    "origin": "Amazigh trading city · Northern gateway of trans-Saharan gold trade · c. 757 CE",
+    "guardian": "Aje",
+    "guardianOrigin": "Yoruba Pantheon · Nigeria · Goddess of Wealth",
     "category": "economy",
-    "tagline": "The Cowrie flows where trust is earned.",
+    "tagline": "Africa invented international finance. Sijilmasa is the proof.",
+    "isHolding": false,
     "roles": [
-      { "key": "bank_officer", "name": "Bank Officer / Branch Manager", "desc": "Retail banking officer, SME lending manager, microfinance loan officer, bank teller, credit analyst — across African banking systems" },
-      { "key": "financial_analyst", "name": "Financial Analyst / Investment Manager", "desc": "Equity analyst, portfolio manager, investment banker, asset manager, pension fund manager, stock broker, securities trader" },
-      { "key": "microfinance", "name": "Microfinance / VSLA Facilitator", "desc": "Susu collector (Ghana), esusu organiser (Nigeria), chama coordinator (Kenya), tontine facilitator (Francophone Africa), VSLA group leader" },
-      { "key": "fintech", "name": "Fintech Entrepreneur / Payment Specialist", "desc": "Mobile money operator, payment gateway builder, digital lending platform founder, insurtech developer, remittance service operator" },
-      { "key": "accountant", "name": "Accountant / Auditor / Tax Consultant", "desc": "Chartered accountant, management accountant, external auditor, tax practitioner, IFRS specialist, forensic accountant" },
-      { "key": "insurance", "name": "Insurance Agent / Actuary", "desc": "Life insurance agent, health insurance broker, crop insurance officer, microinsurance distributor, actuarial analyst" },
-      { "key": "crypto_defi", "name": "Crypto / Digital Currency Expert", "desc": "Cryptocurrency trader, DeFi yield farmer, CBDC implementation specialist, stablecoin economist, blockchain finance architect" },
-      { "key": "real_estate_finance", "name": "Real Estate Finance / Mortgage Officer", "desc": "Mortgage banker, real estate investment trust manager, land valuation officer, property finance consultant, housing fund administrator" }
+      {
+        "key": "banker",
+        "name": "Bank Officer",
+        "desc": "Retail banking, savings, loans, account management"
+      },
+      {
+        "key": "investment",
+        "name": "Financial Analyst",
+        "desc": "Investment analysis, portfolio management, market research"
+      },
+      {
+        "key": "microfinance",
+        "name": "Microfinance / VSLA Coordinator",
+        "desc": "Savings groups, cooperative lending, village finance circles"
+      },
+      {
+        "key": "fintech",
+        "name": "Fintech Entrepreneur",
+        "desc": "Payment apps, digital banking, blockchain, DeFi"
+      },
+      {
+        "key": "accountant",
+        "name": "Accountant / Auditor",
+        "desc": "Financial reporting, tax, audit, compliance"
+      },
+      {
+        "key": "insurance",
+        "name": "Insurance Agent",
+        "desc": "Life, health, property, agricultural insurance"
+      },
+      {
+        "key": "tax_agent",
+        "name": "Crypto / DeFi Expert",
+        "desc": "Digital assets, decentralised finance, web3"
+      },
+      {
+        "key": "ajo_keeper",
+        "name": "Ajo Circle Keeper",
+        "desc": "Traditional savings circles, rotating credit, community funds"
+      }
     ]
   },
   {
     "id": "justice",
+    "ancientName": "GACACA",
     "name": "Justice Village",
     "yoruba": "Ìlú Ìdájọ́",
     "emoji": "⚖️",
-    "color": "#4338ca",
-    "guardian": "Ọbàtálá",
+    "color": "#0369a1",
+    "nation": "🇷🇼",
+    "nationFull": "Rwanda · Ancient Community Justice Tradition",
+    "language": "Kinyarwanda · Kirundi",
+    "era": "Ancient – 2012 AD",
+    "meaning": "The Grass Courts — justice done face to face, seated in the grass. Rwanda processed 1.2 million cases with this tradition",
+    "history": "Gacaca means 'justice on the grass' in Kinyarwanda. For 500 years communities gathered as equals — seated on the ground — to resolve disputes. After the 1994 genocide, Rwanda adapted this ancient system: between 2005–2012, over 12,000 Gacaca courts processed 1.2 million cases — the largest community justice initiative in human history.",
+    "guardianDesc": "Imana is the supreme moral authority in Rwandan spiritual tradition who cannot be bribed. He does not sleep. He sees every act of justice and injustice equally. Justice Village answers to Imana's gaze.",
+    "origin": "Rwanda's 500-year-old grass-roots justice tradition · 'justice on the grass'",
+    "guardian": "Imana",
+    "guardianOrigin": "Kinyarwanda spiritual tradition · Rwanda",
     "category": "civic",
-    "tagline": "Truth before power. The law serves the people.",
+    "tagline": "Africa invented restorative justice. The world is still catching up.",
+    "isHolding": false,
     "roles": [
-      { "key": "lawyer", "name": "Lawyer / Advocate / Barrister", "desc": "Civil litigator, criminal defence lawyer, human rights lawyer, corporate lawyer, pro bono advocate, public interest lawyer across African jurisdictions" },
-      { "key": "judge_magistrate", "name": "Judge / Magistrate / Arbitrator", "desc": "High court judge, magistrate court officer, traditional court chief, commercial arbitrator, family court judge, ECOWAS court official" },
-      { "key": "investigator", "name": "Investigator / Anti-Corruption Officer", "desc": "EFCC officer, ICPC investigator, SARS special agent, forensic investigator, financial crimes detective, Interpol African liaison" },
-      { "key": "legal_aid", "name": "Legal Aid Worker / Paralegal", "desc": "Legal aid clinic worker, paralegal, access to justice advocate, community legal educator, court companion, legal literacy trainer" },
-      { "key": "human_rights", "name": "Human Rights Defender", "desc": "Human rights activist, NGO legal advocate, UN treaty body expert, refugee rights lawyer, press freedom defender, women's rights campaigner" },
-      { "key": "traditional_justice", "name": "Traditional Justice Keeper", "desc": "Gacaca facilitator (Rwanda), community mediator, elder dispute resolver, ubuntu circle facilitator, customary law practitioner" },
-      { "key": "court_admin", "name": "Court Administrator / Registrar", "desc": "Court registrar, judicial secretary, case management officer, court interpreter, evidence custodian, process server" },
-      { "key": "prison_reform", "name": "Prison Reform / Corrections Officer", "desc": "Correctional officer, prison welfare worker, rehabilitation programme facilitator, re-entry support worker, juvenile justice officer" }
+      {
+        "key": "lawyer",
+        "name": "Lawyer",
+        "desc": "Litigation, legal advice, contract law, corporate law"
+      },
+      {
+        "key": "mediator",
+        "name": "Mediator",
+        "desc": "Dispute resolution, negotiation, conflict mediation"
+      },
+      {
+        "key": "magistrate",
+        "name": "Magistrate / Judge",
+        "desc": "Judicial proceedings, rulings, court administration"
+      },
+      {
+        "key": "paralegal",
+        "name": "Paralegal",
+        "desc": "Legal research, document preparation, case support"
+      },
+      {
+        "key": "human_rights",
+        "name": "Human Rights Defender",
+        "desc": "Advocacy, documentation, legal aid, campaigning"
+      },
+      {
+        "key": "notary",
+        "name": "Notary",
+        "desc": "Document authentication, legal certification, witnessing"
+      },
+      {
+        "key": "traditional_priest",
+        "name": "Traditional Justice Elder",
+        "desc": "Community-based resolution, customary law, elder mediation"
+      },
+      {
+        "key": "prison_reform",
+        "name": "Prison Reform Worker",
+        "desc": "Rehabilitation, reintegration, correctional advocacy"
+      }
     ]
   },
   {
     "id": "government",
+    "ancientName": "AKSUM",
     "name": "Government Village",
     "yoruba": "Ìlú Aláṣẹ",
-    "emoji": "🏛",
-    "color": "#1e3a5f",
-    "guardian": "Ọbàtálá",
+    "emoji": "🏛️",
+    "color": "#1d4ed8",
+    "nation": "🇪🇹",
+    "nationFull": "Ethiopia · Eritrea · Aksumite Empire",
+    "language": "Ge'ez (Ethiopic) · Tigrinya",
+    "era": "100 – 940 AD",
+    "meaning": "The Throne of Thrones — one of the four great powers of the ancient world alongside Rome, Persia, and China",
+    "history": "The Aksumite Empire issued its own gold coins — the only sub-Saharan African empire to do so in antiquity. When Persia sent an ambassador to Aksum, they were received as equals. Aksum built the tallest standing stone monuments of the ancient world — obelisks 24 metres tall. Ethiopia is the only African nation never fully colonised, rooted in this 2,000-year tradition of sovereign governance.",
+    "guardianDesc": "Negus Negusti means 'King of Kings' — the title of every Aksumite emperor. Not a person but a principle: sovereign African governance that answers to no foreign power. The spirit that kept Ethiopia forever sovereign.",
+    "origin": "One of the four great ancient world powers · Ethiopia · c. 100 CE · own gold coinage",
+    "guardian": "Negus Negusti",
+    "guardianOrigin": "Ge'ez title · Aksumite Empire · Ethiopia",
     "category": "civic",
-    "tagline": "The people's power, held in trust for all.",
+    "tagline": "Governance as sovereignty, not servitude. The Aksumite way.",
+    "isHolding": false,
     "roles": [
-      { "key": "elected_official", "name": "Elected Official / Political Leader", "desc": "Councillor, senator, member of parliament, governor, mayor, ward representative, continental union official, traditional ruler" },
-      { "key": "civil_servant", "name": "Civil Servant / Public Administrator", "desc": "Ministry official, local government officer, district administrator, public sector manager, government secretary, permanent secretary" },
-      { "key": "diplomat", "name": "Diplomat / International Relations Officer", "desc": "Ambassador, high commissioner, consular officer, AU representative, ECOWAS official, bilateral trade attaché, protocol officer" },
-      { "key": "community_organiser", "name": "Community Organiser / Activist", "desc": "Ward development committee chair, community development officer, civil society leader, citizens' assembly facilitator, voter mobiliser" },
-      { "key": "policy_analyst", "name": "Policy Analyst / Technocrat", "desc": "Government policy researcher, think-tank expert, ministerial advisor, budget analyst, national planning commission officer, statistics officer" },
-      { "key": "traditional_ruler", "name": "Traditional Ruler / Chief", "desc": "Oba, Emir, Chief, Okyenhene, Limpopo Chief, Maasai Laibon, Rwandan Umuryango head — custodian of customary governance" },
-      { "key": "public_finance", "name": "Public Finance Officer / Treasury", "desc": "Treasury officer, budget director, revenue authority officer, customs commissioner, public debt manager, government auditor" },
-      { "key": "elections_officer", "name": "Electoral Officer / Democracy Worker", "desc": "INEC/IEC/NEC officer, election observer, voter registration officer, returning officer, ballot processor, democracy watchdog" }
+      {
+        "key": "civil_servant",
+        "name": "Civil Servant",
+        "desc": "Public administration, government operations, policy execution"
+      },
+      {
+        "key": "legislator",
+        "name": "Elected Official",
+        "desc": "Elected leadership, policy-making, constituency service"
+      },
+      {
+        "key": "diplomat",
+        "name": "Diplomat",
+        "desc": "International relations, negotiation, protocol"
+      },
+      {
+        "key": "urban_planner",
+        "name": "Urban Planner",
+        "desc": "City planning, land use, infrastructure development"
+      },
+      {
+        "key": "tax_collector",
+        "name": "Tax Collector",
+        "desc": "Revenue administration, compliance, public finance"
+      },
+      {
+        "key": "registrar",
+        "name": "Registrar",
+        "desc": "Birth, death, land, business registration and records"
+      },
+      {
+        "key": "policy",
+        "name": "Policy Analyst",
+        "desc": "Policy research, legislation drafting, government advisory"
+      },
+      {
+        "key": "elections",
+        "name": "Elections Officer",
+        "desc": "Electoral administration, voter registration, results management"
+      }
     ]
   },
   {
     "id": "security",
+    "ancientName": "AGOJIE",
     "name": "Security Village",
     "yoruba": "Ìlú Jagunjagun",
-    "emoji": "🛡",
-    "color": "#374151",
-    "guardian": "Ògún",
+    "emoji": "🛡️",
+    "color": "#7f1d1d",
+    "nation": "🇧🇯",
+    "nationFull": "Benin Republic · Kingdom of Dahomey",
+    "language": "Fon · Ewe",
+    "era": "1625 – 1894 AD",
+    "meaning": "The Ones Who Protect — world's only all-female professional army, 6,000 warriors who French Foreign Legion veterans called the fiercest they ever faced",
+    "history": "The Agojie numbered 6,000 — one-third of the entire Dahomey military. They trained from age eight. When the French colonial army invaded in 1890, the Agojie led the resistance. French Foreign Legion veterans reported that the Agojie were the most ferocious fighters they had ever faced. They were never defeated in single combat.",
+    "guardianDesc": "Ogun is the Yoruba/Fon god of iron, war, and protection. Worshipped from Nigeria to Cuba to Brazil to Haiti. The patron of soldiers, surgeons, and all who work with iron. He does not protect cowards. The Agojie invoked Ogun before every battle.",
+    "origin": "All-female elite military regiment of Dahomey · World's only professional women's standing army",
+    "guardian": "Ogun",
+    "guardianOrigin": "Yoruba/Fon Pantheon · Pan-West African",
     "category": "civic",
-    "tagline": "The guardian at every gate. Africa protects her own.",
+    "tagline": "400 years of Africa's most disciplined protection tradition.",
+    "isHolding": false,
     "roles": [
-      { "key": "police", "name": "Police Officer / Detective", "desc": "Community policing officer, CID detective, anti-robbery squad, SWAT operative, police reservist, neighbourhood watch commander" },
-      { "key": "military", "name": "Military Personnel", "desc": "Army soldier, naval officer, air force pilot, peacekeeping operative (AMISOM, ECOMOG), military intelligence officer, special forces" },
-      { "key": "fire_rescue", "name": "Fire & Rescue / Paramedic", "desc": "Firefighter, emergency medical technician, search and rescue operative, disaster response team member, ambulance crew" },
-      { "key": "border_customs", "name": "Border Guard / Customs Officer", "desc": "Immigration officer, customs inspector, port security officer, border patrol agent, anti-smuggling officer, passport control officer" },
-      { "key": "private_security", "name": "Private Security Agent / Guard", "desc": "Estate guard, bank security officer, event security, VIP protection agent, close protection officer, CCTV monitoring operator" },
-      { "key": "cybersecurity_gov", "name": "National Cybersecurity Officer", "desc": "National CERT officer, government cybersecurity analyst, digital crime investigator, critical infrastructure protector, intelligence analyst" },
-      { "key": "wildlife_ranger", "name": "Wildlife Ranger / Conservation Officer", "desc": "Anti-poaching ranger, national park warden, marine conservation officer, CITES enforcement officer, community game guard" },
-      { "key": "emergency_mgmt", "name": "Emergency Management Officer", "desc": "NEMA officer, disaster risk reduction coordinator, flood relief manager, drought response officer, civil protection officer" }
+      {
+        "key": "officer",
+        "name": "Police Officer",
+        "desc": "Law enforcement, community policing, crime prevention"
+      },
+      {
+        "key": "cybersec",
+        "name": "Cybersecurity Government",
+        "desc": "State cybersecurity, critical infrastructure protection"
+      },
+      {
+        "key": "fire_safety",
+        "name": "Fire & Rescue",
+        "desc": "Firefighting, emergency response, hazmat operations"
+      },
+      {
+        "key": "private_sec",
+        "name": "Private Security",
+        "desc": "Personal protection, premises security, event security"
+      },
+      {
+        "key": "border",
+        "name": "Border Guard",
+        "desc": "Border control, immigration, customs enforcement"
+      },
+      {
+        "key": "forensic",
+        "name": "Forensic Expert",
+        "desc": "Crime scene investigation, digital forensics, evidence analysis"
+      },
+      {
+        "key": "community_watch",
+        "name": "Community Watch",
+        "desc": "Neighbourhood safety, community policing, crime reporting"
+      },
+      {
+        "key": "disaster",
+        "name": "Emergency Management",
+        "desc": "Disaster response, civil protection, emergency coordination"
+      }
     ]
   },
   {
     "id": "spirituality",
+    "ancientName": "KARNAK",
     "name": "Spirituality Village",
     "yoruba": "Ìlú Àwọn Amọ́nà",
-    "emoji": "🙏",
-    "color": "#5b21b6",
-    "guardian": "Ọbàtálá",
+    "emoji": "🔮",
+    "color": "#6d28d9",
+    "nation": "🇪🇬",
+    "nationFull": "Egypt · Ancient Thebes · Karnak Temple Complex",
+    "language": "Medu Neter · Coptic",
+    "era": "2055 BC – 400 AD",
+    "meaning": "The Most Sacred of Places — largest ancient religious site on Earth, 2,000 years to build, 30 pharaohs contributed",
+    "history": "Karnak was not one temple but a city of temples — the largest religious complex ever constructed. For 2,000 years each pharaoh added to it. Egyptian spiritual philosophy — Ma'at (truth, justice, harmony), the soul's journey, the afterlife — directly influenced Judaism, Christianity, and Islam. Africa did not receive spirituality from the world. Africa gave it.",
+    "guardianDesc": "Ifa/Orunmila is the Yoruba oracle system — UNESCO declared it a Masterpiece of Oral Heritage. The 256 Odù form a body of oral literature larger than the Bible. Orunmila witnessed the creation of the world and knows every destiny that will unfold within it.",
+    "origin": "Largest religious complex ever built · 2,000 years under construction · 30 pharaohs · c. 2055 BCE",
+    "guardian": "Ifa / Orunmila",
+    "guardianOrigin": "Yoruba Pantheon · Nigeria — Pan-African Oracle System",
     "category": "spirit",
-    "tagline": "Where the ancestors speak and the spirit is fed.",
+    "tagline": "Africa gave spirituality to the world. Karnak is the oldest proof.",
+    "isHolding": false,
     "roles": [
-      { "key": "islamic_scholar", "name": "Islamic Scholar / Imam / Marabout", "desc": "Mosque imam, Quran teacher, Islamic jurist, Sufi sheikh, marabout (West Africa), mufti, waqf administrator, Islamic finance scholar" },
-      { "key": "christian_minister", "name": "Christian Minister / Pastor / Priest", "desc": "Pentecostal pastor, Catholic priest, Orthodox priest (Ethiopia/Egypt), Anglican minister, mission church leader, healing minister, apostle" },
-      { "key": "traditional_priest", "name": "Traditional Priest / Priestess / Spirit Medium", "desc": "Babalawo (Yoruba), Sangoma (Zulu/Xhosa), Dibia (Igbo), Fetish priest (Ghana), Svikiro (Shona), N'anga (Zimbabwe), Wadaad (Somali)" },
-      { "key": "spiritual_herbalist", "name": "Spiritual Herbalist / Medicine Keeper", "desc": "Sacred plant medicine keeper, ancestral healing practitioner, ritual cleansing specialist, protection charm maker, spiritual bath preparer" },
-      { "key": "shrine_keeper", "name": "Shrine Keeper / Sacred Site Guardian", "desc": "Sacred grove keeper, ancestral shrine guardian, ritual ceremony facilitator, feast day organiser, libation pour master" },
-      { "key": "interfaith_worker", "name": "Interfaith Peace Worker", "desc": "Interfaith dialogue facilitator, religious tolerance educator, faith-based conflict mediator, Salam/Shalom peace builder, multi-faith chaplain" },
-      { "key": "worship_leader", "name": "Worship Leader / Gospel Artist", "desc": "Gospel musician, choir director, praise and worship leader, Islamic nasheed artist, traditional praise singer, liturgical music director" },
-      { "key": "spiritual_educator", "name": "Religious Educator / Seminary Teacher", "desc": "Madrasa teacher, Sunday school teacher, seminary lecturer, Torah/Bible/Quran teacher, catechism instructor, Islamic studies professor" }
-    ]
-  },
-  {
-    "id": "sports",
-    "name": "Sports Village",
-    "yoruba": "Ìlú Eré",
-    "emoji": "⚽",
-    "color": "#9d174d",
-    "guardian": "Ṣàngó",
-    "category": "creative",
-    "tagline": "Africa runs. Africa wins. Africa rises.",
-    "roles": [
-      { "key": "footballer", "name": "Footballer / Futsal Player", "desc": "Professional football player, semi-pro footballer, futsal player, beach soccer player — from AFCON to local Sunday leagues" },
-      { "key": "track_field", "name": "Track & Field / Marathon Athlete", "desc": "Sprinter, marathon runner, long-distance runner (Ethiopian/Kenyan tradition), high jumper, javelin thrower, heptathlete" },
-      { "key": "combat_athlete", "name": "Combat Athlete / Martial Artist", "desc": "Boxer, wrestler (Senegalese laamb wrestling, Nuba wrestling), MMA fighter, taekwondo, judo, traditional African combat sports" },
-      { "key": "team_sport", "name": "Team Sport Athlete", "desc": "Basketball player, volleyball player, handball player, rugby player, cricket player, netball player, water polo player" },
-      { "key": "coach_trainer", "name": "Sports Coach / Physical Trainer", "desc": "Football coach, athletics coach, strength and conditioning coach, sports scientist, performance analyst, youth academy coach" },
-      { "key": "sports_admin", "name": "Sports Administrator / Federation Official", "desc": "Football association official, national sports council officer, AFCON logistics coordinator, Olympic committee member, sports lawyer" },
-      { "key": "sports_media", "name": "Sports Journalist / Commentator", "desc": "Sports broadcaster, match commentator, football analyst, sports writer, podcast host, social media sports content creator" },
-      { "key": "esports", "name": "Esports Player / Gaming Creator", "desc": "Competitive gamer, game streamer, esports team manager, mobile gaming champion, African gaming tournament organiser" }
+      {
+        "key": "imam",
+        "name": "Islamic Scholar / Imam",
+        "desc": "Islamic leadership, teaching, community guidance"
+      },
+      {
+        "key": "pastor",
+        "name": "Christian Minister",
+        "desc": "Church leadership, pastoral care, community service"
+      },
+      {
+        "key": "traditional_priest",
+        "name": "Traditional Priest",
+        "desc": "Indigenous spiritual practice, ritual, ancestral communication"
+      },
+      {
+        "key": "counselor",
+        "name": "Spiritual Counselor",
+        "desc": "Spiritual guidance, life coaching, psychological-spiritual support"
+      },
+      {
+        "key": "healer",
+        "name": "Spiritual Healer",
+        "desc": "Energy healing, traditional medicine, holistic wellness"
+      },
+      {
+        "key": "meditation",
+        "name": "Meditation Guide",
+        "desc": "Mindfulness, meditation teaching, wellness facilitation"
+      },
+      {
+        "key": "charity",
+        "name": "Charity Worker",
+        "desc": "Faith-based community service, aid, social welfare"
+      },
+      {
+        "key": "funeral",
+        "name": "Funeral Director",
+        "desc": "Death care, ceremony, grief support, body preparation"
+      }
     ]
   },
   {
     "id": "fashion",
+    "ancientName": "BIDA",
     "name": "Fashion Village",
     "yoruba": "Ìlú Oníṣẹ́-Ọ̀wọ́",
     "emoji": "👗",
-    "color": "#c2410c",
-    "guardian": "Ọṣun",
+    "color": "#be185d",
+    "nation": "🇳🇬",
+    "nationFull": "Nigeria · Nupe Kingdom · Bida City of Craftsmen",
+    "language": "Nupe · Hausa",
+    "era": "1400 AD – present",
+    "meaning": "The City of Master Craftsmen — 1,000 years of Nupe brasswork, glassmaking, and handwoven cloth",
+    "history": "The Nupe of Bida have produced Africa's finest brasswork, glassware, and handwoven textiles for over 1,000 years. Their glass beads were initially mistaken for Venetian manufacture by European traders. The Fashion Village draws from all of Africa: kente from Ghana, bogolan from Mali, adire from Yoruba Nigeria, shweshwe from South Africa, kitenge from East Africa, and haik from North Africa.",
+    "guardianDesc": "Osun is the Yoruba goddess of beauty, gold, honey, rivers, and all beautiful things. Worshipped from Nigeria to Cuba to Brazil. Patron of fashion, jewellery, and everything that makes life beautiful rather than merely functional.",
+    "origin": "Capital of Nupe Kingdom · 1,000 years of master glasswork, brasswork, weaving",
+    "guardian": "Osun",
+    "guardianOrigin": "Yoruba Pantheon · Nigeria · River Goddess of Beauty",
     "category": "creative",
-    "tagline": "Dressing Africa in its own glory — from kente to kitenge.",
+    "tagline": "1,000 years of African luxury craft. Not borrowed — built.",
+    "isHolding": false,
     "roles": [
-      { "key": "fashion_designer", "name": "Fashion Designer / Couturier", "desc": "High fashion designer, ready-to-wear label founder, traditional attire designer (agbada, boubou, kitenge suit, kaftan, shweshwe, kanga designer)" },
-      { "key": "tailor_seamstress", "name": "Tailor / Seamstress / Fundi", "desc": "Custom clothing tailor, alterations expert, traditional garment maker, wedding dress maker, school uniform supplier, market tailor" },
-      { "key": "fabric_merchant", "name": "Fabric Merchant / Textile Trader", "desc": "Ankara trader, kente cloth seller, adire tie-dye maker, bogolan mudcloth producer, kitenge importer, lace and aso-oke distributor" },
-      { "key": "hair_beauty", "name": "Hair Stylist / Beauty Practitioner", "desc": "Natural hair stylist, loctician, braider, barber, MUA (makeup artist), nail technician, skincare specialist, waxing practitioner" },
-      { "key": "shoe_accessories", "name": "Shoe Maker / Accessories Designer", "desc": "Cobbler, leather sandal maker, beaded jewellery designer, handbag maker, head wrap designer, traditional bead artist (Maasai, Zulu, Yoruba)" },
-      { "key": "fashion_photographer", "name": "Fashion Photographer / Stylist", "desc": "Editorial fashion photographer, fashion stylist, lookbook director, runway photographer, magazine cover photographer, brand campaign creator" },
-      { "key": "fashion_retailer", "name": "Fashion Retailer / Boutique Owner", "desc": "Boutique owner, online fashion store operator, thrift/vintage shop owner, fashion curator, mall fashion outlet manager" },
-      { "key": "fashion_tech", "name": "Fashion Tech / Sustainable Fabric Maker", "desc": "Sustainable textile innovator, African fashion app developer, recycled fabric designer, fashion logistics operator, virtual fitting room builder" }
+      {
+        "key": "designer",
+        "name": "Fashion Designer",
+        "desc": "African fashion design, custom garments, collection development"
+      },
+      {
+        "key": "tailor",
+        "name": "Tailor / Seamstress",
+        "desc": "Bespoke sewing, alterations, traditional garment making"
+      },
+      {
+        "key": "model",
+        "name": "Model",
+        "desc": "Fashion modelling, editorial, brand representation"
+      },
+      {
+        "key": "beauty",
+        "name": "Hair Stylist / Beauty",
+        "desc": "Hair care, beauty services, cosmetics, bridal"
+      },
+      {
+        "key": "shoe_maker",
+        "name": "Fabric Merchant",
+        "desc": "Textile trading, fabric sourcing, wholesale cloth"
+      },
+      {
+        "key": "beauty_prac",
+        "name": "Beauty Practitioner",
+        "desc": "Skincare, makeup artistry, spa and wellness services"
+      },
+      {
+        "key": "jewellery",
+        "name": "Shoe Maker",
+        "desc": "Handcrafted footwear, leather goods, shoe design"
+      },
+      {
+        "key": "jewelry_des",
+        "name": "Jewellery Designer",
+        "desc": "Bead work, metalwork, gem setting, African jewellery"
+      }
     ]
   },
   {
     "id": "family",
+    "ancientName": "UBUNTU",
     "name": "Family Village",
     "yoruba": "Ìlú Ìdílé",
-    "emoji": "🏠",
-    "color": "#065f46",
-    "guardian": "Ọbàtálá",
-    "category": "spirit",
-    "tagline": "The root of every village is the family circle.",
+    "emoji": "👨‍👩‍👧‍👦",
+    "color": "#0f766e",
+    "nation": "🇿🇦",
+    "nationFull": "South Africa · Zimbabwe · Nguni Ubuntu Philosophy",
+    "language": "isiZulu · isiXhosa · Ndebele",
+    "era": "Ancient – present",
+    "meaning": "I Am Because We Are — Umuntu ngumuntu ngabantu. The philosophical spine of Southern African civilisation",
+    "history": "Ubuntu has been the foundational operating system of Nguni family life for at least 1,000 years. Nelson Mandela built his post-apartheid reconciliation philosophy on it. The South African Constitution draws from it. Ubuntu is the original African answer to what a human being owes to another: everything. The family is not just blood — it is everyone who has ever shared your fire.",
+    "guardianDesc": "Nana Buluku is the supreme androgynous creator in Fon/Ewe tradition — both mother and father, both ancestor and descendant. The guardian of every family circle that has ever existed. She created the universe and all the divine twins.",
+    "origin": "'Umuntu ngumuntu ngabantu' · A person is a person through other persons · Zulu/Xhosa/Ndebele",
+    "guardian": "Nana Buluku",
+    "guardianOrigin": "Fon · Benin Republic · Supreme Creator",
+    "category": "people",
+    "tagline": "I am because we are. Ubuntu is the software Africa runs on.",
+    "isHolding": false,
     "roles": [
-      { "key": "family_counselor", "name": "Family Counsellor / Marriage Therapist", "desc": "Marriage guidance counsellor, family therapist, divorce mediator, lobola/bride price negotiation facilitator, family conflict resolver" },
-      { "key": "child_welfare", "name": "Child Welfare Worker / Social Worker", "desc": "Child protection officer, orphan care worker, foster care coordinator, street children outreach worker, child labour inspector" },
-      { "key": "elderly_care", "name": "Elderly Care Provider / Gerontologist", "desc": "Old age home staff, community elder support worker, dementia care specialist, palliative care worker, elder dignity advocate" },
-      { "key": "early_childhood", "name": "Early Childhood Educator / Crèche Operator", "desc": "Crèche/ECD centre operator, nursery school teacher, play therapist, childminder, after-school care provider, baby day care manager" },
-      { "key": "womens_rights", "name": "Women's Rights Advocate / Gender Officer", "desc": "GBV prevention officer, femicide campaigner, FGM eradication worker, women's economic empowerment facilitator, gender equality trainer" },
-      { "key": "genealogist", "name": "Genealogist / Family Historian", "desc": "DNA ancestry researcher, oral family history keeper, clan tree documenter, African diaspora roots tracer, lineage verification specialist" },
-      { "key": "marriage_coord", "name": "Marriage Coordinator / Dowry Negotiator", "desc": "Traditional wedding planner, lobola/bride price negotiator, introduction ceremony coordinator, white wedding planner, nikah/church ceremony organiser" },
-      { "key": "youth_worker", "name": "Youth Worker / Mentorship Leader", "desc": "Youth centre coordinator, boys/girls club leader, school counsellor, after-school mentor, gang diversion worker, youth entrepreneurship trainer" }
+      {
+        "key": "elder",
+        "name": "Family Elder",
+        "desc": "Community wisdom, elder mentorship, family leadership"
+      },
+      {
+        "key": "marriage",
+        "name": "Marriage Coordinator",
+        "desc": "Marriage ceremonies, counselling, family mediation"
+      },
+      {
+        "key": "child_care",
+        "name": "Child Welfare Worker",
+        "desc": "Child protection, orphan care, foster support"
+      },
+      {
+        "key": "genealogist",
+        "name": "Genealogist",
+        "desc": "Family history research, ancestry tracing, heritage documentation"
+      },
+      {
+        "key": "adoption",
+        "name": "Family Mediator",
+        "desc": "Family dispute resolution, reconciliation, mediation"
+      },
+      {
+        "key": "homemaker",
+        "name": "Adoption Officer",
+        "desc": "Adoption processes, foster care coordination"
+      },
+      {
+        "key": "youth_mentor",
+        "name": "Homemaker",
+        "desc": "Household management, domestic economy, family budgeting"
+      },
+      {
+        "key": "family_coord",
+        "name": "Youth Mentor",
+        "desc": "Intergenerational knowledge transfer, youth development"
+      }
     ]
   },
   {
     "id": "hospitality",
+    "ancientName": "TERANGA",
     "name": "Hospitality Village",
     "yoruba": "Ìlú Àlejò",
-    "emoji": "🍽",
-    "color": "#92400e",
-    "guardian": "Ọṣun",
-    "category": "economy",
-    "tagline": "No visitor leaves an African home hungry. Hospitality is our birthright.",
+    "emoji": "🍲",
+    "color": "#c2410c",
+    "nation": "🇸🇳",
+    "nationFull": "Senegal · Gambia · Wolof Philosophical Tradition",
+    "language": "Wolof · French · Arabic",
+    "era": "Ancient – present",
+    "meaning": "The Guest Is King — Wolof philosophy of radical hospitality. The guest must be fed before questions are asked",
+    "history": "Teranga demands that a host give everything to a guest before taking care of themselves. This was not charity — it was sacred obligation, the bedrock of West African trading culture. Caravansaries on every trans-Saharan route operated on the Teranga principle: feed first, trade later. Teranga is why West African market cities became the most cosmopolitan places on medieval Earth.",
+    "guardianDesc": "Osun is the Yoruba goddess of rivers and the open door. Her rivers flow to every village. No one who arrives at her banks leaves thirsty or hungry. The spirit of the welcome that costs the host everything and enriches both.",
+    "origin": "Wolof philosophy of radical unconditional hospitality · 'The Land of Teranga'",
+    "guardian": "Osun",
+    "guardianOrigin": "Yoruba Pantheon · Nigeria · Goddess of Plenty",
+    "category": "people",
+    "tagline": "Feed first. Trade later. The most ancient customer service tradition.",
+    "isHolding": false,
     "roles": [
-      { "key": "chef_cook", "name": "Chef / Cook / Street Food Vendor", "desc": "Restaurant chef, hotel executive chef, street food seller (suya, jollof, injera, bunny chow, thieboudienne), catering company cook, palace chef" },
-      { "key": "hotel_manager", "name": "Hotel Manager / Lodge Operator", "desc": "Hotel general manager, guesthouse owner, safari lodge manager, Airbnb superhost, camping site operator, resort operations director" },
-      { "key": "tour_guide", "name": "Tour Guide / Safari Guide", "desc": "Cultural heritage tour guide, game drive ranger, gorilla trekking guide, city walking tour guide, historical site interpreter, adventure tourism guide" },
-      { "key": "events_coordinator", "name": "Events Coordinator / Wedding Planner", "desc": "Corporate events planner, wedding coordinator, festival organiser, conference manager, trade fair organiser, cultural event producer" },
-      { "key": "bartender_mixologist", "name": "Bartender / Drink Specialist", "desc": "Hotel bar manager, craft spirits bartender, palm wine tapper, tej (Ethiopian honey wine) maker, cocktail innovator with African ingredients" },
-      { "key": "receptionist_concierge", "name": "Hotel Receptionist / Concierge", "desc": "Front desk officer, guest relations manager, concierge, reservations specialist, hospitality customer service professional" },
-      { "key": "travel_agent", "name": "Travel Agent / Tourism Operator", "desc": "Package holiday designer, airline ticketing agent, visa facilitation officer, African diaspora roots tour operator, cruise booking specialist" },
-      { "key": "housekeeping", "name": "Housekeeping Supervisor / Facilities Manager", "desc": "Hotel housekeeper, lodge facilities manager, cleaning supervisor, linen manager, property maintenance coordinator, hygiene compliance officer" }
+      {
+        "key": "hotel_manager",
+        "name": "Hotel Manager",
+        "desc": "Hotel operations, guest services, accommodation management"
+      },
+      {
+        "key": "chef",
+        "name": "Chef / Cook",
+        "desc": "Professional cooking, catering, food service management"
+      },
+      {
+        "key": "tour_guide",
+        "name": "Tour Guide",
+        "desc": "Tourism, cultural tours, travel experiences"
+      },
+      {
+        "key": "event_planner",
+        "name": "Events Coordinator",
+        "desc": "Event management, weddings, conferences, festivals"
+      },
+      {
+        "key": "bartender",
+        "name": "Bartender",
+        "desc": "Bar service, beverages, hospitality floor service"
+      },
+      {
+        "key": "travel_agent",
+        "name": "Travel Agent",
+        "desc": "Travel planning, booking, tourism packages"
+      },
+      {
+        "key": "resort_manage",
+        "name": "Resort Manager",
+        "desc": "Resort operations, guest experience, facility management"
+      },
+      {
+        "key": "camp_host",
+        "name": "Camp Host",
+        "desc": "Eco-tourism, camping, wilderness hospitality"
+      }
+    ]
+  },
+  {
+    "id": "sports",
+    "ancientName": "NANDI",
+    "name": "Sports Village",
+    "yoruba": "Ìlú Eré",
+    "emoji": "🏃",
+    "color": "#0f4c21",
+    "nation": "🇰🇪",
+    "nationFull": "Kenya · Ethiopia · Nandi/Kalenjin Running Nation",
+    "language": "Nandi · Kalenjin · Swahili",
+    "era": "Ancient – present",
+    "meaning": "The Running Nation — Kalenjin people represent 0.06% of world population but won 40% of international distance competitions (1980–2011)",
+    "history": "Kalenjin-speaking people from Kenya's Rift Valley represent 0.06% of the world's population but won 40% of all international long-distance competitions between 1980 and 2011. Ancient Nandi warriors trained by running between villages — 50 miles a day was not unusual. Eliud Kipchoge, the first human to run a marathon under 2 hours, is Nandi/Kalenjin. Africa's body was made for this.",
+    "guardianDesc": "Sango is the Yoruba/Fon god of thunder and explosive power. Worshipped from Nigeria to Cuba to Brazil to Trinidad. The patron of athletes and warriors. He strikes fast. He never misses. Lightning is Sango's sprint.",
+    "origin": "Nandi/Kalenjin ethnic cluster · Rift Valley Kenya · Most Olympic gold per capita in distance running",
+    "guardian": "Sango",
+    "guardianOrigin": "Yoruba/Fon Pantheon · Pan-West African",
+    "category": "people",
+    "tagline": "The most dominant athletic tradition in human history lives here.",
+    "isHolding": false,
+    "roles": [
+      {
+        "key": "athlete",
+        "name": "Footballer / Team Athlete",
+        "desc": "Professional sports, team competition, athlete development"
+      },
+      {
+        "key": "coach",
+        "name": "Coach / Trainer",
+        "desc": "Athletic coaching, performance training, sports development"
+      },
+      {
+        "key": "referee",
+        "name": "Referee / Sports Official",
+        "desc": "Match officiating, rules enforcement, sports governance"
+      },
+      {
+        "key": "gym_owner",
+        "name": "Gym / Facility Owner",
+        "desc": "Sports facility management, fitness centre operations"
+      },
+      {
+        "key": "scout",
+        "name": "Sports Scout / Agent",
+        "desc": "Talent identification, contract negotiation, player management"
+      },
+      {
+        "key": "physio",
+        "name": "Sports Medicine Officer",
+        "desc": "Athletic injury prevention, physiotherapy, sports medicine"
+      },
+      {
+        "key": "esports",
+        "name": "Esports Player",
+        "desc": "Competitive gaming, streaming, esports tournament play"
+      },
+      {
+        "key": "sports_media",
+        "name": "Sports Journalist",
+        "desc": "Sports reporting, commentary, broadcasting, analysis"
+      }
     ]
   },
   {
     "id": "holdings",
+    "ancientName": "ADULIS",
     "name": "Holdings Village",
-    "yoruba": "Ìlú Àbọ̀rìná",
+    "yoruba": "Ìlú Àgbàdo",
     "emoji": "🚪",
-    "color": "#6b7280",
-    "guardian": "Èṣù",
-    "category": "spirit",
-    "tagline": "The gate for those still finding their path. The Griot will guide you home.",
+    "color": "#d4a017",
+    "nation": "🇪🇷",
+    "nationFull": "Eritrea · Aksumite Empire · Red Sea Gateway",
+    "language": "Ge'ez · Tigrinya · Arabic",
+    "era": "500 BC – 700 AD",
+    "meaning": "The Eternal Gateway — crossroads of Africa, Arabia, India, Rome, and Persia. Every trade route passed through here",
+    "history": "Adulis (modern Zula, Eritrea) was the principal Red Sea port of the Aksumite Empire. The Periplus of the Erythraean Sea (60 AD) describes it as a major trading port where African ivory, gold, and rhinoceros horn were exchanged for Indian cloth, Egyptian papyrus, Persian silver, and Arabian goods. Four continents connected through one port.",
+    "guardianDesc": "Esu/Elegba is the keeper of all crossroads and doorways. Must be propitiated before any prayer reaches any other deity. Also called Legba (Fon), Papa Legba (Haitian Vodou). He is the first spirit and the last — the one who opens every door.",
+    "origin": "Greatest Red Sea port of the ancient world · Gateway of the Aksumite Empire · c. 600 BCE",
+    "guardian": "Esu / Elegba",
+    "guardianOrigin": "Yoruba Pantheon · Nigeria — Pan-African Crossroads God",
+    "category": "civic",
+    "tagline": "Every journey begins at Adulis. Esu decides which path is yours.",
     "isHolding": true,
     "roles": [
-      { "key": "explorer", "name": "Explorer", "desc": "Still discovering your craft and calling — the Griot AI is mapping your journey" },
-      { "key": "career_changer", "name": "Career Changer", "desc": "Transitioning between industries — your new village is being identified" },
-      { "key": "new_graduate", "name": "New Graduate", "desc": "Fresh from education — building skills before declaring a village" },
-      { "key": "entrepreneur", "name": "Entrepreneur in Formation", "desc": "Building an idea that does not yet fit one village — you may span multiple" },
-      { "key": "volunteer", "name": "Community Volunteer", "desc": "Serving the community while your craft finds its village" },
-      { "key": "multi_skilled", "name": "Multi-Skilled Worker", "desc": "Your work spans more than one village — the Griot will help you find your primary home" },
-      { "key": "navigator", "name": "Navigator", "desc": "Using Griot AI guidance to find the right village match through conversation" },
-      { "key": "returning_citizen", "name": "Returning Citizen", "desc": "Re-entering the workforce or returning from abroad — your village assignment is being recalibrated" }
+      {
+        "key": "explorer",
+        "name": "Explorer",
+        "desc": "Platform discovery, village exploration, path-finding"
+      },
+      {
+        "key": "career_changer",
+        "name": "Career Changer",
+        "desc": "Professional transition, skills reassessment, new direction"
+      },
+      {
+        "key": "new_graduate",
+        "name": "New Graduate",
+        "desc": "First professional experience, portfolio building, mentorship"
+      },
+      {
+        "key": "entrepreneur",
+        "name": "Entrepreneur in Formation",
+        "desc": "Business ideation, validation, early-stage startup"
+      },
+      {
+        "key": "volunteer",
+        "name": "Community Volunteer",
+        "desc": "Service, giving back, skill-sharing, community building"
+      },
+      {
+        "key": "multi_skilled",
+        "name": "Multi-Skilled Worker",
+        "desc": "Diverse skills, multiple income streams, versatile professional"
+      },
+      {
+        "key": "navigator",
+        "name": "Navigator",
+        "desc": "Platform navigation, orientation, guidance for others"
+      },
+      {
+        "key": "returning_citizen",
+        "name": "Returning Citizen",
+        "desc": "Diaspora return, reintegration, reconnection with home"
+      }
     ]
   }
 ]
