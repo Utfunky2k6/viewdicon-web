@@ -11,6 +11,21 @@ export default function VillageTools({ mode }: { mode: ThemeMode }) {
   const activeVillageId  = useVillageStore(s => s.activeVillageId)
   const activeRoleKey    = useVillageStore(s => s.activeRoleKey)
   const activeVillageColor = useVillageStore(s => s.activeVillageColor)
+  const [liveToolKeys, setLiveToolKeys] = React.useState<string[] | null>(null)
+
+  // Fetch live tools from village-registry API (with static fallback)
+  React.useEffect(() => {
+    if (!activeVillageId || !activeRoleKey) return
+    fetch(`/api/v1/villages/${activeVillageId}/tools?roleKey=${encodeURIComponent(activeRoleKey)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const list = d?.data ?? d?.tools ?? (Array.isArray(d) ? d : null)
+        if (list && list.length > 0) {
+          setLiveToolKeys(list.map((item: any) => item.toolKey ?? item.key ?? item))
+        }
+      })
+      .catch(() => {})
+  }, [activeVillageId, activeRoleKey])
 
   // No village selected
   if (!activeVillageId) {
@@ -46,8 +61,8 @@ export default function VillageTools({ mode }: { mode: ThemeMode }) {
     )
   }
 
-  // Get tools for this village + role
-  const roleTools: string[] = VILLAGE_TOOL_MAP[activeVillageId]?.[activeRoleKey] ?? []
+  // Use live API data if available, fall back to static map
+  const roleTools: string[] = liveToolKeys ?? VILLAGE_TOOL_MAP[activeVillageId]?.[activeRoleKey] ?? []
 
   if (roleTools.length === 0) {
     return (
