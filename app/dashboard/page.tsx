@@ -115,7 +115,7 @@ export default function DashboardPage() {
     }
     const t = setTimeout(() => setShowSOS(true), 4000)
     // Fetch live vitality from BFF
-    fetch('/api/v1/home/vitality')
+    fetch('/api/sorosoke/home/vitality')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (!d?.data) return
@@ -134,14 +134,23 @@ export default function DashboardPage() {
   }, [])
 
   const isDark = mode === 'dark'
+  const [clockStr, setClockStr] = React.useState(() => {
+    const d = new Date(); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`
+  })
+  React.useEffect(() => {
+    const tick = () => { const d = new Date(); setClockStr(`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`) }
+    const id = setInterval(tick, 15000)
+    return () => clearInterval(id)
+  }, [])
+  const activeSkinLabel = useVillageStore(s => s.activeSkin)?.toUpperCase() ?? 'ISE'
 
   return (
     <main style={{ minHeight:'100dvh', background:t('bg',mode), color:t('text',mode), fontFamily:'Inter, system-ui, sans-serif', overflowX:'hidden', maxWidth:480, margin:'0 auto', paddingBottom:100 }}>
 
       {/* STATUS BAR */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px', background: isDark ? '#060d08' : '#fff', fontSize:11, fontWeight:700, color: isDark ? '#4ade80' : '#1a7c3e' }}>
-        <span>9:41</span>
-        <span style={{ padding:'2px 8px', borderRadius:99, background: isDark ? 'rgba(26,124,62,.25)' : 'rgba(26,124,62,.1)', fontSize:10, fontWeight:700 }}>⚒ ISE · WORK</span>
+        <span>{clockStr}</span>
+        <span style={{ padding:'2px 8px', borderRadius:99, background: isDark ? 'rgba(26,124,62,.25)' : 'rgba(26,124,62,.1)', fontSize:10, fontWeight:700 }}>⚒ {activeSkinLabel} · WORK</span>
         <span>🔋</span>
       </div>
 

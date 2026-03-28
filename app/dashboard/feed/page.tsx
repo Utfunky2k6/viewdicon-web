@@ -278,8 +278,19 @@ const GEO_CTX: Record<Geo, {
   },
 }
 
-function GeoContextBanner({ geo }: { geo:Geo }) {
-  const ctx = GEO_CTX[geo]
+function GeoContextBanner({ geo, villageOverride }: { geo:Geo; villageOverride?:{name:string;emoji:string;ancientName?:string;memberCount?:number} }) {
+  const ctx = React.useMemo(() => {
+    if (geo === 'village' && villageOverride) {
+      return {
+        ...GEO_CTX.village,
+        emoji: villageOverride.emoji,
+        name: villageOverride.name,
+        subtitle: villageOverride.ancientName ?? GEO_CTX.village.subtitle,
+        members: villageOverride.memberCount != null ? `${villageOverride.memberCount.toLocaleString()} members` : GEO_CTX.village.members,
+      }
+    }
+    return GEO_CTX[geo]
+  }, [geo, villageOverride])
   return (
     <div style={{
       margin:'8px 12px 4px', borderRadius:14, overflow:'hidden',
@@ -801,12 +812,13 @@ function PostCard({ post }: { post:Post }) {
 
 /* ── create post sheet ── */
 type CreatePostT = 'text'|'voice'|'market'|'proverb'|'golive'
-function CreateSheet({ open, onClose }: { open:boolean; onClose:()=>void }) {
+function CreateSheet({ open, onClose, onPosted }: { open:boolean; onClose:()=>void; onPosted?:(p:Post)=>void }) {
   const [postType, setPostType] = React.useState<CreatePostT>('text')
   const [text, setText] = React.useState('')
   const [scope, setScope] = React.useState<'village'|'region'|'nation'>('village')
   const [isRecording, setIsRecording] = React.useState(false)
   const [recSecs, setRecSecs] = React.useState(0)
+  const [posting, setPosting] = React.useState(false)
   const recRef = React.useRef<ReturnType<typeof setInterval>|null>(null)
 
   const heatPct = Math.min(90, 20 + text.length * 0.8)
@@ -890,8 +902,36 @@ function CreateSheet({ open, onClose }: { open:boolean; onClose:()=>void }) {
             </div>
           ))}
         </div>
-        <button onClick={()=>{onClose();}} style={{ margin:'0 16px',width:'calc(100% - 32px)',padding:14,background:'#1a7c3e',border:'none',borderRadius:14,fontSize:14,fontWeight:700,color:'#fff',cursor:'pointer',fontFamily:'Sora,sans-serif',display:'flex',alignItems:'center',justifyContent:'center',gap:8 }}>
-          🥁 Drum This to Your Village
+        <button
+          disabled={posting || (postType !== 'voice' && postType !== 'golive' && text.trim().length < 3)}
+          onClick={async () => {
+            if (posting) return
+            setPosting(true)
+            try {
+              let token: string | null = null
+              let villageId: string | null = null
+              try {
+                const stored = localStorage.getItem('afk-auth')
+                token = stored ? JSON.parse(stored)?.state?.accessToken ?? null : null
+              } catch {}
+              try {
+                const vs = localStorage.getItem('afk-village')
+                villageId = vs ? JSON.parse(vs)?.state?.activeVillageId ?? null : null
+              } catch {}
+              if (token && villageId && text.trim()) {
+                await fetch('/api/posts', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({ body: text.trim(), villageId, skin: 'ise' }),
+                })
+              }
+            } catch {}
+            finally { setPosting(false) }
+            setText(''); onClose()
+          }}
+          style={{ margin:'0 16px',width:'calc(100% - 32px)',padding:14,background:posting?'rgba(26,124,62,.4)':'#1a7c3e',border:'none',borderRadius:14,fontSize:14,fontWeight:700,color:'#fff',cursor:posting?'wait':'pointer',fontFamily:'Sora,sans-serif',display:'flex',alignItems:'center',justifyContent:'center',gap:8 }}
+        >
+          {posting ? '⏳ Drumming…' : '🥁 Drum This to Your Village'}
         </button>
       </div>
     </div>
@@ -911,10 +951,40 @@ export default function SoroFeedPage() {
   const [createOpen, setCreateOpen] = React.useState(false)
   const [feedLive, setFeedLive] = React.useState(false)
   const [livePosts, setLivePosts] = React.useState<Post[]>(ALL_POSTS)
+  const [villageInfo, setVillageInfo] = React.useState<{name:string;emoji:string;ancientName?:string;memberCount?:number}|undefined>(undefined)
 
   // ── Fetch live posts from soro-soke-feed ────────────────
   React.useEffect(() => {
-    fetch(`/api/v1/feed/posts?skin=${skin}&geo=${geo}`)
+    // Read token + villageId from persisted auth store
+    let token: string | null = null
+    let villageId: string | null = null
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
+      const state = stored ? JSON.parse(stored)?.state : null
+      token = state?.accessToken ?? state?.token ?? null
+    } catch {}
+    try {
+      const vs = typeof window !== 'undefined' ? localStorage.getItem('afk-village') : null
+      villageId = vs ? JSON.parse(vs)?.state?.activeVillageId ?? null : null
+    } catch {}
+
+    // ── Fetch village info for context banner ──────────────
+    if (villageId) {
+      fetch(`/api/v1/villages/${villageId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          const v = d?.data ?? d
+          if (v?.name) setVillageInfo({ name: v.name, emoji: v.emoji ?? v.badgeEmoji ?? '🏘', ancientName: v.ancientName ?? undefined, memberCount: v._count?.memberships ?? v.memberCount ?? undefined })
+        })
+        .catch(() => {})
+    }
+
+    const params = new URLSearchParams({ limit: '30', sort: 'hot', skin })
+    if (villageId) params.set('villageId', villageId)
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+
+    fetch(`/api/feed?${params.toString()}`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (!d || !Array.isArray(d.data) || d.data.length === 0) return
@@ -922,13 +992,20 @@ export default function SoroFeedPage() {
         const liveIds = new Set(d.data.map((p: any) => p.id))
         const merged = [
           ...d.data.map((p: any) => ({
-            id: p.id, type: p.type || 'TEXT_DRUM', skin: p.skin || p.skinContext || skin,
-            geoMin: p.geoMin || p.geoLayer || 'village',
-            author: p.author?.handle || p.authorHandle || 'anonymous',
-            village: p.village || p.villageId || 'technology',
-            body: p.body || '', kila: p.kilaCount || p.kila || 0,
-            stir: p.stirCount || p.stir || 0, ubuntu: p.ubuntuCount || p.ubuntu || 0,
-            spray: p.sprayTotal || p.spray || 0, heatScore: p.heatScore || 50,
+            id: p.id,
+            type: (p.type ?? p.postType ?? 'text').toLowerCase().replace('_drum','').replace('text_',''),
+            skin: (p.skinContext ?? p.skin ?? skin) as Skin,
+            geoMin: (p.geoMin ?? p.geoLayer ?? 'village') as Geo,
+            authorName: p.author?.displayName ?? p.author?.handle ?? 'Villager',
+            village: p.village?.name ?? p.villageId ?? villageId ?? 'village',
+            av: p.author?.avatarEmoji ?? '👤',
+            avBg: 'rgba(26,124,62,.15)', avBorder: 'rgba(26,124,62,.4)',
+            time: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'now',
+            heat: p.heatScore ?? 50,
+            content: p.body ?? p.content ?? '',
+            kila: p.kilaCount ?? 0, stir: p.stirCount ?? 0, drum: p.drumCount ?? 0,
+            ubuntu: p.ubuntuCount ?? 0, spray: p.sprayTotal ?? 0,
+            scope: 'village' as const,
           })),
           ...ALL_POSTS.filter(p => !liveIds.has(p.id)),
         ] as Post[]
@@ -1010,7 +1087,7 @@ export default function SoroFeedPage() {
       {/* ── Feed ── */}
       <div style={{ flex:1,overflowY:'auto',position:'relative',zIndex:5 }}>
         {/* geo context banner */}
-        <GeoContextBanner geo={geo} />
+        <GeoContextBanner geo={geo} villageOverride={geo === 'village' ? villageInfo : undefined} />
 
         {/* geo-specific widget */}
         {GEO_CTX[geo].widget === 'state-index'     && <StateIndexWidget />}

@@ -66,16 +66,66 @@ const VILLAGES_PREVIEW = [
 
 type ExploreTab = 'trending' | 'people' | 'villages' | 'live' | 'tags'
 
+interface LiveVillage {
+  id: string; name: string; emoji: string; members: string; color: string
+  ancientName?: string; meaning?: string
+}
+interface LiveTag { tag: string; posts: number; heat: number }
+
 export default function ExplorePage() {
   const router = useRouter()
   const [search, setSearch] = React.useState('')
   const [tab, setTab] = React.useState<ExploreTab>('trending')
   const [invitedPeople, setInvitedPeople] = React.useState<Set<string>>(new Set())
+  const [liveVillages, setLiveVillages] = React.useState<LiveVillage[]>([])
+  const [liveTags, setLiveTags] = React.useState<LiveTag[]>([])
 
   React.useEffect(() => {
     if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return
     const s = document.createElement('style'); s.id = CSS_ID; s.textContent = CSS
     document.head.appendChild(s)
+  }, [])
+
+  // ── Fetch real villages from village-registry ────────────
+  React.useEffect(() => {
+    fetch('/api/v1/villages?limit=20')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const list = d?.data ?? d?.villages ?? (Array.isArray(d) ? d : null)
+        if (!list || list.length === 0) return
+        setLiveVillages(list.map((v: any) => ({
+          id: v.id ?? v.slug,
+          name: v.name,
+          emoji: v.emoji ?? v.badgeEmoji ?? '🏘',
+          members: v._count?.memberships != null ? `${v._count.memberships.toLocaleString()}` : v.memberCount != null ? `${Number(v.memberCount).toLocaleString()}` : '—',
+          color: v.brandColor ?? '#1a7c3e',
+          ancientName: v.ancientName ?? undefined,
+          meaning: v.meaning ?? undefined,
+        })))
+      })
+      .catch(() => {})
+  }, [])
+
+  // ── Fetch trending hashtags from soro-soke ───────────────
+  React.useEffect(() => {
+    let token: string | null = null
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
+      token = stored ? JSON.parse(stored)?.state?.accessToken ?? null : null
+    } catch {}
+    if (!token) return
+    fetch('/api/posts/hashtags/trending', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const list = d?.data ?? d?.tags ?? (Array.isArray(d) ? d : null)
+        if (!list || list.length === 0) return
+        setLiveTags(list.map((t: any) => ({
+          tag: t.tag ?? `#${t.name}`,
+          posts: t.postCount ?? t.posts ?? 0,
+          heat: Math.min(99, Math.round((t.postCount ?? t.posts ?? 0) / 30)),
+        })))
+      })
+      .catch(() => {})
   }, [])
 
   const toggleInvite = (id: string) => {
@@ -225,17 +275,19 @@ export default function ExplorePage() {
               🏘 Discover villages
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {VILLAGES_PREVIEW.filter(v =>
-                !search || v.name.toLowerCase().includes(search.toLowerCase())
-              ).map((v, i) => (
-                <div key={v.id} className="ex-fade" onClick={() => router.push('/dashboard/villages')} style={{
+              {(liveVillages.length > 0 ? liveVillages : VILLAGES_PREVIEW).filter((v: LiveVillage) =>
+                !search || v.name.toLowerCase().includes(search.toLowerCase()) || (v.ancientName ?? '').toLowerCase().includes(search.toLowerCase())
+              ).map((v: LiveVillage, i: number) => (
+                <div key={v.id} className="ex-fade" onClick={() => router.push(`/dashboard/villages/${v.id}`)} style={{
                   padding: '16px 14px', borderRadius: 16, cursor: 'pointer',
                   background: `linear-gradient(135deg, ${v.color}15, ${v.color}05)`,
                   border: `1px solid ${v.color}25`,
                   animationDelay: `${i * 0.06}s`,
                 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>{v.emoji}</div>
+                  {v.ancientName && <div style={{ fontSize: 8, fontWeight: 900, color: `${v.color}99`, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>{v.ancientName}</div>}
                   <div style={{ fontSize: 13, fontWeight: 800, color: v.color, fontFamily: 'Sora,sans-serif' }}>{v.name}</div>
+                  {v.meaning && <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', marginTop: 1, fontStyle: 'italic' }}>{v.meaning}</div>}
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>{v.members} members</div>
                   <button style={{
                     marginTop: 8, padding: '5px 12px', borderRadius: 99, fontSize: 9, fontWeight: 700,
@@ -300,7 +352,7 @@ export default function ExplorePage() {
             <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
               # Trending tags
             </div>
-            {TRENDING_TAGS
+            {(liveTags.length > 0 ? liveTags : TRENDING_TAGS)
               .filter(t => !search || t.tag.toLowerCase().includes(search.toLowerCase()))
               .sort((a, b) => b.heat - a.heat)
               .map((t, i) => (
