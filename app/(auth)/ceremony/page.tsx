@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/lib/api'
@@ -18,6 +18,7 @@ import FaceLiveness from '@/components/onboarding/FaceLiveness'
 import { CanonicalVillage } from '@/constants/villages'
 import { isAfricanDialCode, AFRICAN_DIAL_CODES, WORLD_DIAL_CODES, type UserCircle, type DialCodeEntry } from '@/lib/dial-codes'
 import { useThemeStore } from '@/stores/themeStore'
+import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
 
 // ── THEME CONSTANTS ──────────────────────────────────────────
 // LIGHT: Warm ivory parchment — premium, Africa-inspired, AA-contrast throughout
@@ -149,7 +150,8 @@ function DField({ label, placeholder, type='text', value, onChange, theme }: { l
     <div style={{ marginBottom:14 }}>
       {label && <div style={{ fontSize:10, fontWeight:700, color:theme?.subText || 'rgba(255,255,255,.4)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>{label}</div>}
       <input type={type} placeholder={placeholder} value={value} onChange={(e)=>onChange?.(e.target.value)}
-        style={{ width:'100%', padding:'13px 14px', background:(theme?.muted || 'rgba(255,255,255,.06)'), border:`1.5px solid ${theme?.border || 'rgba(255,255,255,.12)'}`, borderRadius:12, color:theme?.text || '#f0f7f0', fontSize:14, outline:'none', fontFamily:'inherit', WebkitAppearance:'none' }} />
+        className="dcf"
+        style={{ ['--dcf-sub' as string]: theme?.subText || 'rgba(255,255,255,.4)', width:'100%', padding:'13px 14px', background:(theme?.muted || 'rgba(255,255,255,.06)'), border:`1.5px solid ${theme?.border || 'rgba(255,255,255,.12)'}`, borderRadius:12, color:theme?.text || '#f0f7f0', fontSize:14, outline:'none', fontFamily:'inherit', WebkitAppearance:'none' }} />
     </div>
   )
 }
@@ -166,6 +168,8 @@ const CEREMONY_CSS = `
 @keyframes scanLine{0%{top:0}100%{top:100%}}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+input.dcf::placeholder{color:var(--dcf-sub,rgba(255,255,255,.4));}
+input.dcf::-webkit-input-placeholder{color:var(--dcf-sub,rgba(255,255,255,.4));}
 `
 
 // ── Shell ─────────────────────────────────────────────────────
@@ -471,16 +475,12 @@ function PhoneStep({ onSendDrum, theme }: { onSendDrum:(d:string, p:string)=>voi
 }
 
 // ── STEP: OTP ─────────────────────────────────────────────────
-function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any; phone:string; devOtp?:string }) {
+function OtpStep({ onNext, theme, phone, devOtp, isDark }: { onNext:()=>void; theme:any; phone:string; devOtp?:string; isDark:boolean }) {
   const [otp, setOtp] = React.useState('')
   const [verifying, setVerifying] = React.useState(false)
   const [verified, setVerified] = React.useState(false)
   const [error, setError] = React.useState('')
   const [countdown, setCountdown] = React.useState(60)
-  const r0=React.useRef<HTMLInputElement>(null), r1=React.useRef<HTMLInputElement>(null)
-  const r2=React.useRef<HTMLInputElement>(null), r3=React.useRef<HTMLInputElement>(null)
-  const r4=React.useRef<HTMLInputElement>(null), r5=React.useRef<HTMLInputElement>(null)
-  const refs = [r0,r1,r2,r3,r4,r5]
 
   React.useEffect(() => {
     if (countdown > 0) { const t = setTimeout(() => setCountdown(c => c - 1), 1000); return () => clearTimeout(t) }
@@ -503,28 +503,11 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
             setVerifying(false)
             setOtp('')
             setError('Invalid code — try again')
-            refs[0].current?.focus()
           }
         }
       })()
     }
   }, [otp, verifying, verified, onNext, phone, devOtp])
-
-  const handleDigit = (i:number, v:string) => {
-    if (!/^\d?$/.test(v)) return
-    const arr = (otp + '      ').split('').slice(0,6)
-    arr[i] = v
-    setOtp(arr.join('').trimEnd())
-    if (v && i < 5) refs[i+1].current?.focus()
-  }
-  const handleKey = (i:number, e:React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[i] && i > 0) refs[i-1].current?.focus()
-  }
-  const handlePaste = (e:React.ClipboardEvent) => {
-    e.preventDefault()
-    const t = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6)
-    if (t) setOtp(t)
-  }
 
   // Drum-beat animation bars
   const drumBars = [.45,.7,1,.85,.6,.5,.75,.4]
@@ -560,25 +543,17 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
         </div>
       )}
 
-      {/* 6-box OTP input */}
+      {/* DrumOtpBoxes — theme-aware, shake-on-error, Arrow+Backspace nav, paste, click-to-overwrite */}
       <div style={{ background:theme.card, border:`1px solid ${theme.border}`, borderRadius:16, padding:16, marginBottom:12 }}>
-        <div style={{ fontSize:10, fontWeight:800, color:theme.subText, textTransform:'uppercase', letterSpacing:'.12em', marginBottom:10, textAlign:'center' }}>6-Digit Talking Drum Code</div>
-        <div style={{ display:'flex', gap:6 }} onPaste={handlePaste}>
-          {refs.map((ref,i) => (
-            <input key={i} ref={ref} type="text" inputMode="numeric" maxLength={1}
-              value={otp[i] ?? ''} onChange={e => handleDigit(i,e.target.value)} onKeyDown={e => handleKey(i,e)}
-              autoFocus={i===0}
-              style={{
-                flex:1, height:44, borderRadius:10, textAlign:'center', fontSize:18, fontWeight:900,
-                color: otp[i] ? theme.text : theme.subText,
-                background: otp[i] ? `${theme.accent}20` : theme.muted,
-                border: `2.5px solid ${otp[i] ? theme.accent : theme.border}`,
-                outline:'none', transition:'all .15s',
-                boxShadow: otp[i] ? `0 0 12px ${theme.accent}33` : 'none',
-              }}
-            />
-          ))}
-        </div>
+        <DrumOtpBoxes
+          value={otp}
+          onChange={(v) => { setOtp(v); if (error) setError('') }}
+          onComplete={() => {}}
+          accentColor={theme.accent}
+          isDark={isDark}
+          error={error}
+          label="🥁 TALKING DRUM CODE"
+        />
 
         {/* Status */}
         <div style={{ marginTop:16, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
@@ -600,11 +575,6 @@ function OtpStep({ onNext, theme, phone, devOtp }: { onNext:()=>void; theme:any;
           )}
         </div>
       </div>
-
-      {/* Error display */}
-      {error && (
-        <div style={{ fontSize:12, color:'#f87171', textAlign:'center', padding:'8px 14px', background:'rgba(178,34,34,.1)', borderRadius:10, border:'1px solid rgba(178,34,34,.2)', marginBottom:8 }}>{error}</div>
-      )}
 
       {/* Drum animation */}
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:14, background:`${theme.accent}08`, border:`1px solid ${theme.accent}22`, marginBottom:'auto' }}>
@@ -902,6 +872,126 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
   )
 }
 
+// ── DSelect — theme-aware custom select, replaces native <select> ──
+// Self-contained, no portal, no extra libs — bottom-sheet slide-up on tap
+function DSelect({ value, onChange, options, placeholder, theme }: {
+  value: string; onChange: (v:string)=>void; options: string[]; placeholder: string; theme: any
+}) {
+  const [open, setOpen] = React.useState(false)
+  const [search, setSearch] = React.useState('')
+  const searchRef = React.useRef<HTMLInputElement>(null)
+
+  React.useEffect(() => {
+    if (open) {
+      setSearch('')
+      setTimeout(() => searchRef.current?.focus(), 80)
+    }
+  }, [open])
+
+  const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()))
+
+  const pick = (v: string) => { onChange(v); setOpen(false) }
+
+  return (
+    <>
+      {/* Trigger — looks like a DField input */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{
+          width: '100%', padding: '13px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: theme.muted, border: `1.5px solid ${value ? theme.accent + '88' : theme.border}`,
+          borderRadius: 12, color: value ? theme.text : theme.subText, fontSize: 14, fontWeight: value ? 600 : 400,
+          cursor: 'pointer', outline: 'none', textAlign: 'left', fontFamily: 'inherit',
+          transition: 'border-color .15s',
+        }}
+      >
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {value || placeholder}
+        </span>
+        <span style={{ fontSize: 10, color: theme.subText, marginLeft: 8, flexShrink: 0 }}>▼</span>
+      </button>
+
+      {/* Bottom-sheet overlay */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9998,
+            background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(2px)',
+          }}
+        />
+      )}
+
+      {/* Sheet panel */}
+      {open && (
+        <div style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 9999,
+          height: '72vh', display: 'flex', flexDirection: 'column',
+          background: theme.card === 'rgba(255,255,255,.045)' ? '#0d1117' : (theme.card || '#fff'),
+          borderTop: `1px solid ${theme.border}`,
+          borderRadius: '20px 20px 0 0',
+          boxShadow: '0 -8px 40px rgba(0,0,0,.4)',
+          animation: 'slideUp .22s ease',
+        }}>
+          {/* Handle */}
+          <div style={{ padding: '12px 0 0', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 40, height: 4, borderRadius: 4, background: theme.border }} />
+          </div>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 16px 12px', flexShrink: 0 }}>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 800, color: theme.text }}>{placeholder}</div>
+            <button onClick={() => setOpen(false)} style={{ width: 28, height: 28, borderRadius: '50%', border: 'none', background: theme.muted, color: theme.text, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>✕</button>
+          </div>
+
+          {/* Search */}
+          <div style={{ padding: '0 16px 10px', flexShrink: 0 }}>
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 14,
+                background: theme.muted, border: `1.5px solid ${theme.border}`,
+                color: theme.text, outline: 'none', fontFamily: 'inherit',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {/* Scrollable list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 16px' }}>
+            {filtered.length === 0 && (
+              <div style={{ padding: 32, textAlign: 'center', color: theme.subText, fontSize: 13 }}>No results for "{search}"</div>
+            )}
+            {filtered.map(opt => {
+              const sel = opt === value
+              return (
+                <div key={opt} onClick={() => pick(opt)}
+                  style={{
+                    padding: '13px 14px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    background: sel ? `${theme.accent}15` : 'transparent',
+                    color: sel ? theme.accent : theme.text,
+                    fontWeight: sel ? 700 : 400, fontSize: 14,
+                    marginBottom: 2,
+                    transition: 'background .1s',
+                  }}
+                >
+                  {sel && <span style={{ marginRight: 8, flexShrink: 0 }}>✓</span>}
+                  {opt}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── STEP: NAMING (5 scenes as internal tabs) ──────────────────
 const SCENE_META = [
   { icon:'🪬', color:'#d4a017', title:'Your Names', quote:'"The name you carry is the story of your people."', note:'Your heritage shapes the first 3 characters of your Afro-ID' },
@@ -912,7 +1002,7 @@ const SCENE_META = [
 ]
 const SCENE_TABS = ['Names','Origins','Seasons','People','Path']
 
-function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void; theme:any; heritage?:string; onNamingData?:(d:Record<string,string>)=>void }) {
+function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:()=>void; theme:any; heritage?:string; onNamingData?:(d:Record<string,string>)=>void; isDark:boolean }) {
   const [tab, setTab] = React.useState(0)
   const [first, setFirst] = React.useState('')
   const [last, setLast] = React.useState('')
@@ -1063,11 +1153,13 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
         {tab===1 && (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
              <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:2 }}>Ancestral Nation *</div>
-             <select value={ancestralNation} onChange={e=>{setAncestralNation(e.target.value);setTabError('')}}
-               style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:ancestralNation?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${theme.border}`, outline:'none', appearance:'auto' }}>
-               <option value="">Select your ancestral nation…</option>
-               {AFRICAN_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-             </select>
+             <DSelect
+               value={ancestralNation}
+               onChange={v=>{setAncestralNation(v);setTabError('')}}
+               options={AFRICAN_COUNTRIES}
+               placeholder="Select your ancestral nation…"
+               theme={theme}
+             />
              <DField label="State or Region" placeholder="e.g. Lagos, Ashanti, Nairobi..." value={originState} onChange={v=>{setOriginState(v);setTabError('')}} theme={theme} />
              <DField label="Village or Town of Origin" placeholder="e.g. Eket, Kumasi, Kisumu..." value={originVillage} onChange={v=>{setOriginVillage(v);setTabError('')}} theme={theme} />
              <DField label="Ethnic Group / Tribe" placeholder="e.g. Yoruba, Igbo, Zulu" value={ethnicGroup} onChange={v=>{setEthnicGroup(v);setTabError('')}} theme={theme} />
@@ -1090,7 +1182,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
               <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Date of Birth *</div>
               <input type="date" value={dob} min={minDob} max={maxDob}
                 onChange={e=>{setDob(e.target.value);setTabError('')}}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:dob?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${dob?theme.accent:theme.border}`, outline:'none', boxSizing:'border-box', colorScheme:'dark' }}
+                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:dob?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${dob?theme.accent:theme.border}`, outline:'none', boxSizing:'border-box', colorScheme: isDark ? 'dark' : 'light' }}
               />
               {dob && <div style={{ fontSize:10, color:theme.accent, marginTop:4 }}>✓ Birth year {new Date(dob).getFullYear()} will be encoded in your Afro-ID</div>}
             </div>
@@ -1152,11 +1244,13 @@ function NamingStep({ onNext, theme, heritage, onNamingData }: { onNext:()=>void
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             <div>
               <div style={{ fontSize:10, fontWeight:700, color:theme.subText, textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>Country of Residence *</div>
-              <select value={currentCountry} onChange={e=>{setCurrentCountry(e.target.value);setTabError('')}}
-                style={{ width:'100%', padding:'12px 14px', borderRadius:12, fontSize:14, fontWeight:600, color:currentCountry?theme.text:theme.subText, background:theme.muted, border:`1.5px solid ${theme.border}`, outline:'none', appearance:'auto' }}>
-                <option value="">Select your country…</option>
-                {WORLD_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <DSelect
+                value={currentCountry}
+                onChange={v=>{setCurrentCountry(v);setTabError('')}}
+                options={WORLD_COUNTRIES}
+                placeholder="Select your country…"
+                theme={theme}
+              />
             </div>
             <DField label="City / Town *" placeholder="e.g. London" value={currentCity} onChange={v=>{setCurrentCity(v);setTabError('')}} theme={theme} />
             <DField label="Occupation / Calling *" placeholder="e.g. Software Engineer, Farmer, Student" value={occupation} onChange={v=>{setOccupation(v);setTabError('')}} theme={theme} />
@@ -1663,7 +1757,7 @@ const FamilyTreeSVG = React.memo(function FamilyTreeSVG({ count }: { count:numbe
 }) // React.memo
 
 // ── STEP: FAMILY (African Kinship Builder) ─────────────────────
-function FamilyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
+function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any }) {
   const [members, setMembers] = React.useState<FM[]>(SEED_FAMILY)
   // Add-member flow: categories → options → form → (back to list)
   const [view, setView] = React.useState<'list'|'categories'|'options'|'perms'>('list')
@@ -1776,10 +1870,10 @@ function FamilyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
       </div>
 
       <div style={{ padding:'12px 20px 20px', background:theme.card, borderTop:`1px solid ${theme.border}`, flexShrink:0 }}>
-        <GradBtn onClick={onNext} style={{ height:54 }}>
+        <GradBtn onClick={() => onNext(members)} style={{ height:54 }}>
           {members.length > 0 ? 'Seal the Kinship Circle 🛡 →' : 'Continue without members →'}
         </GradBtn>
-        <button onClick={onNext} style={{ width:'100%', marginTop:8, padding:'6px 0', borderRadius:10, background:'none', border:'none', color:'rgba(255,255,255,.3)', fontSize:11, fontWeight:600, cursor:'pointer' }}>
+        <button onClick={() => onNext([])} style={{ width:'100%', marginTop:8, padding:'6px 0', borderRadius:10, background:'none', border:'none', color:'rgba(255,255,255,.3)', fontSize:11, fontWeight:600, cursor:'pointer' }}>
           Skip for now →
         </button>
       </div>
@@ -1924,18 +2018,25 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
       <div style={{ flex:1, overflowY:'auto', padding:'0 20px 20px' }}>
          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             {visible.map(v => (
-              <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}15`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:20, padding:18, cursor:'pointer', transition:'all .2s' }}>
-                 <div style={{ fontSize:28, marginBottom:10 }}>{v.emoji}</div>
-                 <div style={{ fontSize:14, fontWeight:900, color:theme.text }}>{v.name}</div>
-                 <div style={{ fontSize:10, color:v.color, fontWeight:800, marginTop:2 }}>{v.yoruba}</div>
+              <div key={v.id} onClick={()=>setSelId(v.id)} style={{ background:selId===v.id?`${v.color}15`:theme.card, border:`2px solid ${selId===v.id?v.color:theme.border}`, borderRadius:20, padding:16, cursor:'pointer', transition:'all .2s', position:'relative', overflow:'hidden' }}>
+                 {/* Ancient name watermark */}
+                 <div style={{ position:'absolute', top:8, right:8, fontSize:7, fontWeight:900, color:selId===v.id?v.color:'rgba(255,255,255,0.15)', letterSpacing:'0.1em', fontFamily:'Cinzel,Palatino,serif', textTransform:'uppercase' }}>{v.ancientName}</div>
+                 <div style={{ fontSize:26, marginBottom:8 }}>{v.emoji}</div>
+                 <div style={{ fontSize:12, fontWeight:900, color:theme.text, lineHeight:1.2 }}>{v.name.replace(' Village','')}</div>
+                 {/* Ancient name prominent when selected */}
+                 {selId===v.id && <div style={{ fontSize:11, fontFamily:'Cinzel,Palatino,serif', color:v.color, fontWeight:900, marginTop:3, letterSpacing:'0.04em' }}>{v.ancientName}</div>}
+                 <div style={{ fontSize:9, color:'rgba(255,255,255,0.4)', marginTop:2, lineHeight:1.3 }}>{v.meaning.slice(0,40)}{v.meaning.length>40?'…':''}</div>
               </div>
             ))}
          </div>
          <div onClick={()=>setSelId(holding.id)} style={{ marginTop:12, padding:20, background:selId===holding.id?`${holding.color}15`:theme.card, border:`2px dashed ${selId===holding.id?holding.color:theme.border}`, borderRadius:20, display:'flex', alignItems:'center', gap:16, cursor:'pointer' }}>
             <div style={{ fontSize:32 }}>{holding.emoji}</div>
             <div>
-               <div style={{ fontSize:15, fontWeight:900, color:theme.text }}>{holding.name} Village</div>
-               <div style={{ fontSize:11, color:theme.subText }}>The Griot will guide you to your path.</div>
+               <div style={{ fontSize:15, fontWeight:900, color:theme.text }}>
+                 {holding.name} Village · <span style={{ fontFamily:'Cinzel,Palatino,serif', color:holding.color }}>{holding.ancientName}</span>
+               </div>
+               <div style={{ fontSize:10, color:'rgba(255,255,255,0.4)', marginTop:2 }}>{holding.meaning}</div>
+               <div style={{ fontSize:11, color:theme.subText, marginTop:2 }}>The Griot will guide you to your path.</div>
             </div>
          </div>
       </div>
@@ -1997,10 +2098,11 @@ function RoleStep({ village, onNext, theme }: { village:Village; onNext:(role:st
       {/* Role perks */}
       <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:24 }}>
         {[
-          `🌍 Joins the ${village.name} Village as a verified ${selected.sector} member`,
+          `🌍 Joins ${village.ancientName} (${village.name}) as a verified ${selected.sector} member`,
+          `🏛️ Inherits the ${village.ancientName} tradition — ${village.meaning}`,
           `🏅 Earns the "${selected.name}" Sovereign Role Badge`,
           `🥁 Receives village-specific Drum Feed posts and opportunities`,
-          `🔑 Unlocks ${village.name} Village roles, rooms, and market access`,
+          `🔑 Unlocks ${village.ancientName} roles, rooms, and market access`,
           `⚡ Afro-ID prefix tied to ${village.yoruba ?? village.name} lineage`,
         ].map((perk, i) => (
           <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 14px', borderRadius:14, background:theme.card, border:`1px solid ${theme.border}` }}>
@@ -2023,8 +2125,12 @@ function RoleStep({ village, onNext, theme }: { village:Village; onNext:(role:st
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
           <span style={{ fontSize:24 }}>{village.emoji}</span>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:900, color:theme.text }}>{village.name} Village</div>
-            <div style={{ fontSize:10, color:theme.subText }}>{allRoles.length} professional roles · {sectors.length} sectors</div>
+            <div style={{ display:'flex', alignItems:'baseline', gap:8, flexWrap:'wrap' }}>
+              <div style={{ fontFamily:'Cinzel,Palatino,serif', fontSize:17, fontWeight:900, color:village.color, letterSpacing:'0.06em' }}>{village.ancientName}</div>
+              <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,0.45)' }}>{village.name}</div>
+            </div>
+            <div style={{ fontSize:10, color:village.color, fontWeight:700, marginTop:1, opacity:0.8 }}>{village.meaning}</div>
+            <div style={{ fontSize:9, color:theme.subText, marginTop:1 }}>{allRoles.length} professional roles · {sectors.length} sectors</div>
           </div>
         </div>
         {/* Search */}
@@ -2275,6 +2381,11 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
 
         <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:'#f0f7f0', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .4s' }}>Welcome Home!</div>
         <div style={{ fontSize:13, color:'#7da882', textAlign:'center', lineHeight:1.65, marginBottom:8 }}>You are now a citizen of<br/>the Digital Motherland.</div>
+        {village.ancientName && (
+          <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:18, fontWeight:900, color: village.color, letterSpacing:'0.08em', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .6s', textShadow:`0 0 20px ${village.color}80` }}>
+            {village.ancientName}
+          </div>
+        )}
         <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.4)', borderRadius:99, padding:'5px 14px', fontSize:11, fontWeight:700, color:'#4ade80', marginBottom:18 }}>✦ {village.name} Village · {role}</div>
 
         <div style={{ width:'100%', background:'rgba(26,124,62,.08)', border:'1px solid rgba(26,124,62,.25)', borderRadius:16, padding:16, marginBottom:12, textAlign:'center' }}>
@@ -2554,10 +2665,25 @@ function AllyCoronationStep({ allyName, onDone, theme }: { allyName?:string; onD
 
 // ── MAIN ──────────────────────────────────────────────────────
 export default function CeremonyPage() {
+  return (
+    <React.Suspense fallback={<div style={{minHeight:'100dvh',display:'flex',alignItems:'center',justifyContent:'center',background:'#050a06',color:'#4ade80',fontWeight:800,fontSize:14}}>Loading Ceremony…</div>}>
+      <CeremonyInner />
+    </React.Suspense>
+  )
+}
+
+function CeremonyInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { setTokens, setUser, setCeremonyComplete } = useAuthStore()
   const { isDark: getIsDark } = useThemeStore()
-  const [idx, setIdx] = React.useState(0)
+
+  // Support ?step=NAMING (or any step key) to jump directly to a scene — great for preview/testing
+  const startStep = searchParams.get('step') as Step | null
+  const defaultSeq = buildSequence(null)
+  const startIdx = startStep ? Math.max(defaultSeq.indexOf(startStep), 0) : 0
+
+  const [idx, setIdx] = React.useState(startIdx)
   const [showGriot, setShowGriot] = React.useState(false)
 
   // CIRCLE drives the entire step sequence:
@@ -2582,8 +2708,10 @@ export default function CeremonyPage() {
   const [dateOfBirth, setDateOfBirth] = React.useState('')
   const [gender, setGender] = React.useState<'male'|'female'|'non-binary'|'prefer-not-to-say'|''>('')
   const namingDataRef = React.useRef<Record<string,string>>({})
+  const familyMembersRef = React.useRef<FM[]>([])
 
   const theme = getIsDark() ? DARK_THEME : LIGHT_THEME
+  const isDark = getIsDark()
 
   // Rebuild sequence whenever circle changes (after phone step)
   const SEQUENCE = React.useMemo(() => buildSequence(circle), [circle])
@@ -2667,7 +2795,9 @@ export default function CeremonyPage() {
         totemAnimal: nd.totemAnimal || undefined,
         residenceCountry: nd.currentCountry || undefined,
         residenceCity: nd.currentCity || undefined,
-        occupation: nd.occupation || undefined,
+        occupation: nd.occupation || role || undefined,
+        villageId: village?.id || undefined,
+        roleKey: role || undefined,
       })
       setTokens(res.accessToken, res.refreshToken)
       if (typeof document !== 'undefined') {
@@ -2679,6 +2809,22 @@ export default function CeremonyPage() {
         setUser(me)
       } catch {
         setUser({ id: res.userId })
+      }
+      // Send collected family members to family-service (fire-and-forget)
+      const fam = familyMembersRef.current
+      if (fam.length > 0) {
+        fam.forEach(member => {
+          fetch('/api/v1/family/members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${res.accessToken}` },
+            body: JSON.stringify({
+              name: member.name,
+              relationship: member.rel,
+              phone: member.phone,
+              tier: member.tier,
+            }),
+          }).catch(() => { /* family service failures are non-fatal */ })
+        })
       }
     } catch {
       // Registration failed — still advance, user can retry login
@@ -2722,7 +2868,7 @@ export default function CeremonyPage() {
         <motion.div key={step} initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }} transition={{ duration:0.25 }} style={{ flex:1, display:'flex', flexDirection:'column' }}>
           {step==='TERMS'           && <TermsStep onNext={next} theme={theme} />}
           {step==='PHONE'           && <PhoneStep onSendDrum={handleSendDrum} theme={theme} />}
-          {step==='OTP'             && <OtpStep onNext={next} theme={theme} phone={ceremonyPhone} devOtp={devOtp} />}
+          {step==='OTP'             && <OtpStep onNext={next} theme={theme} phone={ceremonyPhone} devOtp={devOtp} isDark={isDark} />}
           {/* CIRCLES only appears for non-African SIM users */}
           {step==='CIRCLES'         && <CirclesStep geoResult={geoResult} geoLoading={geoLoading} onNext={(c: number) => { setCircle((c + 1) as UserCircle); next() }} theme={theme} />}
           {/* Circle 2: Griot heritage verification */}
@@ -2736,12 +2882,12 @@ export default function CeremonyPage() {
           {step==='BIOMETRIC'       && <BiometricStep onNext={next} theme={theme} />}
           {step==='VOICE'           && <VoiceStep onNext={next} theme={theme} />}
           {step==='HERITAGE'        && <HeritageStep onNext={(h) => { setSelectedHeritage(h); next() }} theme={theme} />}
-          {step==='NAMING'          && <NamingStep onNext={next} theme={theme} heritage={selectedHeritage} onNamingData={(d) => {
+          {step==='NAMING'          && <NamingStep onNext={next} theme={theme} heritage={selectedHeritage} isDark={isDark} onNamingData={(d) => {
             setFullName(d.fullName || ''); setDateOfBirth(d.dateOfBirth || '')
             // Store all ceremony naming fields in a ref for register
             namingDataRef.current = d
           }} />}
-          {step==='FAMILY'          && <FamilyStep onNext={next} theme={theme} />}
+          {step==='FAMILY'          && <FamilyStep onNext={(members) => { familyMembersRef.current = members; next() }} theme={theme} />}
           {/* VILLAGE / ROLE: Circle 1 & 2 only. Circle 3 NEVER sees these */}
           {step==='VILLAGE'         && <VillageStep onNext={handleVillageSelect} theme={theme} sovereigntyAllowed={circle === 1 || heritageCompleted} />}
           {step==='ROLE'            && village && <RoleStep village={village} onNext={(r, o) => { setRole(r); setOcc(o); next() }} theme={theme} />}
