@@ -95,7 +95,7 @@ export default function DashboardPage() {
   const [mode, setMode] = React.useState<ThemeMode>('dark')
   const [showSOS, setShowSOS] = React.useState(false)
   const [sosResponded, setSosResponded] = React.useState(false)
-  const [vitality, setVitality] = React.useState({ cowrie:'₡4.2K', kila:'52', jobs:'147', live:'🔴 4', isLive:false })
+  const [vitality, setVitality] = React.useState({ cowrie:'₡4.2K', kila:'52', jobs:'147', live:'🔴 4', isLive:false, notifCount:0 })
   const activeVillageId = useVillageStore(s => s.activeVillageId)
   const user = useAuthStore(s => s.user)
   const greeting = React.useMemo(() => getTimeGreeting(), [])
@@ -127,6 +127,7 @@ export default function DashboardPage() {
           jobs:   String(v.activePosts ?? 147),
           live:   `🔴 ${v.activeCircles ?? 4}`,
           isLive: !!d.live,
+          notifCount: v.notifCount ?? v.unreadNotifications ?? 0,
         })
       })
       .catch(() => {})
@@ -177,7 +178,7 @@ export default function DashboardPage() {
           <div onClick={() => router.push('/dashboard/explore')} style={{ width:30, height:30, borderRadius:'50%', background:t('muted',mode), border:`1px solid ${t('border',mode)}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, cursor:'pointer', position:'relative' }}>🔍</div>
           <div onClick={() => router.push('/dashboard/notifications')} style={{ width:30, height:30, borderRadius:'50%', background:t('muted',mode), border:`1px solid ${t('border',mode)}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, cursor:'pointer', position:'relative' }}>
             🔔
-            <span style={{ position:'absolute', top:-3, right:-3, width:14, height:14, borderRadius:'50%', background:'#1a7c3e', border:`2px solid ${isDark?'#0a1a0b':'#fff'}`, fontSize:8, fontWeight:700, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>5</span>
+            {vitality.notifCount > 0 && <span style={{ position:'absolute', top:-3, right:-3, width:14, height:14, borderRadius:'50%', background:'#1a7c3e', border:`2px solid ${isDark?'#0a1a0b':'#fff'}`, fontSize:8, fontWeight:700, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>{vitality.notifCount > 9 ? '9+' : vitality.notifCount}</span>}
           </div>
         </div>
       </div>
