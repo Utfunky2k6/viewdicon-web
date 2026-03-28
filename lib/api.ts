@@ -91,6 +91,8 @@ export const authApi = {
     residenceCountry?: string
     residenceCity?: string
     occupation?: string
+    villageId?: string
+    roleKey?: string
   }) => api.post<{ userId: string; accessToken: string; refreshToken: string; message: string }>(
     '/api/v1/auth/register', data
   ),

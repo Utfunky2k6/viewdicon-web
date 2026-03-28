@@ -270,6 +270,8 @@ export default function ToolPage() {
   const searchParams  = useSearchParams()
   const router        = useRouter()
   const [sessionOpen, setSessionOpen] = React.useState(false)
+  const [sessionId, setSessionId] = React.useState<string | null>(null)
+  const [cowrieEarned, setCowrieEarned] = React.useState(0)
   const [toast, setToast] = React.useState('')
 
   const toolKey   = String(params.toolKey ?? '')
@@ -279,7 +281,51 @@ export default function ToolPage() {
   const tool   = TOOL_REGISTRY[toolKey]
   const vColor = VCOLOR[villageId] ?? C.green
 
+  // Tick cowrie earned every 2 minutes during active session
+  React.useEffect(() => {
+    if (!sessionOpen || tool?.cowrieFlow !== 'earns') return
+    const id = setInterval(() => setCowrieEarned(c => c + 1), 120_000)
+    return () => clearInterval(id)
+  }, [sessionOpen, tool?.cowrieFlow])
+
+  const getAuth = () => {
+    try {
+      const s = JSON.parse(localStorage.getItem('vd-auth') || '{}')
+      return { token: s?.state?.accessToken ?? '', afroId: s?.state?.user?.afroId ?? '' }
+    } catch { return { token: '', afroId: '' } }
+  }
+
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+
+  const handleOpenSession = async () => {
+    const { token, afroId } = getAuth()
+    try {
+      const res = await fetch('/api/v1/tool-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ userAfroId: afroId, villageId, roleKey, toolKey }),
+      })
+      const data = await res.json()
+      if (res.ok && data.data?.id) setSessionId(data.data.id)
+    } catch { /* offline — continue without session ID */ }
+    setSessionOpen(true)
+    showToast('✓ Business session opened')
+  }
+
+  const handleSaveExit = () => {
+    if (sessionId) {
+      fetch(`/api/v1/tool-sessions/${sessionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COMPLETED', cowrieEarned }),
+      }).catch(() => {})
+      showToast(`✓ Session saved · +₡${cowrieEarned}`)
+    }
+    setTimeout(() => {
+      if (villageId) router.push(`/dashboard/villages/${villageId}`)
+      else router.push('/dashboard')
+    }, sessionId ? 400 : 0)
+  }
 
   if (!tool) {
     return (
@@ -357,7 +403,7 @@ export default function ToolPage() {
           </div>
           {!sessionOpen && (
             <button
-              onClick={() => { setSessionOpen(true); showToast('✓ Business session opened') }}
+              onClick={handleOpenSession}
               style={{ padding: '7px 14px', borderRadius: 99, background: C.gold, color: '#000', fontSize: 11, fontWeight: 800, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
             >Open</button>
           )}
@@ -385,13 +431,10 @@ export default function ToolPage() {
             style={{ flex: 1, padding: '11px 0', borderRadius: 12, background: `${vColor}15`, border: `1px solid ${vColor}30`, color: vColor, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
           >💬 Share</button>
           <button
-            onClick={() => {
-              if (sessionOpen) showToast('✓ Session saved to ledger')
-              setTimeout(() => villageId ? router.push(`/dashboard/villages/${villageId}`) : router.push('/dashboard'), sessionOpen ? 400 : 0)
-            }}
+            onClick={handleSaveExit}
             style={{ flex: 2, padding: '11px 0', borderRadius: 12, background: `linear-gradient(90deg, ${C.green}, #065f46)`, color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
-            {sessionOpen ? '💾 Save & Exit' : '← Back to Village'}
+            {sessionOpen ? `💾 Save & Exit${cowrieEarned > 0 ? ` (+₡${cowrieEarned})` : ''}` : '← Back to Village'}
           </button>
         </div>
       </div>

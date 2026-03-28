@@ -26,6 +26,13 @@ export interface Village {
   tagline: string
   roles: VillageRole[]
   holding?: boolean
+  // Extended Pan-African cultural identity (matches DB + API)
+  sourceCivilisation?: string
+  guardianOrigin?: string
+  nationFlag?: string
+  servicePort?: number
+  historicalContext?: string
+  whyThisName?: string
   // computed gradient (generated below)
   gradient?: string
 }

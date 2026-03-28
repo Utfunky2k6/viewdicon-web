@@ -29,6 +29,7 @@ interface DrumOtpBoxesProps {
   accentColor?: string
   error?: string
   label?: string
+  isDark?: boolean
 }
 
 export function DrumOtpBoxes({
@@ -38,7 +39,14 @@ export function DrumOtpBoxes({
   accentColor = '#1a7c3e',
   error,
   label = '🥁 TALKING DRUM CODE',
+  isDark = true,
 }: DrumOtpBoxesProps) {
+  // Theme-derived colour tokens — keeps dark as default for backwards compat
+  const textFilled  = isDark ? '#ffffff'               : '#1a0f08'
+  const textEmpty   = isDark ? 'rgba(255,255,255,.22)' : 'rgba(26,15,8,.28)'
+  const bgEmpty     = isDark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.04)'
+  const bgCursor    = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'
+  const borderEmpty = isDark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.13)'
   const inputRefs = [
     React.useRef<HTMLInputElement>(null),
     React.useRef<HTMLInputElement>(null),
@@ -180,14 +188,14 @@ export function DrumOtpBoxes({
                 fontSize: 22,
                 fontWeight: 900,
                 lineHeight: 1,
-                color: filled ? '#ffffff' : 'rgba(255,255,255,.22)',
+                color: filled ? textFilled : textEmpty,
                 background: allFilled
                   ? `linear-gradient(145deg, ${accentColor}45, ${accentColor}22)`
                   : filled
                     ? `linear-gradient(145deg, ${accentColor}30, ${accentColor}14)`
                     : isCursor
-                      ? `rgba(255,255,255,.06)`
-                      : 'rgba(255,255,255,.03)',
+                      ? bgCursor
+                      : bgEmpty,
                 border: `2.5px solid ${
                   allFilled
                     ? accentColor
@@ -195,7 +203,7 @@ export function DrumOtpBoxes({
                       ? `${accentColor}cc`
                       : isCursor
                         ? `${accentColor}55`
-                        : 'rgba(255,255,255,.1)'
+                        : borderEmpty
                 }`,
                 outline: 'none',
                 boxShadow: allFilled

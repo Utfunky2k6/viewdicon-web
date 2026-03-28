@@ -8,8 +8,12 @@ import { useParams, useRouter } from 'next/navigation'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
 import { TOOL_REGISTRY, type ToolDefinition } from '@/constants/tools'
 import { useVillageStore } from '@/stores/villageStore'
-import { VILLAGE_TOOL_MAP } from '@/lib/village-tool-map'
 import { VillageFlagBg } from '@/components/village/VillageFlagBg'
+
+type ApiRoleTool = {
+  id: string; villageId: string; roleKey: string; toolKey: string
+  toolName: string; earnsCowrie: boolean; opensSession: boolean
+}
 
 /* ── CSS ── */
 const INJ = 'vd-village-detail-css'
@@ -173,6 +177,16 @@ export default function VillageDetailPage() {
   const [joined, setJoined] = React.useState(false)
   // accordion: track which role sections are collapsed
   const [collapsedRoles, setCollapsedRoles] = React.useState<Set<string>>(new Set())
+  // live API data
+  const [apiToolMap, setApiToolMap] = React.useState<Record<string, ApiRoleTool[]>>({})
+  const [liveStats, setLiveStats] = React.useState<{ memberCount: number; toolCount: number; activeSessionCount: number } | null>(null)
+  const [liveVillage, setLiveVillage] = React.useState<{
+    ancientName?: string; meaning?: string; nationFlag?: string
+    historicalContext?: string; whyThisName?: string
+    guardianDescription?: string; guardianOrigin?: string
+    sourceCivilisation?: string; historicalEra?: string
+    memberCount?: number
+  } | null>(null)
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -184,6 +198,38 @@ export default function VillageDetailPage() {
   React.useEffect(() => {
     const j = localStorage.getItem('afk_joined_villages')
     if (j) { try { setJoined(JSON.parse(j).includes(villageId)) } catch {} }
+  }, [villageId])
+
+  // Load tools + stats from village-registry
+  React.useEffect(() => {
+    if (!villageId) return
+    fetch(`/api/v1/villages/${villageId}/tools`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { ok: boolean; data: ApiRoleTool[] } | null) => {
+        if (!data?.data) return
+        const map: Record<string, ApiRoleTool[]> = {}
+        for (const t of data.data) {
+          if (!map[t.roleKey]) map[t.roleKey] = []
+          map[t.roleKey].push(t)
+        }
+        setApiToolMap(map)
+      })
+      .catch(() => {})
+
+    fetch(`/api/v1/villages/${villageId}/stats`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { ok: boolean; data: { memberCount: number; toolCount: number; activeSessionCount: number } } | null) => {
+        if (data?.data) setLiveStats(data.data)
+      })
+      .catch(() => {})
+
+    // Fetch full village cultural data
+    fetch(`/api/v1/villages/${villageId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { ok: boolean; data: Record<string, unknown> } | null) => {
+        if (data?.data) setLiveVillage(data.data as any)
+      })
+      .catch(() => {})
   }, [villageId])
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000) }
@@ -198,24 +244,56 @@ export default function VillageDetailPage() {
     )
   }
 
-  const stats = VILLAGE_STATS[villageId] || EMPTY_STATS
   const ai = VILLAGE_AI[villageId] || { name: 'Village Oracle', powers: [] }
-  const toolMap = VILLAGE_TOOL_MAP[villageId] || {}
   const roles = village.roles || []
+  const hasApiTools = Object.keys(apiToolMap).length > 0
 
-  /* ── all roles + their tools ── */
+  /* ── merge API tools with TOOL_REGISTRY for icon/desc ── */
   const allRoleTools = React.useMemo(() => {
-    return roles.map(role => ({
-      role,
-      tools: (toolMap[role.key] || []).map((k: string) => TOOL_REGISTRY[k]).filter(Boolean) as ToolDefinition[],
-    }))
-  }, [roles, toolMap])
+    return roles.map(role => {
+      let tools: ToolDefinition[]
+      if (hasApiTools) {
+        const apiTools = apiToolMap[role.key] || []
+        tools = apiTools.map(at => {
+          const base = TOOL_REGISTRY[at.toolKey]
+          if (base) {
+            return {
+              ...base,
+              cowrieFlow: at.earnsCowrie ? 'earns' : 'neutral',
+              opensBusinessSession: at.opensSession,
+            } as ToolDefinition
+          }
+          // API tool not in local registry — create minimal def
+          return {
+            key: at.toolKey,
+            name: at.toolName,
+            icon: '🛠',
+            description: `${at.toolName} tool`,
+            category: 'professional',
+            opensBusinessSession: at.opensSession,
+            cowrieFlow: at.earnsCowrie ? 'earns' : 'neutral',
+          } as ToolDefinition
+        })
+      } else {
+        // fallback: no API data yet, show empty
+        tools = []
+      }
+      return { role, tools }
+    })
+  }, [roles, apiToolMap, hasApiTools])
 
   const totalToolCount = React.useMemo(() => {
+    if (liveStats) return liveStats.toolCount
     const s = new Set<string>()
-    Object.values(toolMap).forEach((arr: string[]) => arr.forEach(k => s.add(k)))
+    Object.values(apiToolMap).forEach((arr) => arr.forEach(t => s.add(t.toolKey)))
     return s.size
-  }, [toolMap])
+  }, [apiToolMap, liveStats])
+
+  const stats = {
+    members: liveStats?.memberCount ?? liveVillage?.memberCount ?? 0,
+    sessions: liveStats?.activeSessionCount ?? 0,
+    cowrie: '₡0',
+  }
 
   /* ── flat search across all roles ── */
   const searchResults = React.useMemo(() => {
@@ -256,6 +334,20 @@ export default function VillageDetailPage() {
   /* ── route to the tool shell ── */
   const handleLaunchTool = (tool: ToolDefinition, roleKey: string) => {
     const p = new URLSearchParams({ village: villageId, role: roleKey })
+    // Fire-and-forget: start a tool session in the background if tool opens sessions
+    if (tool.opensBusinessSession) {
+      const token = typeof window !== 'undefined'
+        ? (JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.accessToken ?? '')
+        : ''
+      fetch('/api/v1/tool-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          userAfroId: JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.user?.afroId ?? '',
+          villageId, roleKey, toolKey: tool.key,
+        }),
+      }).catch(() => {})
+    }
     router.push(`/dashboard/tools/${tool.key}?${p.toString()}`)
   }
 
@@ -359,16 +451,42 @@ export default function VillageDetailPage() {
           ))}
         </div>
 
+        {/* Source Civilisation badge */}
+        {liveVillage?.sourceCivilisation && (
+          <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: `${vc}08`, border: `1px solid ${vc}18`, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>{liveVillage.nationFlag || village.nation?.slice(0,4)}</span>
+            <div>
+              <div style={{ fontSize: 8, fontWeight: 800, color: vc, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{liveVillage.historicalEra}</div>
+              <div style={{ fontSize: 10, color: C.textDim, fontWeight: 500, marginTop: 1 }}>{liveVillage.sourceCivilisation}</div>
+            </div>
+          </div>
+        )}
+
         {/* History */}
         <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ fontSize: 9, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>🏛️ History</div>
-          <p style={{ fontSize: 10.5, color: C.textDim, fontWeight: 500, margin: 0, lineHeight: 1.65 }}>{village.history}</p>
+          <p style={{ fontSize: 10.5, color: C.textDim, fontWeight: 500, margin: 0, lineHeight: 1.65 }}>
+            {liveVillage?.historicalContext || village.history}
+          </p>
         </div>
+
+        {/* Why This Name */}
+        {liveVillage?.whyThisName && (
+          <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 10, background: `${vc}08`, border: `1px solid ${vc}20` }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: vc, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>🌍 Why This Name?</div>
+            <p style={{ fontSize: 10.5, color: C.textDim, fontWeight: 500, margin: 0, lineHeight: 1.65 }}>{liveVillage.whyThisName}</p>
+          </div>
+        )}
 
         {/* Guardian */}
         <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>⚡ Guardian Spirit · {village.guardian}</div>
-          <p style={{ fontSize: 10.5, color: C.textDim, fontWeight: 500, margin: 0, lineHeight: 1.65 }}>{village.guardianDesc}</p>
+          <div style={{ fontSize: 9, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+            ⚡ Guardian Spirit · {village.guardian}
+            {liveVillage?.guardianOrigin && <span style={{ color: C.textDim2, fontWeight: 500 }}> · {liveVillage.guardianOrigin}</span>}
+          </div>
+          <p style={{ fontSize: 10.5, color: C.textDim, fontWeight: 500, margin: 0, lineHeight: 1.65 }}>
+            {liveVillage?.guardianDescription || village.guardianDesc}
+          </p>
         </div>
 
         <button onClick={handleJoin} style={{

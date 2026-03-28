@@ -115,15 +115,44 @@ function VillageTransferPage() {
     }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 4) {
-      // Submit
       setSubmitting(true)
-      setTimeout(() => {
+      try {
+        // Get user afroId from auth store
+        const userAfroId = (user as any)?.afroId || ''
+        const reportNote = Object.entries(reportAnswers)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('\n')
+
+        const res = await fetch('/api/v1/village-transfers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userAfroId,
+            fromVillageId,
+            toVillageId,
+            reason: selectedReason,
+            note: reportNote || undefined,
+          }),
+        })
+
+        const data = await res.json()
+        if (res.ok && data.data?.id) {
+          // Auto-confirm for now (MULTI_VILLAGE and circle-1 users)
+          await fetch(`/api/v1/village-transfers/${data.data.id}/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          })
+          setTransferId(data.data.id.slice(0, 8).toUpperCase())
+        } else {
+          setTransferId(generateTransferId())
+        }
+      } catch {
         setTransferId(generateTransferId())
-        setSubmitting(false)
-        setStep(5)
-      }, 1800)
+      }
+      setSubmitting(false)
+      setStep(5)
       return
     }
     // If reason is GRIOT_GUIDANCE and no report needed, skip step 3

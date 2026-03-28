@@ -198,8 +198,24 @@ export default function VillagesPage() {
     setActiveVillage: s.setActiveVillage,
   }))
 
-  // Fetch live member counts
+  // Fetch user's actual village membership from auth-core + live member counts
   React.useEffect(() => {
+    // Load the authenticated user's real village (set during ceremony)
+    const token = typeof window !== 'undefined'
+      ? (JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.accessToken ?? '')
+      : ''
+    if (token) {
+      fetch('/api/v1/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(me => {
+          if (me?.villageId) {
+            setJoinedIds(prev => { const n = new Set(prev); n.add(me.villageId); return n })
+            setActiveVillage(me.villageId)
+          }
+        })
+        .catch(() => {})
+    }
+    // Load live member counts from village-registry
     fetch('/api/villages')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
@@ -247,6 +263,17 @@ export default function VillagesPage() {
 
     setJoinedIds(prev => { const n = new Set(prev); n.add(id); return n })
     setActiveVillage(id)
+    // Persist to village-registry (fire-and-forget)
+    const token = typeof window !== 'undefined'
+      ? (JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.accessToken ?? '')
+      : ''
+    if (token) {
+      fetch('/api/v1/village-memberships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ villageId: id, roleKey: 'citizen', isPrimary: true }),
+      }).catch(() => {})
+    }
   }
 
   const handleOpen = (id: string) => {
