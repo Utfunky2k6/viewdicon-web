@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation'
 // ── CSS ──────────────────────────────────────────────────────────
 const CSS_ID = 'baobab-css'
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes baobabFade{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes baobabGlow{0%,100%{filter:drop-shadow(0 0 8px rgba(26,124,62,.3))}50%{filter:drop-shadow(0 0 20px rgba(26,124,62,.6))}}
 @keyframes leafFloat{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-6px) rotate(3deg)}}

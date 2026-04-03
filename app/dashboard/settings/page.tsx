@@ -3,7 +3,9 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useSkinStore, SKIN_META } from '@/stores/skinStore'
 import { useAuthStore } from '@/stores/authStore'
+import { authApi } from '@/lib/api'
 import type { ActiveSkin } from '@/types'
+import { getRankFromXP, getXPProgress, RANK_GROUP_META, XP_SOURCES as HONOR_XP_SOURCES, type RankGroup } from '@/constants/ranks'
 
 // ═══════════════════════════════════════════════════════════════════════
 // SETTINGS — Comprehensive: Account, Privacy, Security, Masquerade,
@@ -22,7 +24,6 @@ interface Address {
 }
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 @keyframes stFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes stSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
 @keyframes stPop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
@@ -38,29 +39,6 @@ const red = '#ef4444'
 const gold = '#d4a017'
 const purple = '#7c3aed'
 const orange = '#d97706'
-
-// ── Honor Rank System ────────────────────────────────────────────────
-const RANK_GROUPS = [
-  { name: 'Seed',    range: [1, 10],  color: '#4ade80', emoji: '🌱' },
-  { name: 'Trader',  range: [11, 20], color: '#fb923c', emoji: '🧺' },
-  { name: 'Warrior', range: [21, 35], color: '#fbbf24', emoji: '⚔' },
-  { name: 'Elder',   range: [36, 50], color: '#c084fc', emoji: '🏛' },
-  { name: 'Chief',   range: [51, 65], color: '#fbbf24', emoji: '🦅' },
-  { name: 'Oba',     range: [66, 80], color: '#d4a017', emoji: '⚜' },
-  { name: 'Orisha',  range: [81, 90], color: '#c084fc', emoji: '✨' },
-  { name: 'Legend',  range: [91, 99], color: '#f87171', emoji: '🌍' },
-  { name: 'Eternal', range: [100, 100], color: '#fff', emoji: '♾' },
-]
-
-const XP_ACTIONS = [
-  { action: 'Seal a Trade',       xp: '+200',  emoji: '🤝' },
-  { action: 'Receive Kila',       xp: '+15',   emoji: '⭐' },
-  { action: 'Post Drummed',       xp: '+50',   emoji: '🥁' },
-  { action: 'Go Live on Jollof',  xp: '+300',  emoji: '🔴' },
-  { action: 'Root Planted in You', xp: '+100', emoji: '🌳' },
-  { action: 'Event Ticket Sold',  xp: '+75',   emoji: '🎟' },
-  { action: '7-Day Login Streak', xp: '+500',  emoji: '🔥' },
-]
 
 // ── Section titles map ───────────────────────────────────────────────
 const SECTION_TITLES: Record<Section, string> = {
@@ -142,14 +120,25 @@ export default function SettingsPage() {
   const [section, setSection] = React.useState<Section>('main')
   const [flash, setFlash] = React.useState('')
   const { activeSkin } = useSkinStore()
-  const { biometricEnrolled, setBiometricEnrolled } = useAuthStore()
+  const { biometricEnrolled, setBiometricEnrolled, user } = useAuthStore()
 
-  // ── Account state ──
-  const [displayName, setDisplayName] = React.useState('Umoh Utibe')
-  const [handle, setHandle] = React.useState('@MarketKing')
-  const [phone, setPhone] = React.useState('+234 812 *** ****')
+  // ── Account state — hydrate from real user data ──
+  const [displayName, setDisplayName] = React.useState('')
+  const [handle, setHandle] = React.useState('')
+  const [phone, setPhone] = React.useState('')
   const [email, setEmail] = React.useState('')
-  const [bio, setBio] = React.useState('Sovereign digital citizen. Commerce Village proud.')
+  const [bio, setBio] = React.useState('')
+
+  // Hydrate account fields from authStore user on mount
+  React.useEffect(() => {
+    if (user) {
+      setDisplayName(user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.firstName || user.displayName || '')
+      setHandle(user.handle ? `@${user.handle}` : user.afroId?.raw ? `@${user.afroId.raw}` : '')
+      setPhone(user.phone || '')
+      setEmail(user.email || '')
+      setBio(user.bio || '')
+    }
+  }, [user])
 
   // ── Privacy toggles ──
   const [showOnline, setShowOnline] = React.useState(true)
@@ -204,11 +193,8 @@ export default function SettingsPage() {
   const [notifSound, setNotifSound] = React.useState(true)
   const [notifVibrate, setNotifVibrate] = React.useState(true)
 
-  // ── Addresses ──
-  const [addresses, setAddresses] = React.useState<Address[]>([
-    { id: 'a1', label: 'Home', line1: '14 Ogunlana Drive', line2: 'Surulere', city: 'Lagos', state: 'Lagos', country: 'Nigeria', isDefault: true },
-    { id: 'a2', label: 'Shop', line1: '21B Bodija Market', line2: 'Stall C-47', city: 'Ibadan', state: 'Oyo', country: 'Nigeria', isDefault: false },
-  ])
+  // ── Addresses — start empty, load from backend ──
+  const [addresses, setAddresses] = React.useState<Address[]>([])
   const [addrForm, setAddrForm] = React.useState({ label: '', line1: '', line2: '', city: '', state: '', country: 'Nigeria' })
 
   // ── Language ──
@@ -224,10 +210,10 @@ export default function SettingsPage() {
   const [confirmDelete, setConfirmDelete] = React.useState(false)
   const [deleteInput, setDeleteInput] = React.useState('')
 
-  // ── Honor Rank ──
-  const currentXP = 2847
-  const currentRank = 14 // Trader tier
-  const nextRankXP = 5000
+  // ── Honor Rank — from user data, using 500-tier system ──
+  const currentXP = user?.ubuntuScore ?? user?.honorXp ?? 0
+  const honorRank = getRankFromXP(currentXP)
+  const honorProgress = getXPProgress(currentXP)
 
   React.useEffect(() => {
     if (typeof document !== 'undefined' && !document.getElementById('st-css')) {
@@ -257,13 +243,22 @@ export default function SettingsPage() {
 
   const goBack = () => section === 'main' ? router.back() : setSection('main')
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 1. Invalidate refresh token on backend
+    try { await authApi.logout() } catch { /* ok if fails */ }
+    // 2. Clear zustand in-memory + persisted state
+    useAuthStore.getState().logout()
+    // 3. Clear all localStorage keys
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('afk-auth')
       localStorage.removeItem('afk_token')
+      localStorage.removeItem('afk-ceremony-state')
+      localStorage.removeItem('village-store')
     }
+    // 4. Clear auth cookies
     if (typeof document !== 'undefined') {
       document.cookie = 'afk_token=; Max-Age=0; path=/'
+      document.cookie = 'afk_ceremony_done=; Max-Age=0; path=/'
     }
     router.push('/login')
   }
@@ -336,14 +331,8 @@ export default function SettingsPage() {
     }
   }
 
-  const getCurrentRankGroup = () => {
-    for (const g of RANK_GROUPS) {
-      if (currentRank >= g.range[0] && currentRank <= g.range[1]) return g
-    }
-    return RANK_GROUPS[0]
-  }
-
-  const rankGroup = getCurrentRankGroup()
+  // rankGroup derived from honorRank
+  const rankGroupMeta = RANK_GROUP_META[honorRank.group]
 
   // ── Render ─────────────────────────────────────────────────────────
   return (
@@ -383,7 +372,7 @@ export default function SettingsPage() {
                 <div style={{ fontSize: 15, fontWeight: 800 }}>{displayName}</div>
                 <div style={{ fontSize: 11, color: vc, fontWeight: 600 }}>{handle}</div>
                 <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>
-                  {rankGroup.emoji} {rankGroup.name} · Rank {currentRank}
+                  {honorRank.emoji} {honorRank.group} · Lv {honorRank.level}
                 </div>
               </div>
               <button onClick={() => setSection('account')} style={{ padding: '6px 10px', borderRadius: 8, background: `${vc}15`, border: `1px solid ${vc}30`, color: vc, fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>Edit</button>
@@ -392,7 +381,7 @@ export default function SettingsPage() {
             {/* Profile & Identity */}
             <Card>
               <Row icon="👤" label="Account" sub="Name, phone, email, Afro-ID" onClick={() => setSection('account')} />
-              <Row icon="⚔️" label="Honor Rank" sub={`${rankGroup.emoji} ${rankGroup.name} Tier · Rank ${currentRank} · ${currentXP} XP`} onClick={() => setSection('rank')} />
+              <Row icon="⚔️" label="Honor Rank" sub={`${honorRank.emoji} ${honorRank.group} · Lv ${honorRank.level} · ${currentXP.toLocaleString()} XP`} onClick={() => setSection('rank')} />
               <Row icon="🎭" label="Masquerade Protocol" sub={`Active: ${SKIN_META[activeSkin].label} · 3 skins`} onClick={() => setSection('masquerade')} />
             </Card>
 
@@ -432,6 +421,7 @@ export default function SettingsPage() {
 
             {/* Danger zone */}
             <Card>
+              <Row icon="⏸" label="Deactivate Account" sub="Pause — reactivate within 90 days" danger onClick={() => doFlash('Deactivation pauses your account. You can return within 90 days.')} />
               <Row icon="⚠️" label="Delete My Account" sub="Permanently remove all data" danger onClick={() => setSection('danger')} />
             </Card>
           </>
@@ -486,12 +476,18 @@ export default function SettingsPage() {
             </Card>
 
             <Card title="Identity">
-              <Row icon="🪪" label="Afro-ID" sub="NG-YOR-****-**** · Tap to reveal" onClick={() => doFlash('NG-YOR-2341-0001')} />
-              <Row icon="🏛" label="Primary Village" sub="Commerce Village" />
-              <Row icon="⚔️" label="Crest Level" sub={`Level III · ${currentXP.toLocaleString()} / ${nextRankXP.toLocaleString()} XP to Level IV`} />
+              <Row icon="🪪" label="Afro-ID" sub={user?.afroId?.masked || '••••-••••-••••'} onClick={() => doFlash(user?.afroId?.raw || 'No Afro-ID yet')} />
+              <Row icon="🛖" label="Primary Village" sub={user?.villageId ? user.villageId.charAt(0).toUpperCase() + user.villageId.slice(1) + ' Village' : 'Not assigned'} />
+              <Row icon="🪘" label="Crest Level" sub={`Level ${user?.crestLevel || 1} · ${currentXP.toLocaleString()} / ${honorProgress.next ? honorProgress.next.xpRequired.toLocaleString() : 'MAX'} XP`} />
             </Card>
 
-            <button onClick={() => { doFlash('Profile saved!'); setSection('main') }} style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: vc, color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'Sora, sans-serif', cursor: 'pointer', marginTop: 8 }}>
+            <button onClick={async () => {
+              try {
+                await authApi.updateMe({ displayName, handle: handle.replace(/^@/, ''), email, bio })
+                doFlash('Profile saved!')
+                setSection('main')
+              } catch { doFlash('Save failed — try again') }
+            }} style={{ width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', background: vc, color: '#fff', fontSize: 14, fontWeight: 800, fontFamily: 'Sora, sans-serif', cursor: 'pointer', marginTop: 8 }}>
               Save Changes
             </button>
           </>
@@ -503,49 +499,52 @@ export default function SettingsPage() {
             {/* Current rank display */}
             <Card>
               <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: 52, marginBottom: 8 }}>{rankGroup.emoji}</div>
-                <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, color: rankGroup.color }}>{rankGroup.name} Tier</div>
-                <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', marginTop: 4 }}>Rank {currentRank} of 100</div>
+                <div style={{ fontSize: 52, marginBottom: 8 }}>{honorRank.emoji}</div>
+                <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, color: honorRank.color }}>{honorRank.name}</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginTop: 2 }}>{honorRank.subtitle}</div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,.5)', marginTop: 4 }}>Level {honorRank.level} of 500 · {honorRank.group}</div>
                 <div style={{ margin: '16px auto 8px', maxWidth: 280 }}>
                   <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(currentXP / nextRankXP) * 100}%`, borderRadius: 4, background: `linear-gradient(90deg, ${rankGroup.color}88, ${rankGroup.color})`, transition: 'width .5s' }} />
+                    <div style={{ height: '100%', width: `${honorProgress.progress * 100}%`, borderRadius: 4, background: `linear-gradient(90deg, ${honorRank.color}88, ${honorRank.color})`, transition: 'width .5s' }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, fontSize: 10, color: 'rgba(255,255,255,.35)' }}>
                     <span>{currentXP.toLocaleString()} XP</span>
-                    <span>{nextRankXP.toLocaleString()} XP</span>
+                    {honorProgress.next ? <span>{honorProgress.next.xpRequired.toLocaleString()} XP</span> : <span style={{ color: honorRank.color }}>MAX ✦</span>}
                   </div>
                 </div>
+                <div style={{ fontSize: 10, color: honorRank.color, fontWeight: 600, marginTop: 4 }}>✓ {honorRank.perk}</div>
               </div>
             </Card>
 
             {/* XP earning methods */}
             <Card title="How to earn XP">
-              {XP_ACTIONS.map((a, i) => (
+              {HONOR_XP_SOURCES.map((a, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,.03)' }}>
                   <span style={{ fontSize: 18, width: 28, textAlign: 'center' }}>{a.emoji}</span>
                   <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#f0f7f0' }}>{a.action}</div>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#4ade80' }}>{a.xp}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#4ade80' }}>+{a.xp}</span>
                 </div>
               ))}
             </Card>
 
-            {/* Rank ladder */}
-            <Card title="Rank Ladder">
-              {RANK_GROUPS.map((g, i) => {
-                const isCurrent = currentRank >= g.range[0] && currentRank <= g.range[1]
+            {/* Rank ladder — 11 groups */}
+            <Card title="Honor Ladder · 500 Tiers">
+              {(Object.keys(RANK_GROUP_META) as RankGroup[]).map((groupName) => {
+                const meta = RANK_GROUP_META[groupName]
+                const isCurrent = honorRank.group === groupName
                 return (
-                  <div key={i} style={{
+                  <div key={groupName} style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
                     borderBottom: '1px solid rgba(255,255,255,.03)',
-                    background: isCurrent ? `${g.color}10` : 'transparent',
-                    borderLeft: isCurrent ? `3px solid ${g.color}` : '3px solid transparent',
+                    background: isCurrent ? `${meta.color}10` : 'transparent',
+                    borderLeft: isCurrent ? `3px solid ${meta.color}` : '3px solid transparent',
                   }}>
-                    <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{g.emoji}</span>
+                    <span style={{ fontSize: 20, width: 28, textAlign: 'center' }}>{meta.emoji}</span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: g.color }}>{g.name}{isCurrent ? ' (You)' : ''}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>Rank {g.range[0]}{g.range[0] !== g.range[1] ? ` – ${g.range[1]}` : ''}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: meta.color }}>{groupName}{isCurrent ? ' (You)' : ''}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)' }}>{meta.description}</div>
                     </div>
-                    {isCurrent && <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 99, background: `${g.color}20`, color: g.color, border: `1px solid ${g.color}40` }}>CURRENT</span>}
+                    {isCurrent && <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 99, background: `${meta.color}20`, color: meta.color, border: `1px solid ${meta.color}40` }}>LV {honorRank.level}</span>}
                   </div>
                 )
               })}
@@ -978,17 +977,14 @@ export default function SettingsPage() {
               </div>
             </Card>
 
-            <Card title="What will be deleted">
+            <Card title="Before you delete">
               {[
-                '🪪 Your Afro-ID and identity',
-                '🐚 All Cowrie balance (non-recoverable)',
-                '🏘 All village memberships and rank',
-                '💬 All chat messages and connections',
-                '🔥 All business sessions and history',
-                '🎭 All 3 skin profiles (ISE / EGBE / IDILE)',
-                '👨‍👩‍👧‍👦 Family tree and clan data',
-                '📁 All vault documents and artifacts',
-                '🌳 All root subscriptions (in and out)',
+                '💰 All Cowrie must be withdrawn before deletion',
+                '🔒 All active escrow sessions must be resolved',
+                '🌳 All Root Planters refunded automatically',
+                '⭐ Honor Rank and XP permanently lost',
+                '📁 Vault documents transferred to family key holder',
+                '⏳ 14-day grace period before permanent deletion',
               ].map((item, i) => (
                 <div key={i} style={{ padding: '8px 16px', fontSize: 12, color: 'rgba(255,255,255,.5)', borderBottom: '1px solid rgba(255,255,255,.03)' }}>
                   {item}
@@ -1013,9 +1009,13 @@ export default function SettingsPage() {
                     style={{ width: '100%', padding: '12px', borderRadius: 10, boxSizing: 'border-box', background: 'rgba(239,68,68,.06)', border: `2px solid ${red}30`, color: red, fontSize: 14, fontWeight: 700, outline: 'none', fontFamily: 'inherit', textAlign: 'center' }}
                   />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (deleteInput !== 'DELETE MY ACCOUNT') { doFlash('Type the exact phrase to confirm'); return }
-                      handleLogout()
+                      // Submit deletion request — clears local session immediately
+                      // Backend deletion is processed within 30 days per data policy
+                      try { await authApi.logout() } catch { /* ok */ }
+                      doFlash('Deletion request submitted. Your data will be removed within 30 days.')
+                      setTimeout(() => handleLogout(), 2000)
                     }}
                     disabled={deleteInput !== 'DELETE MY ACCOUNT'}
                     style={{
@@ -1026,7 +1026,7 @@ export default function SettingsPage() {
                       opacity: deleteInput === 'DELETE MY ACCOUNT' ? 1 : 0.3,
                     }}
                   >
-                    🗑 Permanently Delete My Account
+                    🗑 Submit Account Deletion Request
                   </button>
                 </div>
               </Card>

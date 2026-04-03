@@ -359,7 +359,6 @@ function generateAIResponse(tool: ToolDefinition, question: string, formData: Re
 
 // ── CSS ──────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 @keyframes tlFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tlPulse{0%,100%{opacity:1}50%{opacity:.6}}
 @keyframes tlSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}

@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 // Protected routes require auth token
 const PROTECTED = ['/dashboard']
-// Auth routes — redirect to dashboard if already logged in
+// Auth routes — redirect to dashboard if already logged in (NOT ceremony — new users need it)
 const AUTH_ROUTES = ['/login', '/register']
-
-// Dev mode: allow all traffic through without auth checks
-const DEV_MODE = process.env.NODE_ENV === 'development'
 
 // ── Rate limiter (in-memory, per-IP) ─────────────────────────
 const rateMap = new Map<string, { count: number; reset: number }>()
@@ -30,7 +27,7 @@ const SUSPICIOUS_PATTERNS = [
   /javascript:/i,
   /on\w+\s*=/i,        // onerror=, onclick= etc
   /data:text\/html/i,
-  /\.\.\//g,            // path traversal
+  /\.\.\//,             // path traversal (no g flag — prevents alternating bypass)
   /%3cscript/i,         // URL-encoded <script
   /union\s+select/i,    // SQL injection
   /;\s*drop\s+/i,       // SQL drop
@@ -47,8 +44,9 @@ export function middleware(req: NextRequest) {
     || req.headers.get('x-real-ip')
     || 'unknown'
 
-  // ── Rate limiting (API routes only) ──
-  if (pathname.startsWith('/api/')) {
+  // ── Rate limiting (API routes only — skip for localhost/internal) ──
+  const isLocalhost = ip === '127.0.0.1' || ip === '::1' || ip === 'unknown'
+  if (pathname.startsWith('/api/') && !isLocalhost) {
     if (!checkRateLimit(ip)) {
       return new NextResponse(JSON.stringify({ error: 'Too many requests. Slow down.' }), {
         status: 429,
@@ -71,9 +69,6 @@ export function middleware(req: NextRequest) {
     })
   }
 
-  // In development, let everything through — no auth barriers
-  if (DEV_MODE) return NextResponse.next()
-
   const token = req.cookies.get('afk_token')?.value
     || req.headers.get('authorization')?.replace('Bearer ', '')
 
@@ -87,9 +82,29 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (isAuthRoute && token) {
+  // Fix 2: Accept both 'true' and '1' for legacy support
+  const ceremonyCookie = req.cookies.get('afk_ceremony_done')?.value
+  const ceremonyDone = ceremonyCookie === 'true' || ceremonyCookie === '1'
+  const isCeremony   = pathname.startsWith('/ceremony')
+
+  // Case 1: Trying to access dashboard without ceremony
+  if (isProtected && token && !ceremonyDone) {
+    const url = req.nextUrl.clone()
+    url.pathname = '/ceremony'
+    return NextResponse.redirect(url)
+  }
+
+  // Case 2: Trying to access ceremony when already done
+  if (isCeremony && token && ceremonyDone) {
     const url = req.nextUrl.clone()
     url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
+  // Case 3: Logged in users trying to access login/register
+  if (isAuthRoute && token) {
+    const url = req.nextUrl.clone()
+    url.pathname = ceremonyDone ? '/dashboard' : '/ceremony'
     return NextResponse.redirect(url)
   }
 
@@ -104,6 +119,7 @@ export const config = {
     '/dashboard/:path*',
     '/login',
     '/register',
+    '/ceremony',
     '/api/:path*',
   ],
 }

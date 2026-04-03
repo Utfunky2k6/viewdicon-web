@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation'
 
 const CSS_ID = 'explore-css'
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes exFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes exPulse{0%,100%{opacity:.7}50%{opacity:1}}
 .ex-fade{animation:exFade .35s ease both}

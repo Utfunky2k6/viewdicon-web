@@ -1,59 +1,65 @@
 'use client'
+import Image from 'next/image'
 
-const GRAD = 'linear-gradient(to right, #1a7c3e, #b22222)'
+const LOGO_CSS_ID = 'vi-logo-fx'
+const LOGO_CSS = `
+@keyframes viGlow{0%,100%{filter:drop-shadow(0 0 6px rgba(26,124,62,.5))}50%{filter:drop-shadow(0 0 14px rgba(26,124,62,.8))}}
+@keyframes viRingSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes viPulse{0%,100%{opacity:.6;transform:scale(.95)}50%{opacity:1;transform:scale(1.05)}}
+`
 
-/** Full animated logo with spinning tri-color ring + vi letters + wordmark */
+function injectCSS() {
+  if (typeof document !== 'undefined' && !document.getElementById(LOGO_CSS_ID)) {
+    const s = document.createElement('style')
+    s.id = LOGO_CSS_ID
+    s.textContent = LOGO_CSS
+    document.head.appendChild(s)
+  }
+}
+
+/** Full logo with animated glow + wordmark */
 export function ViewdiconLogo({ size = 76 }: { size?: number }) {
-  const inner = size * 0.79 // inset ratio
-  const fontSize = size * 0.37
-  const dotSize = Math.max(5, size * 0.09)
-
+  if (typeof window !== 'undefined') injectCSS()
+  const ringW = Math.max(2, size * 0.03)
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative" style={{ width: size, height: size }}>
-        {/* Spinning tri-color ring */}
-        <div
-          className="absolute inset-0 rounded-full animate-spin"
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: size, height: size }}>
+        {/* Outer spinning ring */}
+        <div style={{
+          position: 'absolute', inset: -4, borderRadius: '50%',
+          border: `${ringW}px solid transparent`,
+          borderTopColor: '#1a7c3e', borderRightColor: '#d4a017', borderBottomColor: '#b22222',
+          animation: 'viRingSpin 4s linear infinite',
+          opacity: 0.7,
+        }} />
+        {/* Subtle pulse ring */}
+        <div style={{
+          position: 'absolute', inset: -8, borderRadius: '50%',
+          border: '1px solid rgba(26,124,62,.15)',
+          animation: 'viPulse 3s ease-in-out infinite',
+        }} />
+        {/* Logo image — transparent PNG, no white */}
+        <Image
+          src="/logo-clean.png"
+          alt="Viewdicon"
+          width={size}
+          height={size}
+          priority
           style={{
-            border: `${Math.max(2, size * 0.033)}px solid transparent`,
-            borderTopColor: '#1a7c3e',
-            borderRightColor: '#d4a017',
-            borderBottomColor: '#b22222',
-            animationDuration: '3s',
+            width: size, height: size, objectFit: 'contain',
+            animation: 'viGlow 3s ease-in-out infinite',
           }}
         />
-        {/* Inner circle with vi letters */}
-        <div
-          className="absolute rounded-full flex items-center justify-center"
-          style={{
-            inset: size - inner > 0 ? (size - inner) / 2 : 6,
-            background: 'rgba(255,255,255,0.04)',
-          }}
-        >
-          <div className="flex items-center gap-px font-black leading-none" style={{ fontSize }}>
-            <span style={{ color: '#1a7c3e' }}>v</span>
-            <span className="relative" style={{ color: '#b22222' }}>
-              i
-              <div
-                className="absolute rounded-full"
-                style={{
-                  top: -dotSize * 0.7,
-                  right: -dotSize * 0.4,
-                  width: dotSize,
-                  height: dotSize,
-                  background: '#d4a017',
-                }}
-              />
-            </span>
-          </div>
-        </div>
       </div>
       <div
-        className="font-extrabold lowercase mt-1.5"
         style={{
+          fontFamily: "'Sora', sans-serif",
           fontSize: Math.max(10, size * 0.16),
-          letterSpacing: '0.1em',
-          background: GRAD,
+          fontWeight: 800,
+          letterSpacing: '0.12em',
+          textTransform: 'lowercase',
+          marginTop: 8,
+          background: 'linear-gradient(to right, #1a7c3e, #d4a017, #b22222)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
         }}
@@ -64,52 +70,53 @@ export function ViewdiconLogo({ size = 76 }: { size?: number }) {
   )
 }
 
-/** Mini logo used in headers and step screens (icon + wordmark inline) */
-export function ViewdiconMini() {
+/** Mini logo — icon + wordmark inline */
+export function ViewdiconMini({ size = 26 }: { size?: number }) {
+  if (typeof window !== 'undefined') injectCSS()
   return (
-    <div className="flex items-center gap-2">
-      <div
-        className="w-[26px] h-[26px] rounded-[7px] flex items-center justify-center text-[11px] font-black text-white"
-        style={{ background: GRAD }}
-      >
-        vi
-      </div>
-      <span className="text-xs font-extrabold" style={{ color: '#1a7c3e' }}>viewdicon</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <Image
+        src="/logo-clean.png"
+        alt="Vi"
+        width={size}
+        height={size}
+        style={{
+          width: size, height: size, objectFit: 'contain',
+          filter: 'drop-shadow(0 0 4px rgba(26,124,62,.4))',
+        }}
+      />
+      <span style={{
+        fontSize: 12, fontWeight: 800, color: '#1a7c3e',
+        fontFamily: "'Sora', sans-serif", letterSpacing: '0.08em',
+      }}>viewdicon</span>
     </div>
   )
 }
 
-/** Tiny icon-only logo for TopBar / nav (no wordmark) */
+/** Tiny icon for TopBar / nav — with subtle glow */
 export function ViewdiconIcon({ size = 28 }: { size?: number }) {
-  const dotSize = Math.max(3, size * 0.15)
+  if (typeof window !== 'undefined') injectCSS()
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <div
-        className="absolute inset-0 rounded-full animate-spin"
+    <div style={{ position: 'relative', width: size, height: size }}>
+      {/* Thin spinning accent ring */}
+      <div style={{
+        position: 'absolute', inset: -2, borderRadius: '50%',
+        border: '1.5px solid transparent',
+        borderTopColor: '#1a7c3e', borderRightColor: '#d4a017', borderBottomColor: '#b22222',
+        animation: 'viRingSpin 4s linear infinite',
+        opacity: 0.5,
+      }} />
+      <Image
+        src="/logo-clean.png"
+        alt="Vi"
+        width={size}
+        height={size}
+        priority
         style={{
-          border: '1.5px solid transparent',
-          borderTopColor: '#1a7c3e',
-          borderRightColor: '#d4a017',
-          borderBottomColor: '#b22222',
-          animationDuration: '3s',
+          width: size, height: size, objectFit: 'contain',
+          filter: 'drop-shadow(0 0 3px rgba(26,124,62,.35))',
         }}
       />
-      <div className="flex items-center gap-px font-black leading-none" style={{ fontSize: size * 0.4 }}>
-        <span style={{ color: '#1a7c3e' }}>v</span>
-        <span className="relative" style={{ color: '#b22222' }}>
-          i
-          <div
-            className="absolute rounded-full"
-            style={{
-              top: -dotSize * 0.5,
-              right: -dotSize * 0.3,
-              width: dotSize,
-              height: dotSize,
-              background: '#d4a017',
-            }}
-          />
-        </span>
-      </div>
     </div>
   )
 }

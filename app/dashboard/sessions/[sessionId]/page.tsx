@@ -93,7 +93,6 @@ const MY_AFRO_ID = 'NG-LAG-0001-0001'
 
 // ── CSS ────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes pulseGlow{0%,100%{box-shadow:0 0 6px rgba(26,124,62,.3)}50%{box-shadow:0 0 20px rgba(26,124,62,.6)}}
 @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}

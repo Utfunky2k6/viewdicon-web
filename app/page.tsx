@@ -2,10 +2,10 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ViewdiconLogo } from '@/components/ui/ViewdiconLogo'
 
 // ── CSS injected once ────────────────────────────────────────
 const SPLASH_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 
 @keyframes orbit  { to { transform: rotate(360deg) } }
 @keyframes levitate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
@@ -69,62 +69,7 @@ function getTimeData(): { icon: string; word: string; verse: string } {
 function ViLogo() {
   return (
     <div className="vi-a6" style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:20 }}>
-      {/* Orbital ring system */}
-      <div style={{ position:'relative', width:96, height:96 }}>
-        {/* Ring 1 – green teal */}
-        <div style={{
-          position:'absolute', inset:0, borderRadius:'50%',
-          border:'2.5px solid transparent',
-          borderTopColor:'#1a7c3e', borderRightColor:'rgba(26,124,62,.25)',
-          animation:'orbit 4s linear infinite',
-        }} />
-        {/* Ring 2 – gold, counter-spin */}
-        <div style={{
-          position:'absolute', inset:9, borderRadius:'50%',
-          border:'2px solid transparent',
-          borderBottomColor:'#d4a017', borderLeftColor:'rgba(212,160,23,.25)',
-          animation:'orbit 6s linear infinite reverse',
-        }} />
-        {/* Ring 3 – crimson */}
-        <div style={{
-          position:'absolute', inset:18, borderRadius:'50%',
-          border:'1.5px solid transparent',
-          borderTopColor:'#b22222', borderRightColor:'rgba(178,34,34,.2)',
-          animation:'orbit 9s linear infinite',
-        }} />
-        {/* Core */}
-        <div style={{
-          position:'absolute', inset:27, borderRadius:'50%',
-          background:'rgba(26,124,62,.1)',
-          border:'1px solid rgba(26,124,62,.3)',
-          display:'flex', alignItems:'center', justifyContent:'center',
-          animation:'pulse-glow 3s ease-in-out infinite',
-        }}>
-          {/* Vi glyph */}
-          <div style={{ display:'flex', alignItems:'baseline', gap:1, fontFamily:"'Sora',sans-serif", fontSize:18, fontWeight:900, lineHeight:1 }}>
-            <span style={{ color:'#1a7c3e' }}>v</span>
-            <span style={{ color:'#b22222', position:'relative' }}>
-              i
-              <span style={{
-                position:'absolute', top:-5, right:-3,
-                width:7, height:7, borderRadius:'50%',
-                background:'#d4a017',
-                boxShadow:'0 0 8px rgba(212,160,23,.8)',
-                display:'block',
-              }} />
-            </span>
-          </div>
-        </div>
-      </div>
-      {/* Wordmark */}
-      <div style={{
-        fontFamily:"'Sora',sans-serif", fontSize:12, fontWeight:800,
-        letterSpacing:'0.18em', textTransform:'uppercase', marginTop:10,
-        background:'linear-gradient(to right, #1a7c3e, #d4a017, #b22222)',
-        WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
-      }}>
-        viewdicon
-      </div>
+      <ViewdiconLogo size={96} />
     </div>
   )
 }
@@ -134,7 +79,22 @@ export default function LandingPage() {
   const router = useRouter()
   const { icon, word, verse } = getTimeData()
 
-  React.useEffect(() => { injectCSS() }, [])
+  React.useEffect(() => {
+    injectCSS()
+    // Redirect authenticated users based on ceremony status
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie
+      const hasCeremonyDone = cookies.includes('afk_ceremony_done=true') || cookies.includes('afk_ceremony_done=1')
+      // Robust token check — cookie name present (not just 'ey' prefix assumption)
+      const hasToken = cookies.split(';').some(c => c.trim().startsWith('afk_token=') && c.trim().length > 'afk_token='.length + 5)
+      if (hasToken && hasCeremonyDone) {
+        router.replace('/dashboard')
+      } else if (hasToken && !hasCeremonyDone) {
+        // Has a token but hasn't finished ceremony — send back to finish
+        router.replace('/ceremony')
+      }
+    }
+  }, [router])
 
   return (
     <main style={{

@@ -20,13 +20,39 @@ interface AjoCircleData {
 export default function AjoCard({ mode }: { mode: ThemeMode }) {
   const isDark = mode === 'dark'
   const [circle, setCircle] = React.useState<AjoCircleData | null>(null)
+  const [isOffline, setIsOffline] = React.useState(false)
 
   React.useEffect(() => {
     fetch('/api/v1/ajo/my-circle')
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => { if (data?.circleId) setCircle(data) })
-      .catch(() => {})
+      .then(async res => {
+        if (res.status === 503) {
+          setIsOffline(true)
+          return null
+        }
+        return res.ok ? res.json() : null
+      })
+      .then(data => { 
+        if (data?.error?.code === 'STABILIZED_OFFLINE_MODE') {
+          setIsOffline(true)
+        } else if (data?.circleId) {
+          setCircle(data) 
+        }
+      })
+      .catch(() => setIsOffline(true))
   }, [])
+
+  if (isOffline) {
+    return (
+      <>
+        <SectionLabel label="⭕ Your Ajo Circle" mode={mode} />
+        <div style={{ margin: '8px 12px', borderRadius: 14, padding: '16px 20px', background: 'rgba(124,58,237,.05)', border: '1px solid rgba(124,58,237,.2)', textAlign: 'center' }}>
+          <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.6 }}>⭕️</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: '#a78bfa', marginBottom: 4 }}>Resonance Stabilization</div>
+          <div style={{ fontSize: 10, color: 'rgba(167,139,250,.6)', lineHeight: 1.5 }}>The banking core is currently synchronizing. Ajo tools will be back online shortly.</div>
+        </div>
+      </>
+    )
+  }
 
   if (!circle) {
     return (

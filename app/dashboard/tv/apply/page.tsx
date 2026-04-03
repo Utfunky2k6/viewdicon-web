@@ -10,7 +10,6 @@ import { TV_VILLAGE_META, SLOT_PRICES, TIER_META, type SlotTier, type ShowCatego
 // ── CSS ──────────────────────────────────────────────────────────────
 const CSS_ID = 'apply-css'
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes applyFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes applyPulse{0%,100%{box-shadow:0 0 0 0 rgba(26,124,62,.4)}50%{box-shadow:0 0 0 8px rgba(26,124,62,0)}}
 @keyframes spinIn{from{transform:rotate(-180deg) scale(0)}to{transform:rotate(0) scale(1)}}

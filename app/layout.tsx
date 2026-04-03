@@ -10,7 +10,15 @@ export const metadata: Metadata = {
   },
   description: 'Where African identity meets sovereign technology. One ID. All of Africa.',
   manifest:    '/manifest.json',
-  icons:       { icon: '/favicon.ico' },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-128.png', sizes: '128x128', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   keywords:    ['Africa', 'AfroID', 'digital identity', 'viewdicon', 'community', 'diaspora'],
 }
 

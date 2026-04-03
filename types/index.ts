@@ -9,6 +9,7 @@ export type HeritagCircle =
   | 'CENTRAL_AFRICA'
   | 'NORTH_AFRICA'
   | 'DIASPORA'
+  | 'ALLY'
 
 export type UbuntuRank = 'SEED' | 'ROOTED' | 'ELDER' | 'SAGE'
 
@@ -131,6 +132,8 @@ export interface PublicProfile {
 export interface UserProfile extends PublicProfile {
   afroId: AfroID           // Layer 1 masked view (raw never sent to client)
   afroIdentity: AfroIdentity
+  firstName?: string       // Given name — from ceremony
+  lastName?: string        // Family name — from ceremony
   fullName?: string        // Legal full name — collected at ceremony
   dateOfBirth?: string     // ISO date string YYYY-MM-DD — private
   gender?: string          // male|female|non-binary|prefer-not-to-say
@@ -139,6 +142,25 @@ export interface UserProfile extends PublicProfile {
   countryCode?: string
   languageCode?: string
   heritage?: string
+  // ── Naming Ceremony fields ──
+  ancestralNation?: string
+  ethnicGroup?: string
+  clanLineage?: string
+  birthSeason?: string
+  motherName?: string
+  fatherName?: string
+  totemAnimal?: string
+  originState?: string
+  originVillage?: string
+  residenceCountry?: string
+  residenceCity?: string
+  occupation?: string
+  // ── Village membership ──
+  villageId?: string
+  roleKey?: string
+  // ── Gamification ──
+  crestLevel?: number   // 1-5 badge level shown on avatar
+  phone?: string        // masked phone, shown in settings (never raw in public profile)
 }
 
 // ============================================================

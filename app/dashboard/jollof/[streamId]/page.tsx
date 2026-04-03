@@ -47,7 +47,6 @@ interface StreamData {
 // ── CSS Keyframes ────────────────────────────────────────────────
 const CSS_ID = 'jollof-viewer-css'
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes liveBlink{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes cowrieUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-80px) scale(1.3);opacity:0}}
 @keyframes messageIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}

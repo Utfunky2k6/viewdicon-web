@@ -6,7 +6,7 @@
 // ============================================================
 import * as React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { WifiOff, Wifi } from 'lucide-react'
+import { SilentDrum, DjembeIcon } from '@/components/ui/afro-icons'
 
 function useNetworkStatus() {
   const [isOnline, setIsOnline] = React.useState(
@@ -69,12 +69,12 @@ export function OfflineBanner() {
           aria-live="polite"
         >
           {isOnline
-            ? <Wifi size={15} />
-            : <WifiOff size={15} />
+            ? <DjembeIcon size={15} />
+            : <SilentDrum size={15} />
           }
           {isOnline
-            ? 'Connection restored'
-            : 'No connection — showing last known data'
+            ? 'The drum speaks again — connection restored'
+            : 'The drum is silent — showing last known data'
           }
         </motion.div>
       )}

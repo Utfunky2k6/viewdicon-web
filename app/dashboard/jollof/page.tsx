@@ -9,7 +9,6 @@ import * as React from 'react'
 /* ── inject-once CSS ── */
 const CSS_ID = 'jollof-css'
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 @keyframes jfFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes livePulse{0%,100%{opacity:.5;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}

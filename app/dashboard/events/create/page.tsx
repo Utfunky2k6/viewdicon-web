@@ -6,7 +6,6 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes ceFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes cePulse{0%,100%{box-shadow:0 0 0 0 rgba(26,124,62,.4)}50%{box-shadow:0 0 0 8px rgba(26,124,62,0)}}
 .ce-fade{animation:ceFade .3s ease both}

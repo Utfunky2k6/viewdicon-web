@@ -13,7 +13,7 @@ import { HeatBar }         from '@/components/ui/HeatBar'
 import { Badge }           from '@/components/ui/Badge'
 import { SkeletonCard, SkeletonPost } from '@/components/ui/Skeleton'
 import { ThemeToggle }     from '@/components/providers/ThemeProvider'
-import { Search, Lock }    from 'lucide-react'
+import { SearchSigil, CompoundDoor } from '@/components/ui/afro-icons'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -88,7 +88,7 @@ export default function DesignSystemPage() {
         {/* Inputs */}
         <Section title="Input — label, error, icons, OTP, password">
           <div className="space-y-4">
-            <Input label="Phone number" placeholder="+234 800 000 0000" leftIcon={<Search size={16} />} />
+            <Input label="Phone number" placeholder="+234 800 000 0000" leftIcon={<SearchSigil size={16} />} />
             <Input label="Password" type="password" placeholder="Enter your secret" />
             <Input label="OTP Code" type="tel" placeholder="000000" hint="Enter the 6-digit code sent to your phone" />
             <Input label="Handle" placeholder="@your_handle" error="Handle already taken" />

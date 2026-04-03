@@ -2,6 +2,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400&display=swap');
 /* Cinzel — classical serif for ancient village names */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&display=swap');
+/* Sora — modern display font for headings and UI chrome */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
+/* DM Sans — clean sans for chat and utility interfaces */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -21,8 +25,10 @@
     --green-light:    #e8f5ee;
     --gold:           #d4a017;  /* royalty, harvest */
     --amber:          #e07b00;
-    --crimson:        #b22222;  /* courage, sacrifice */
+    --crimson:        #d43b3b;  /* courage, sacrifice (slightly richer) */
     --earth:          #8B6914;  /* soil, foundation */
+    --clay:           #B04A2B;  /* earth, pottery */
+    --savannah:       #EAB308;  /* sun, harvest */
     --cream:          #faf3e0;  /* parchment, ancestral */
 
     /* 5 Orisha AI agent colours */
@@ -174,15 +180,21 @@
 
 /* Gye Nyame symbol — supremacy of God, used sparingly at 4% opacity */
 .bg-adinkra {
-  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='16' fill='none' stroke='%231a7c3e' stroke-width='1.5'/%3E%3Ccircle cx='40' cy='40' r='8' fill='none' stroke='%231a7c3e' stroke-width='1'/%3E%3Cline x1='40' y1='20' x2='40' y2='60' stroke='%231a7c3e' stroke-width='1'/%3E%3Cline x1='20' y1='40' x2='60' y2='40' stroke='%231a7c3e' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: 80px 80px;
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 20 L40 60 L80 60 Z M40 80 L60 100 L80 80 Z' fill='none' stroke='%231a7c3e' stroke-width='0.5'/%3E%3Ccircle cx='60' cy='60' r='10' fill='none' stroke='%231a7c3e' stroke-width='0.5'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
   background-repeat: repeat;
 }
-.bg-adinkra-overlay {
-  position: absolute;
+.bg-mudcloth {
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 L20 0 M20 40 L40 20 M10 10 L15 15 M25 25 L30 30' stroke='%231a7c3e' stroke-width='0.5' fill='none'/%3E%3C/svg%3E");
+  background-size: 40px 40px;
+  background-repeat: repeat;
+}
+.bg-sovereign-overlay {
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.04;
+  opacity: 0.03;
+  z-index: 0;
 }
 
 /* ============================================================

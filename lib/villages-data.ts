@@ -18,7 +18,8 @@ export interface Village {
   meaning: string          // Meaning of the ancient name
   history: string          // Brief historical context
   guardianDesc: string     // Description of the guardian deity/spirit
-  yoruba: string
+  /** @deprecated — use ancientName. Kept for legacy data compat only. */
+  yoruba?: string
   emoji: string
   color: string
   guardian: string

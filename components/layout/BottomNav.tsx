@@ -7,19 +7,23 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import {
+  BaobabTree, DjembeIcon, UbuntuRing, MaskFace, KowrieIcon,
+  ToolSigil, CouncilHut, FireCircle, NkisiShield
+} from '@/components/ui/afro-icons'
 
-interface Tab { path: string; emoji: string; label: string; exact?: boolean }
+interface Tab { path: string; icon: React.ReactNode; label: string; exact?: boolean }
 
 const LEFT_TABS: Tab[] = [
-  { path: '/dashboard',          emoji: '🏠', label: 'Home',     exact: true },
-  { path: '/dashboard/calendar', emoji: '📅', label: 'Calendar'             },
+  { path: '/dashboard',          icon: <BaobabTree size={22} />,  label: 'Home',  exact: true },
+  { path: '/dashboard/feed',     icon: <DjembeIcon size={22} />,  label: 'Drum'               },
 ]
 
 const RIGHT_TABS: Tab[] = [
-  { path: '/dashboard/feed',    emoji: '🥁', label: 'Drum'               },
-  { path: '/dashboard/chat',    emoji: '💬', label: 'Seso'               },
-  { path: '/dashboard/profile', emoji: '🎭', label: 'Profile'            },
+  { path: '/dashboard/chat',     icon: <UbuntuRing size={22} />,  label: 'Seso'               },
+  { path: '/dashboard/profile',  icon: <MaskFace   size={22} />,  label: 'Profile'            },
 ]
+
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -33,12 +37,12 @@ export function BottomNav() {
   const GOLD = '#fbbf24'
 
   const QUICK_ACTIONS = [
-    { emoji: '🛠', label: 'Launch Tool',     href: '/dashboard/villages' },
-    { emoji: '📋', label: 'My Sessions',     href: '/dashboard/sessions' },
-    { emoji: '🥁', label: 'Text Drum',      href: '/dashboard/feed' },
-    { emoji: '🎙', label: 'Voice Story',     href: '/dashboard/feed' },
-    { emoji: '📅', label: 'Calendar',          href: '/dashboard/calendar' },
-    { emoji: '💬', label: 'New Message',      href: '/dashboard/chat' },
+    { icon: <ToolSigil   size={28} />, label: 'My Tools',      href: '/dashboard/villages'  },
+    { icon: <CouncilHut  size={28} />, label: 'Sessions',      href: '/dashboard/sessions'  },
+    { icon: <DjembeIcon  size={28} />, label: 'Text Drum',     href: '/dashboard/feed'      },
+    { icon: <FireCircle  size={28} />, label: 'Voice Circle',  href: '/dashboard/rooms'     },
+    { icon: <KowrieIcon  size={28} />, label: 'Cowrie',        href: '/dashboard/banking'   },
+    { icon: <UbuntuRing  size={28} />, label: 'Message',       href: '/dashboard/chat'      },
   ]
 
   const renderTab = (tab: Tab) => {
@@ -49,9 +53,10 @@ export function BottomNav() {
         padding: '4px 6px', borderRadius: 12,
         background: on ? 'rgba(74,222,128,.08)' : 'transparent',
         minWidth: 48, position: 'relative',
+        color: on ? TAB_COLOR : 'rgba(240,247,240,.38)',
       }}>
-        <span style={{ fontSize: 20, lineHeight: 1 }}>{tab.emoji}</span>
-        <span style={{ fontSize: 8, fontWeight: on ? 700 : 500, color: on ? TAB_COLOR : 'rgba(240,247,240,.38)', letterSpacing: on ? '.02em' : 0 }}>{tab.label}</span>
+        {tab.icon}
+        <span style={{ fontSize: 8, fontWeight: on ? 700 : 500, color: 'inherit', letterSpacing: on ? '.02em' : 0 }}>{tab.label}</span>
         {on && <div style={{ position: 'absolute', bottom: -2, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: TAB_COLOR, boxShadow: `0 0 5px ${TAB_COLOR}` }} />}
       </Link>
     )
@@ -81,7 +86,7 @@ export function BottomNav() {
               marginTop: -20, transition: 'all .25s',
               fontSize: 26, color: '#fff',
             }}>
-              ✚
+              ❂
             </button>
             <span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(74,222,128,.5)', letterSpacing: '.04em', marginTop: 3 }}>Create</span>
           </div>
@@ -108,13 +113,13 @@ export function BottomNav() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               {QUICK_ACTIONS.map(a => (
                 <button key={a.label} onClick={() => { setShowSheet(false); router.push(a.href) }} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                  padding: '16px 8px', borderRadius: 16, cursor: 'pointer',
-                  background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
-                  color: '#f0f5ee', fontSize: 12, fontWeight: 600,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                  padding: '20px 10px', borderRadius: 20, cursor: 'pointer',
+                  background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
+                  color: '#f0f5ee', transition: 'all .2s',
                 }}>
-                  <span style={{ fontSize: 28 }}>{a.emoji}</span>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,.6)' }}>{a.label}</span>
+                  <div style={{ color: TAB_COLOR }}>{a.icon}</div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.7)', letterSpacing: '.04em', textTransform: 'uppercase' }}>{a.label}</span>
                 </button>
               ))}
             </div>

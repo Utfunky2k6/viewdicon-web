@@ -11,6 +11,7 @@ import { HonorRankScreen } from '@/components/profile/HonorRankScreen'
 import { RootPlantingScreen } from '@/components/profile/RootPlantingScreen'
 import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { authApi } from '@/lib/api'
+import { ALL_VILLAGES } from '@/lib/villages-data'
 
 // ── Skin banner style configurations (no hardcoded user data) ──────────────
 const SKIN_BANNER: Record<string, {
@@ -69,11 +70,11 @@ function AfroIdCard() {
   const [revealed, setRevealed] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
 
-  const raw     = user?.afroId?.raw     ?? 'NG-YOR-2764-8937'
-  const masked  = user?.afroId?.masked  ?? 'NG-YOR-••••-••••'
-  const country = user?.afroId?.country ?? 'NG'
-  const tribe   = user?.afroId?.tribe   ?? 'YOR'
-  const numeric = user?.afroId?.numeric ?? '2764-8937'
+  const raw     = user?.afroId?.raw     ?? ''
+  const masked  = user?.afroId?.masked  ?? '••••-••••-••••'
+  const country = user?.afroId?.country ?? ''
+  const tribe   = user?.afroId?.tribe   ?? ''
+  const numeric = user?.afroId?.numeric ?? ''
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(raw)
@@ -127,6 +128,49 @@ function AfroIdCard() {
   )
 }
 
+// ── Naming Ceremony Identity Card ─────────────────────────────────────────
+function CeremonyCard() {
+  const { user } = useAuthStore()
+  const rows: { emoji: string; label: string; value?: string }[] = [
+    { emoji: '📿', label: 'Heritage', value: user?.heritage },
+    { emoji: '🌍', label: 'Ancestral Nation', value: user?.ancestralNation },
+    { emoji: '🪘', label: 'Ethnic Group', value: user?.ethnicGroup },
+    { emoji: '🔗', label: 'Clan / Lineage', value: user?.clanLineage },
+    { emoji: '🌳', label: 'State / Region', value: user?.originState },
+    { emoji: '🛖', label: 'Origin Village', value: user?.originVillage },
+    { emoji: '🌱', label: 'Birth Season', value: user?.birthSeason },
+    { emoji: '👩', label: "Mother's Name", value: user?.motherName },
+    { emoji: '👨', label: "Father's Name", value: user?.fatherName },
+    { emoji: '🦁', label: 'Totem Animal', value: user?.totemAnimal },
+    { emoji: '🌍', label: 'Country', value: user?.residenceCountry },
+    { emoji: '🏙', label: 'City', value: user?.residenceCity },
+    { emoji: '🛠', label: 'Occupation', value: user?.occupation },
+  ].filter(r => r.value)
+
+  if (rows.length === 0) return null
+
+  return (
+    <div style={{ margin: '0 12px 20px', background: '#0a1a0e', border: '1px solid rgba(212,160,23,.35)', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(212,160,23,.2), rgba(212,160,23,.08))', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid rgba(212,160,23,.2)' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(212,160,23,.25)', border: '1px solid rgba(212,160,23,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📿</div>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#d4a017', letterSpacing: '.06em' }}>Naming Ceremony Identity</div>
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,.4)', marginTop: 1 }}>Your roots, your people, your path</div>
+        </div>
+      </div>
+      <div style={{ padding: '8px 14px 12px' }}>
+        {rows.map((r, i) => (
+          <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,.04)' : 'none' }}>
+            <span style={{ fontSize: 14, width: 22, textAlign: 'center', flexShrink: 0 }}>{r.emoji}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.4)', minWidth: 90, flexShrink: 0 }}>{r.label}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#f0f7f0', textAlign: 'right', flex: 1 }}>{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Profile Page ──────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const { activeSkin, skinColors } = useSkinStore()
@@ -134,14 +178,24 @@ export default function ProfilePage() {
   const router = useRouter()
   const [showRank,  setShowRank]  = React.useState(false)
   const [showRoots, setShowRoots] = React.useState(false)
-  const [xp, setXp] = React.useState(0)
 
-  // Fetch real user data from backend on mount
+  // Real XP from user's ubuntu/honor score
+  const xp = user?.ubuntuScore ?? user?.honorXp ?? 0
+
+  // Fetch real user data from backend — merge with existing (don't overwrite ceremony data)
   React.useEffect(() => {
     async function fetchMe() {
       try {
-        const me = await authApi.me(true)
-        setUser(me)
+        const me = await authApi.me()
+        if (me && typeof me === 'object') {
+          const prev = useAuthStore.getState().user
+          if (!prev) { setUser(me); return }
+          const merged: Record<string, unknown> = { ...prev }
+          for (const [k, v] of Object.entries(me as Record<string, unknown>)) {
+            if (v !== null && v !== undefined && v !== '') merged[k] = v
+          }
+          setUser(merged)
+        }
       } catch {
         // Backend offline or not authenticated — use cached store data
       }
@@ -173,11 +227,21 @@ export default function ProfilePage() {
     : user?.heritageCircle ? '🤝 Circle III · Ally'
     : null
 
+  // Resolve village name and role label from village data
+  const userVillage = user?.villageId ? ALL_VILLAGES.find(v => v.id === user.villageId) : null
+  const userRoleLabel = userVillage && user?.roleKey
+    ? userVillage.roles.find(r => r.key === user.roleKey)?.name ?? user.roleKey
+    : null
+
   const displayTags = isGhost
-    ? ['🏛 Clan Member', '🔮 Elder Standing', '🌫 Ghost Active']
+    ? ['🪘 Clan Member', '🔮 Elder Standing', '🌫 Ghost Active']
     : [
         heritageLabel,
+        userVillage ? `${userVillage.emoji} ${userVillage.name}` : null,
+        userRoleLabel ? `🪘 ${userRoleLabel}` : null,
+        user?.heritage ? `📿 ${user.heritage}` : null,
         user?.tribe ? `🌿 ${user.tribe}` : null,
+        user?.occupation ? `🛠 ${user.occupation}` : null,
         `🛡 Nkisi ${user?.nkisiState || 'GREEN'}`,
       ].filter(Boolean) as string[]
 
@@ -185,7 +249,7 @@ export default function ProfilePage() {
   const workStats: { v: string; l: string; tappable?: boolean }[] = [
     { v: '0',  l: 'Jobs Done' },
     { v: String(user?.ringCounts?.ring1 ?? 0), l: 'Roots', tappable: true },
-    { v: '—',  l: 'Honour' },
+    { v: String(user?.ubuntuScore ?? 0),  l: 'Honour' },
     { v: '₡0', l: 'Earned' },
   ]
   const socialStats: { v: string; l: string; tappable?: boolean }[] = [
@@ -207,13 +271,22 @@ export default function ProfilePage() {
     : activeSkin === 'SOCIAL' ? '🎭'
     : '🏛'
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // 1. Call backend to invalidate refresh token
+    try { await authApi.logout() } catch { /* ok if fails */ }
+    // 2. Clear zustand store (in-memory + persisted)
+    useAuthStore.getState().logout()
+    // 3. Clear all localStorage
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('afk-auth')
       localStorage.removeItem('afk_token')
+      localStorage.removeItem('afk-ceremony-state')
+      localStorage.removeItem('village-store')
     }
+    // 4. Clear all auth cookies
     if (typeof document !== 'undefined') {
       document.cookie = 'afk_token=; Max-Age=0; path=/'
+      document.cookie = 'afk_ceremony_done=; Max-Age=0; path=/'
     }
     router.push('/login')
   }
@@ -245,9 +318,9 @@ export default function ProfilePage() {
               filter: isGhost ? 'blur(2px) brightness(.7)' : undefined,
               position: 'relative',
             }}>
-          {activeSkin === 'WORK' ? avatarContent : activeSkin === 'SOCIAL' ? '🎭' : '🏛'}
-              {/* Crest badge */}
-              <div style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#000', background: '#d4a017', border: '2px solid #0a0a14', zIndex: 2 }}>III</div>
+          {activeSkin === 'WORK' ? avatarContent : activeSkin === 'SOCIAL' ? '🪘' : '🛖'}
+              {/* Crest badge — from user data */}
+              <div style={{ position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: '#000', background: '#d4a017', border: '2px solid #0a0a14', zIndex: 2 }}>{user?.crestLevel ? 'I'.repeat(Math.min(user.crestLevel, 5)) : 'I'}</div>
             </div>
             <RankRing color={rank.color} size={68} />
           </div>
@@ -331,6 +404,7 @@ export default function ProfilePage() {
           Account
         </div>
         <AfroIdCard />
+        <CeremonyCard />
 
         {/* Quick access rows */}
         <div style={{ margin: '0 12px 16px', background: '#0a1a0e', border: '1px solid rgba(26,124,62,.35)', borderRadius: 14, overflow: 'hidden' }}>

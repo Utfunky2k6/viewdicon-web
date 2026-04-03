@@ -6,7 +6,6 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes evFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .ev-fade{animation:evFade .3s ease both}
 @keyframes liveBlip{0%,100%{opacity:1}50%{opacity:.3}}

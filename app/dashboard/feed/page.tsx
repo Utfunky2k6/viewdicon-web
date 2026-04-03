@@ -11,7 +11,6 @@ import { CommentSheet } from '@/components/feed/CommentSheet'
 /* ── inject-once CSS ── */
 const INJECT_ID = 'soro-styles'
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes ssFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes adinkra{0%,100%{opacity:.025}50%{opacity:.04}}
 @keyframes nmBreathe{0%,100%{box-shadow:0 0 0 0 rgba(212,160,23,.1)}50%{box-shadow:0 0 20px 3px rgba(212,160,23,.08)}}

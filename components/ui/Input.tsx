@@ -5,7 +5,7 @@
 // Focus ring: 2px green. Adapts to dark/light via CSS vars.
 // ============================================================
 import * as React from 'react'
-import { Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { RevealEye, HideEye, WarningSigil } from '@/components/ui/afro-icons'
 import { cn } from '@/lib/utils'
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -93,7 +93,7 @@ export function Input({
             style={{ color: 'var(--text-muted)' }}
             aria-label={showPwd ? 'Hide password' : 'Show password'}
           >
-            {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showPwd ? <HideEye size={18} /> : <RevealEye size={18} />}
           </button>
         )}
 
@@ -107,14 +107,14 @@ export function Input({
         {/* Error icon */}
         {error && !isPassword && !rightIcon && (
           <span className="absolute right-3 text-[#b22222]">
-            <AlertCircle size={18} />
+            <WarningSigil size={18} />
           </span>
         )}
       </div>
 
       {error && (
         <p id={`${inputId}-error`} className="text-xs text-[#b22222] flex items-center gap-1">
-          <AlertCircle size={12} /> {error}
+          <WarningSigil size={12} /> {error}
         </p>
       )}
       {hint && !error && (

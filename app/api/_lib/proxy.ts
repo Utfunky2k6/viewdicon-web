@@ -3,11 +3,24 @@
 // Keeps a 2-second timeout so pages never block.
 // Includes: SSRF guard, response size cap, content-type validation.
 
-/** Block SSRF — only allow localhost/private upstreams */
+// Extra allowed hostnames from env (comma-separated), e.g. ngrok tunnel or staging hosts
+const EXTRA_ALLOWED_HOSTS: Set<string> = new Set(
+  (process.env.ALLOWED_UPSTREAM_HOSTS || '')
+    .split(',')
+    .map(h => h.trim())
+    .filter(Boolean)
+)
+
+/** Block SSRF — only allow localhost/private upstreams or explicitly whitelisted hosts */
 function isAllowedUpstream(url: string): boolean {
   try {
     const u = new URL(url)
-    return u.hostname === 'localhost' || u.hostname === '127.0.0.1' || u.hostname.endsWith('.internal')
+    return (
+      u.hostname === 'localhost' ||
+      u.hostname === '127.0.0.1' ||
+      u.hostname.endsWith('.internal') ||
+      EXTRA_ALLOWED_HOSTS.has(u.hostname)
+    )
   } catch { return false }
 }
 

@@ -2,7 +2,7 @@
 // Afrikonnect 360 — API Client
 // ============================================================
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+const BASE = process.env.NEXT_PUBLIC_API_URL || ''
 const MOCK = process.env.NEXT_PUBLIC_MOCK === 'true'
 
 class ApiError extends Error {
@@ -52,6 +52,16 @@ async function request<T>(
       code = err?.error?.code ?? code
       msg  = err?.error?.message ?? msg
     } catch {}
+
+    // Auto-clear session and redirect on 401 (expired/invalid token)
+    if (res.status === 401 && typeof window !== 'undefined' && !path.includes('/auth/')) {
+      localStorage.removeItem('afk-auth')
+      localStorage.removeItem('afk_token')
+      document.cookie = 'afk_token=; Max-Age=0; path=/'
+      document.cookie = 'afk_ceremony_done=; Max-Age=0; path=/'
+      window.location.href = '/login'
+    }
+
     throw new ApiError(res.status, code, msg)
   }
 
@@ -72,6 +82,8 @@ export const authApi = {
   register: (data: {
     phone: string
     countryCode: string
+    firstName?: string
+    lastName?: string
     fullName?: string
     dateOfBirth?: string
     gender?: 'male' | 'female' | 'non-binary' | 'prefer-not-to-say'
@@ -88,9 +100,15 @@ export const authApi = {
     motherName?: string
     fatherName?: string
     totemAnimal?: string
+    originState?: string
+    originVillage?: string
     residenceCountry?: string
     residenceCity?: string
     occupation?: string
+    altContact?: string
+    voiceSignature?: string
+    faceSignature?: string
+    fingerprintSignature?: string
     villageId?: string
     roleKey?: string
   }) => api.post<{ userId: string; accessToken: string; refreshToken: string; message: string }>(
@@ -103,6 +121,9 @@ export const authApi = {
   verifyPhone: (data: { phone: string; otp: string }) =>
     api.post<{ verified: boolean; message: string }>('/api/v1/auth/verify-phone', data),
 
+  ceremonyHeartbeat: (phone: string) =>
+    api.post<{ ok: boolean }>('/api/v1/auth/ceremony-heartbeat', { phone }),
+
   verifyOtp: (data: { phone: string; otp: string; deviceName?: string; platform?: string }) =>
     api.post<{ accessToken: string; refreshToken: string; user: Record<string, unknown> }>(
       '/api/v1/auth/verify-otp', data
@@ -114,11 +135,16 @@ export const authApi = {
   revealAfroId: () =>
     api.post<{ afroId: string }>('/api/v1/auth/reveal-afroid', {}),
 
-  me: (showAfroId = false) =>
-    api.get<Record<string, unknown>>(`/api/v1/me${showAfroId ? '?showAfroId=true' : ''}`),
+  me: () =>
+    api.get<Record<string, unknown>>('/api/v1/me'),
 
   updateMe: (data: Record<string, unknown>) =>
     api.patch<Record<string, unknown>>('/api/v1/me', data),
+
+  loginAfroId: (data: { afroId: string; platform?: string }) =>
+    api.post<{ accessToken: string; refreshToken: string; user: Record<string, unknown> }>(
+      '/api/v1/auth/login/afroid', data
+    ),
 
   logout: () => api.post('/api/v1/auth/logout', {}),
 }
@@ -191,6 +217,11 @@ export const villageApi = {
   join:   (id: string) => api.post(`/api/villages/${id}/join`, {}),
   leave:  (id: string) => api.post(`/api/villages/${id}/leave`, {}),
   create: (data: unknown) => api.post('/api/villages', data),
+  // Register user into village_memberships table (called after ceremony)
+  createMembership: (data: { userAfroId: string; villageId: string; roleKey: string; isPrimary?: boolean }) =>
+    api.post<{ ok: boolean; data: { id: string; userAfroId: string; villageId: string; roleKey: string } }>(
+      '/api/v1/village-memberships', data
+    ),
 }
 
 // ── TV/Streaming ──────────────────────────────────────────────

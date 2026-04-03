@@ -24,6 +24,9 @@ export const VOCAB = {
   ubuntu:         '🤝 Ubuntu',
   removeUbuntu:   '↩ Withdraw Ubuntu',
   bless:          '🙏 Send Blessing',
+  drummed:        '🥁 Drummed ✓',
+  drumToRegion:   '🌍 Drum to Region',
+  remaining:      'Remaining',
 
   // ── Commerce ──────────────────────────────────────────────────────
   buyNow:         '🫙 Add to Pot',
@@ -42,6 +45,7 @@ export const VOCAB = {
   requestSample:  '🧪 Request Sample',
   negotiate:      '🗣 Negotiate',
   invoice:        '📋 Send Invoice',
+  sessionOpen:    '🤝 Session Open',
 
   // ── Streaming & Live ──────────────────────────────────────────────
   subscribe:      '🌳 Plant Your Root',
@@ -87,7 +91,6 @@ export const VOCAB = {
 
   // ── Post Compose ─────────────────────────────────────────────────
   drumToVillage:  '🥁 Drum to Village',
-  drumToRegion:   '🌍 Drum to Region',
   drumToNation:   '📡 Drum to Nation',
   publishPost:    '📡 Send to Village',
   saveDraft:      '📝 Save Draft',
@@ -198,6 +201,30 @@ export const VOCAB = {
   denyKey:        '❌ Deny Access',
   approveRecovery:'✅ Approve Recovery',
   reportSuspect:  '⚠ Report Suspicious',
+
+  // ── Events & Ceremonies ──────────────────────────────────────────
+  createEvent:       '🥁 Beat the Drum',
+  publishEvent:      '📡 Send the Drum Call',
+  browseEvents:      '🌍 Village Gatherings',
+  eventTicket:       '🎟 Passage Token',
+  buyTicket:         '🫙 Secure Passage',
+  verifyTicket:      '🔍 Read the Token',
+  openGate:          '🚪 Open the Gate',
+  closeGate:         '🔒 Seal the Gate',
+  admitHolder:       '✅ Grant Passage',
+  denyEntry:         '❌ Turn Away',
+  eventLive:         '🔴 Fire is Lit',
+  eventUpcoming:     '🌅 Rising Sun',
+  eventPast:         '🌙 Sun Has Set',
+  eventFree:         '🕊 Open to All',
+  eventPaid:         '₡ Cowrie Gate',
+  attendEvent:       '👣 Walk to Gathering',
+  hostEvent:         '🏛 Call the Gathering',
+  coHost:            '🤝 Share the Fire',
+  gateKeeper:        '🛡 Gate Keeper',
+  eventCompound:     '🏡 Compound · Private',
+  eventVillage:      '🏘 Village · Community',
+  eventKingdom:      '👑 Kingdom · Broadcast',
 
   // ── General UI ────────────────────────────────────────────────────
   seeAll:         'See All →',

@@ -47,6 +47,6 @@ These defaults are optimized for AI coding agents (and humans) working on apps t
 # Production build + start:
 cd viewdicon-web && rm -rf .next && npm run build && nohup npm run start > /tmp/nextjs-prod.log 2>&1 &
 
-# ngrok tunnel (public access → localhost:3001):
-nohup ngrok http --domain=woodless-lamar-photoelectrically.ngrok-free.dev 3001 > /tmp/ngrok.log 2>&1 &
+# ngrok tunnel (public access → localhost:3000):
+nohup ngrok http --domain=woodless-lamar-photoelectrically.ngrok-free.dev 3000 > /tmp/ngrok.log 2>&1 &
 ```

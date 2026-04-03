@@ -7,7 +7,6 @@ import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes ggAdmit{0%{background:rgba(74,222,128,.3)}100%{background:transparent}}
 @keyframes ggReject{0%{background:rgba(239,68,68,.3)}100%{background:transparent}}
 @keyframes ggSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}

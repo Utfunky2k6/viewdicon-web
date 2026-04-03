@@ -11,7 +11,6 @@ import { VOCAB } from '@/constants/vocabulary'
 /* ── inject-once CSS ── */
 const INJECT_ID = 'seso-thread-styles'
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @keyframes stPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
 @keyframes stFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes stSlide{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}

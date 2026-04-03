@@ -6,7 +6,6 @@ import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes edFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes edPulse{0%,100%{opacity:1}50%{opacity:.4}}
 .ed-fade{animation:edFade .3s ease both}

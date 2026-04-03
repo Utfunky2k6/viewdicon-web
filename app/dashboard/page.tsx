@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 
 import { ThemeMode, t, SectionLabel } from '@/components/dashboard/shared'
 import { useAuthStore } from '@/stores/authStore'
+import { authApi } from '@/lib/api'
 import UbuntuRing from '@/components/dashboard/UbuntuRing'
 import { useVillageStore } from '@/stores/villageStore'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
@@ -17,10 +18,10 @@ import JollofTVCard from '@/components/dashboard/JollofTVCard'
 import VillageTools from '@/components/dashboard/VillageTools'
 import NkisiShield from '@/components/dashboard/NkisiShield'
 import { GriotSymbol } from '@/components/dashboard/GriotAI/GriotSymbol'
+import { GyeNyame, NkisiShield as NkisiIcon, DjembeIcon, KowrieIcon, Sankofa } from '@/components/ui/afro-icons'
 // ── Village Compound v3 — Integrated Professional Dashboard ──────────────────
 
 const DASH_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&display=swap');
 @keyframes db{0%,100%{transform:scaleY(.4);opacity:.5}50%{transform:scaleY(1);opacity:1}}
 @keyframes pulse-y{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
 @keyframes pulse-r{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
@@ -95,14 +96,54 @@ export default function DashboardPage() {
   const [mode, setMode] = React.useState<ThemeMode>('dark')
   const [showSOS, setShowSOS] = React.useState(false)
   const [sosResponded, setSosResponded] = React.useState(false)
-  const [vitality, setVitality] = React.useState({ cowrie:'₡4.2K', kila:'52', jobs:'147', live:'🔴 4', isLive:false, notifCount:0 })
+  const [vitality, setVitality] = React.useState({ cowrie:'₡0', kila:'0', jobs:'0', live:'🔴 0', isLive:false, notifCount:0 })
+  const [devOtp, setDevOtp] = React.useState('')
+  // Welcome banner — shown when arriving from ceremony (?welcome=1)
+  const [showWelcome, setShowWelcome] = React.useState(false)
+  const { user, setUser, isNewCitizen, setNewCitizen } = useAuthStore()
   const activeVillageId = useVillageStore(s => s.activeVillageId)
-  const user = useAuthStore(s => s.user)
+  const setActiveVillage = useVillageStore(s => s.setActiveVillage)
+  const setActiveRole = useVillageStore(s => s.setActiveRole)
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('welcome') === '1' || isNewCitizen) {
+        setShowWelcome(true)
+        if (isNewCitizen) setNewCitizen(false)
+      }
+    }
+  }, [isNewCitizen, setNewCitizen, setUser])
+
+  // Refresh user profile from backend — merge with existing data (don't overwrite ceremony-hydrated fields)
+  React.useEffect(() => {
+    authApi.me().then(me => {
+      if (me && typeof me === 'object') {
+        const prev = useAuthStore.getState().user
+        if (!prev) { setUser(me); return }
+        // Only overwrite fields that the backend actually returns non-empty
+        const merged: Record<string, unknown> = { ...prev }
+        for (const [k, v] of Object.entries(me as Record<string, unknown>)) {
+          if (v !== null && v !== undefined && v !== '') merged[k] = v
+        }
+        setUser(merged)
+      }
+    }).catch(() => {})
+  }, [setUser])
+
+  // Sync user's village from auth profile into village store on first load
+  React.useEffect(() => {
+    if (!activeVillageId && user?.villageId) {
+      setActiveVillage(user.villageId)
+      if (user.roleKey) setActiveRole(user.roleKey)
+    }
+  }, [activeVillageId, user?.villageId, user?.roleKey, setActiveVillage, setActiveRole])
   const greeting = React.useMemo(() => getTimeGreeting(), [])
   const africanGreeting = React.useMemo(() => getAfricanGreeting(), [])
-  const villageName = (activeVillageId && VILLAGE_NAMES[activeVillageId]) || VILLAGE_NAMES['commerce']
+  // Use activeVillageId from villageStore, fall back to user.villageId for immediate first-render hydration
+  const resolvedVillageId = activeVillageId || user?.villageId || null
+  const villageName = (resolvedVillageId && VILLAGE_NAMES[resolvedVillageId]) || VILLAGE_NAMES['commerce']
   // Active village full data — for ancient name, color, emoji, guardian
-  const activeVillage = activeVillageId ? VILLAGE_BY_ID[activeVillageId] : null
+  const activeVillage = resolvedVillageId ? VILLAGE_BY_ID[resolvedVillageId] : null
   const villageColor = activeVillage?.color ?? '#1a7c3e'
   const villageEmoji = activeVillage?.emoji ?? '🧺'
 
@@ -113,9 +154,9 @@ export default function DashboardPage() {
       s.textContent = DASH_CSS
       document.head.appendChild(s)
     }
-    const t = setTimeout(() => setShowSOS(true), 4000)
+
     // Fetch live vitality from BFF
-    fetch('/api/sorosoke/home/vitality')
+    fetch('/api/v1/home/vitality')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (!d?.data) return
@@ -123,15 +164,14 @@ export default function DashboardPage() {
         const bal = v.cowrieBalance ?? 0
         setVitality({
           cowrie: bal >= 1000 ? `₡${(bal/1000).toFixed(1)}K` : `₡${bal}`,
-          kila:   String(v.kilaEarned ?? 52),
-          jobs:   String(v.activePosts ?? 147),
-          live:   `🔴 ${v.activeCircles ?? 4}`,
+          kila:   String(v.kilaEarned ?? 0),
+          jobs:   String(v.activePosts ?? 0),
+          live:   `🔴 ${v.activeCircles ?? 0}`,
           isLive: !!d.live,
           notifCount: v.notifCount ?? v.unreadNotifications ?? 0,
         })
       })
       .catch(() => {})
-    return () => clearTimeout(t)
   }, [])
 
   const isDark = mode === 'dark'
@@ -145,24 +185,90 @@ export default function DashboardPage() {
   }, [])
   const activeSkinLabel = useVillageStore(s => s.activeSkin)?.toUpperCase() ?? 'ISE'
 
+  const isAlly = user?.heritageCircle === 'ALLY'
+
   return (
     <main style={{ minHeight:'100dvh', background:t('bg',mode), color:t('text',mode), fontFamily:'Inter, system-ui, sans-serif', overflowX:'hidden', maxWidth:480, margin:'0 auto', paddingBottom:100 }}>
 
       {/* STATUS BAR */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 18px', background: isDark ? '#060d08' : '#fff', fontSize:11, fontWeight:700, color: isDark ? '#4ade80' : '#1a7c3e' }}>
         <span>{clockStr}</span>
-        <span style={{ padding:'2px 8px', borderRadius:99, background: isDark ? 'rgba(26,124,62,.25)' : 'rgba(26,124,62,.1)', fontSize:10, fontWeight:700 }}>⚒ {activeSkinLabel} · WORK</span>
+        {devOtp && (
+          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'2px 8px', borderRadius:99, background:'rgba(212,160,23,.15)', border:'1px solid rgba(212,160,23,.3)', animation:'fadeUp .3s ease both' }}>
+            <span style={{ fontSize:9 }}>🥁</span>
+            <span style={{ fontSize:10, fontWeight:900, color:'#fbbf24', letterSpacing:'.04em' }}>CODE: {devOtp}</span>
+            <button onClick={() => { setDevOtp(''); localStorage.removeItem('afk-latest-otp') }} style={{ background:'none', border:'none', color:'#fbbf24', fontSize:10, cursor:'pointer', padding:0, marginLeft:4 }}>✕</button>
+          </div>
+        )}
+        <span style={{ padding:'2px 8px', borderRadius:99, background: isDark ? 'rgba(26,124,62,.25)' : 'rgba(26,124,62,.1)', fontSize:10, fontWeight:700 }}>{isAlly ? '🤝 ALLY' : `⚒ ${activeSkinLabel} · WORK`}</span>
         <span>🔋</span>
       </div>
+
+      {/* ── WELCOME BANNER — first-time citizen arrival from ceremony ── */}
+      {showWelcome && (
+        <div className="fade-up" style={{ margin:'8px 12px', borderRadius:20, padding:'18px 16px', background:'linear-gradient(135deg,#0a1f0c,#1a3a10,#0a1f0c)', border:'2px solid rgba(74,222,128,.35)', position:'relative', overflow:'hidden' }}>
+          {/* Kente pattern bg */}
+          <div style={{ position:'absolute', inset:0, opacity:.04, backgroundImage:'repeating-linear-gradient(45deg,#4ade80 0,#4ade80 1px,transparent 0,transparent 50%)', backgroundSize:'18px 18px', pointerEvents:'none' }}/>
+          <button
+            onClick={() => setShowWelcome(false)}
+            style={{ position:'absolute', top:10, right:14, background:'none', border:'none', color:'rgba(255,255,255,.4)', fontSize:16, cursor:'pointer', lineHeight:1 }}
+          >✕</button>
+          <div style={{ position:'relative', zIndex:1 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+            <div style={{ transform: 'scale(1.5)', color:'#4ade80' }}><GyeNyame size={40} /></div>
+              <div>
+                <div style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:900, color:'#4ade80', lineHeight:1.2 }}>
+                  Welcome to the Motherland{user?.firstName ? `, ${user.firstName}` : ''}!
+                </div>
+                <div style={{ fontSize:10, color:'rgba(74,222,128,.6)', fontWeight:600, marginTop:2 }}>
+                  You are now a citizen of the Digital African Renaissance
+                </div>
+              </div>
+            </div>
+            {user?.afroId?.raw && (
+              <div style={{ background:'rgba(74,222,128,.08)', border:'1px solid rgba(74,222,128,.25)', borderRadius:12, padding:'10px 14px', marginBottom:10 }}>
+                <div style={{ fontSize:9, fontWeight:800, letterSpacing:'.1em', color:'rgba(74,222,128,.5)', textTransform:'uppercase', marginBottom:4 }}>🛡 Your AfroID (keep it safe)</div>
+                <div style={{ fontFamily:"'Courier New',monospace", fontSize:16, fontWeight:900, color:'#4ade80', letterSpacing:'.1em' }}>{user.afroId.raw}</div>
+              </div>
+            )}
+            {activeVillage && (
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                <div style={{ width:32, height:32, borderRadius:8, background:villageColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>{villageEmoji}</div>
+                <div>
+                  <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:12, fontWeight:900, color:villageColor }}>{activeVillage.ancientName}</div>
+                  <div style={{ fontSize:10, color:'rgba(255,255,255,.4)' }}>{activeVillage.name} · Your new home</div>
+                </div>
+              </div>
+            )}
+            <div style={{ fontSize:11, fontStyle:'italic', color:'rgba(212,160,23,.7)', lineHeight:1.6, marginBottom:10 }}>
+              "A child who is not raised by the village will burn it down."
+              <span style={{ fontSize:9, color:'rgba(212,160,23,.4)', display:'block', marginTop:2 }}>— African Proverb</span>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => { setShowWelcome(false); router.push('/dashboard/profile') }} style={{ flex:1, padding:'9px 0', borderRadius:12, background:'rgba(74,222,128,.1)', border:'1px solid rgba(74,222,128,.25)', color:'#4ade80', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                👤 View Profile
+              </button>
+              <button onClick={() => { setShowWelcome(false); router.push('/dashboard/villages') }} style={{ flex:1, padding:'9px 0', borderRadius:12, background:'rgba(26,124,62,.25)', border:'1px solid rgba(26,124,62,.4)', color:'#4ade80', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                🏡 Explore Village
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* APP HEADER */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background: isDark ? '#0a1a0b' : '#fff', borderBottom: isDark ? 'none' : `1px solid ${t('border',mode)}` }}>
         <div
           onClick={() => router.push('/dashboard/villages')}
-          style={{ width:36, height:36, borderRadius:10, background: villageColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0, cursor:'pointer', boxShadow: `0 2px 10px ${villageColor}50` }}
-        >{villageEmoji}</div>
+          style={{ width:36, height:36, borderRadius:10, background: isAlly ? '#2563eb' : villageColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0, cursor:'pointer', boxShadow: `0 2px 10px ${isAlly ? '#2563eb' : villageColor}50` }}
+        >{isAlly ? '🌎' : villageEmoji}</div>
         <div style={{ flex:1, minWidth:0 }}>
-          {activeVillage ? (
+          {isAlly ? (
+            <>
+              <div style={{ fontSize:13, fontWeight:700, color:t('text',mode), lineHeight:1.2 }}>Cultural Ally</div>
+              <div style={{ fontSize:10, color:t('sub',mode) }}>Supporting the African Renaissance</div>
+            </>
+          ) : activeVillage ? (
             <>
               <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:13, fontWeight:900, color: villageColor, lineHeight:1.1, letterSpacing:'0.04em' }}>{activeVillage.ancientName}</div>
               <div style={{ fontSize:9.5, color:t('sub',mode), marginTop:1 }}>{activeVillage.name} · {activeVillage.guardian}</div>
@@ -175,33 +281,32 @@ export default function DashboardPage() {
           )}
         </div>
         <div style={{ display:'flex', gap:8, marginLeft:'auto' }}>
-          <div onClick={() => router.push('/dashboard/explore')} style={{ width:30, height:30, borderRadius:'50%', background:t('muted',mode), border:`1px solid ${t('border',mode)}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, cursor:'pointer', position:'relative' }}>🔍</div>
+          <div onClick={() => router.push('/dashboard/explore')} style={{ width:30, height:30, borderRadius:'50%', background:t('muted',mode), border:`1px solid ${t('border',mode)}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, cursor:'pointer', position:'relative' }}><Sankofa size={16} /></div>
           <div onClick={() => router.push('/dashboard/notifications')} style={{ width:30, height:30, borderRadius:'50%', background:t('muted',mode), border:`1px solid ${t('border',mode)}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, cursor:'pointer', position:'relative' }}>
-            🔔
+            <DjembeIcon size={18} />
             {vitality.notifCount > 0 && <span style={{ position:'absolute', top:-3, right:-3, width:14, height:14, borderRadius:'50%', background:'#1a7c3e', border:`2px solid ${isDark?'#0a1a0b':'#fff'}`, fontSize:8, fontWeight:700, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>{vitality.notifCount > 9 ? '9+' : vitality.notifCount}</span>}
           </div>
         </div>
       </div>
 
       {/* ZONE 1: HERO */}
-      <div style={{ padding:14, background: isDark ? `linear-gradient(180deg, ${villageColor}18 0%, #091608 40%, #0a1a0b 100%)` : 'linear-gradient(180deg,#0f2d14 0%,#1a4a1f 100%)', position:'relative', overflow:'hidden' }}>
+      <div style={{ padding:14, background: isDark ? `linear-gradient(180deg, ${isAlly ? '#1e3a8a' : villageColor}18 0%, #091608 40%, #0a1a0b 100%)` : 'linear-gradient(180deg,#0f2d14 0%,#1a4a1f 100%)', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute', inset:0, opacity:.04, backgroundImage:'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)', backgroundSize:'22px 22px', pointerEvents:'none' }}/>
 
         <div style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:12, position:'relative', zIndex:1 }}>
-          <UbuntuRing />
+          <UbuntuRing score={user?.ubuntuScore ?? (isAlly ? 45 : 72)} />
           <div style={{ flex:1 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:'#7da882', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:3 }}>{greeting.english}, {user?.displayName || 'Traveller'} {greeting.emoji}</div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:800, color:'#f0f7f0', lineHeight:1.1, marginBottom:4 }}>Welcome Home.</div>
-            {activeVillage ? (
+            <div style={{ fontSize:10, fontWeight:700, color:'#7da882', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:3 }}>{greeting.english}, {user?.firstName || user?.displayName || 'Traveller'} {greeting.emoji}</div>
+            <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:800, color:'#f0f7f0', lineHeight:1.1, marginBottom:4 }}>{isAlly ? "Unity & Service." : user?.firstName ? `Welcome, ${user.firstName}.` : "Welcome Home."}</div>
+            {isAlly ? (
+              <div style={{ fontSize:11, color:'#a7f3d0', marginBottom:8 }}>Thank you for standing with the continent.</div>
+            ) : activeVillage ? (
               <div style={{ marginBottom:4 }}>
                 <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:14, fontWeight:900, color: villageColor, letterSpacing:'0.05em', lineHeight:1.2 }}>
                   📍 {activeVillage.ancientName}
                 </div>
                 <div style={{ fontSize:9.5, color:'rgba(255,255,255,.38)', marginTop:2 }}>
                   {activeVillage.name} · {activeVillage.nationFull} · {activeVillage.era}
-                </div>
-                <div style={{ fontSize:9.5, color: villageColor, marginTop:2, opacity:0.7, fontStyle:'italic' }}>
-                  Guardian: {activeVillage.guardian}
                 </div>
               </div>
             ) : (
@@ -210,9 +315,14 @@ export default function DashboardPage() {
               </div>
             )}
             <div style={{ fontSize:11, color:'rgba(212,160,23,.7)', fontStyle:'italic', marginBottom:4 }}>"{africanGreeting.text}" — <span style={{ fontSize:10, color:'rgba(212,160,23,.45)' }}>{africanGreeting.language}</span></div>
-            <div style={{ fontSize:12, color:'#a7f3d0', lineHeight:1.55, marginBottom:8 }}>The village is alive. 3 new opportunities are waiting.</div>
+
             <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-              {[['🛡 Nkisi GREEN','rgba(26,124,62,.25)','rgba(26,124,62,.5)','#4ade80'],['✦ Crest III','rgba(212,160,23,.15)','rgba(212,160,23,.4)','#fbbf24'],['🌍 Akan','rgba(255,255,255,.08)','rgba(255,255,255,.15)','#f0f7f0']].map(([lbl,bg,bd,col])=>(
+              {([
+                [`🛡 Nkisi ${user?.nkisiState || 'GREEN'}`,'rgba(26,124,62,.25)','rgba(26,124,62,.5)','#4ade80'],
+                ...(isAlly ? [[`🤝 Alliance Circle`,'rgba(37,99,235,.15)','rgba(37,99,235,.4)','#60a5fa']] : []),
+                ...(user?.roleKey ? [`✦ Crest I`,'rgba(212,160,23,.15)','rgba(212,160,23,.4)','#fbbf24'] as string[] : []),
+                ...(user?.heritage ? [[`🌍 ${user.heritage}`,'rgba(255,255,255,.08)','rgba(255,255,255,.15)','#f0f7f0']] : []),
+              ] as string[][]).map(([lbl,bg,bd,col])=>(
                 <span key={lbl} style={{ borderRadius:99, padding:'3px 9px', fontSize:10, fontWeight:600, background:bg, border:`1px solid ${bd}`, color:col }}>{lbl}</span>
               ))}
             </div>
@@ -230,12 +340,36 @@ export default function DashboardPage() {
         </div>
 
         {/* Talking drum */}
-        <div onClick={() => router.push('/dashboard/feed')} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:10, background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)', cursor:'pointer', position:'relative', zIndex:1 }}>
-          <TalkingDrum />
-          <div style={{ fontSize:11, color:'#a7f3d0', flex:1, lineHeight:1.4 }}><strong>2 Kíla</strong> received · Fatima D. needs a runner · Ajo circle collects Friday</div>
-          <span style={{ background:'#1a7c3e', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>5</span>
-        </div>
+        {!isAlly && (
+          <div onClick={() => router.push('/dashboard/feed')} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px', borderRadius:10, background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)', cursor:'pointer', position:'relative', zIndex:1 }}>
+            <TalkingDrum />
+            <div style={{ fontSize:11, color:'#a7f3d0', flex:1, lineHeight:1.4 }}><strong>{vitality.kila} Kíla</strong> earned · New activity in your village · Tap to see the feed</div>
+            <span style={{ background:'#1a7c3e', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>→</span>
+          </div>
+        )}
       </div>
+
+      {isAlly && (
+        <div style={{ margin: '14px 12px', borderRadius: 16, padding: 20, background: 'linear-gradient(135deg, #1e3a8a, #1e1b4b)', border: '1px solid rgba(37,99,235,.3)', textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 10 }}>🙌</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#60a5fa', marginBottom: 6 }}>Deepen Your Connection</div>
+          <div style={{ fontSize: 12, color: 'rgba(96,165,250,.7)', marginBottom: 16, lineHeight: 1.5 }}>Circle 3 members can apply to join specific villages as Contributing Partners or Honored Guests.</div>
+          <button
+            onClick={() => router.push('/dashboard/villages')}
+            style={{ padding: '10px 24px', borderRadius: 99, background: '#2563eb', color: '#fff', fontSize: 13, fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(37,99,235,0.4)' }}
+          >
+            Explore Villages →
+          </button>
+        </div>
+      )}
+
+      {/* ZONE 2: TOOLS */}
+      {!isAlly && (
+        <>
+          <SectionLabel label="⚒ Village Tools" more="Vault" mode={mode} />
+          <VillageTools mode={mode} />
+        </>
+      )}
 
       <GriotCard mode={mode} onAction={() => router.push('/dashboard/ai')} />
 
@@ -259,7 +393,7 @@ export default function DashboardPage() {
 
       {/* ── CALENDAR — Quick Access ─────────────────── */}
       <div onClick={() => router.push('/dashboard/calendar')} style={{ margin:'8px 12px 0', borderRadius:14, padding:'12px 16px', cursor:'pointer', background:'linear-gradient(135deg,#0d1020,#1a1040)', border:'1px solid rgba(251,191,36,.15)', display:'flex', alignItems:'center', gap:14, transition:'all .2s' }}>
-        <div style={{ fontSize:32, flexShrink:0 }}>📅</div>
+        <div style={{ fontSize:32, flexShrink:0 }}>🌙</div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:14, fontWeight:800, color:'#fbbf24', marginBottom:2 }}>Ìṣẹ̀lẹ̀ · Calendar</div>
           <div style={{ fontSize:10, color:'rgba(251,191,36,.55)', fontWeight:600 }}>Moon cycles · Market days · Family events · Griot AI</div>
@@ -292,15 +426,12 @@ export default function DashboardPage() {
         <div className="sos-card fade-up" onClick={() => { setSosResponded(true); router.push('/dashboard/chat') }} style={{ margin:'8px 12px', borderRadius:12, padding:'11px 14px', display:'flex', alignItems:'center', gap:12, cursor:'pointer', background:'linear-gradient(135deg,#7f1d1d,#b22222)' }}>
           <div style={{ fontSize:26, flexShrink:0 }}>🥁</div>
           <div style={{ flex:1 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'#fff', marginBottom:2 }}>{sosResponded ? 'Response sent to Mma Utibe' : 'Blood-Call from Mma Utibe'}</div>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,.75)', lineHeight:1.4 }}>{sosResponded ? 'Your family circle has been alerted' : 'Your mother sent a distress signal — 14 min ago · Lagos'}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'#fff', marginBottom:2 }}>{sosResponded ? 'Response sent to your family' : 'Blood-Call · Family Alert'}</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,.75)', lineHeight:1.4 }}>{sosResponded ? 'Your family circle has been alerted' : 'A family member sent a distress signal — tap to respond'}</div>
           </div>
           <div style={{ background:'rgba(255,255,255,.2)', border:'1px solid rgba(255,255,255,.3)', borderRadius:99, padding:'5px 12px', fontSize:11, fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{sosResponded ? '✓ Sent' : 'Respond →'}</div>
         </div>
       )}
-
-      <SectionLabel label="⚒ Your Village Tools" more="All tools" mode={mode} />
-      <VillageTools mode={mode} />
 
       <NkisiShield mode={mode} />
 

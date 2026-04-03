@@ -30,7 +30,9 @@ interface CanonicalVillageSource {
 }
 
 export interface VillageRole extends CanonicalRoleSource {
+  id: string
   emoji: string
+  sector: string
 }
 
 export interface CanonicalVillage extends CanonicalVillageSource {
@@ -122,7 +124,9 @@ export const CANONICAL_VILLAGES: CanonicalVillage[] = canonicalSource.map((villa
   region: 'Pan-Africa',
   roles: village.roles.map((role) => ({
     ...role,
+    id: role.key,
     emoji: roleEmojiForVillage(village, role),
+    sector: village.category,
   })),
 }))
 

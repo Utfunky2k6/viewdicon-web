@@ -1,6 +1,7 @@
 'use client'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/stores/authStore'
 import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { HonorRankScreen } from '@/components/profile/HonorRankScreen'
 
@@ -37,9 +38,9 @@ const JOB_STATUS_COLORS: Record<string, string> = {
   SEALED: '#d97706', DELIVERED: '#1a7c3e', DONE: '#374151', OPEN: '#2563eb',
 }
 
-const USER_XP = 4800
-
 export function IseProfile() {
+  const user = useAuthStore(s => s.user)
+  const USER_XP = user?.ubuntuScore ?? user?.honorXp ?? 0
   const [tab, setTab] = React.useState<IseTab>('Work')
   const [showRank, setShowRank] = React.useState(false)
 
@@ -64,7 +65,7 @@ export function IseProfile() {
         ))}
       </div>
 
-      {tab === 'Work'     && <IseWorkTab onShowRank={() => setShowRank(true)} />}
+      {tab === 'Work'     && <IseWorkTab xp={USER_XP} onShowRank={() => setShowRank(true)} />}
       {tab === 'Tools'    && <IseToolsTab />}
       {tab === 'Villages' && <IseVillagesTab />}
 
@@ -74,9 +75,9 @@ export function IseProfile() {
 }
 
 // ── Work tab ─────────────────────────────────────────────────────────────────
-function IseWorkTab({ onShowRank }: { onShowRank: () => void }) {
-  const rank = getRankFromXP(USER_XP)
-  const { progress, next } = getXPProgress(USER_XP)
+function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) {
+  const rank = getRankFromXP(xp)
+  const { progress, next } = getXPProgress(xp)
 
   return (
     <>
@@ -102,7 +103,7 @@ function IseWorkTab({ onShowRank }: { onShowRank: () => void }) {
             <div style={{ height: '100%', background: `linear-gradient(90deg, ${rank.color}, ${rank.color}aa)`, width: `${progress * 100}%`, borderRadius: 99 }} />
           </div>
           <div style={{ fontSize: 9, color: 'rgba(255,255,255,.35)' }}>
-            {next ? `${(next.xpRequired - USER_XP).toLocaleString()} XP to Lv ${next.level} · ${next.name}` : 'MAX LEVEL ✦'}
+            {next ? `${(next.xpRequired - xp).toLocaleString()} XP to Lv ${next.level} · ${next.name}` : 'MAX LEVEL ✦'}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 10, color: 'rgba(255,255,255,.2)', flexShrink: 0 }}>

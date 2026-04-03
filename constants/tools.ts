@@ -12,7 +12,8 @@ import { getRoleByKey } from './role-registry'
 export interface ToolDefinition {
   key: string
   name: string
-  icon: string // emoji
+  icon: string // emoji fallback
+  iconComponent?: string // key for afro-icons component
   description: string
   category:
     | 'commerce'
@@ -46,6 +47,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
     key: 'quick_invoice',
     name: 'Quick Invoice',
     icon: '📋',
+    iconComponent: 'KowrieIcon',
     description: 'Generate a professional invoice in 30 seconds',
     category: 'commerce',
     opensBusinessSession: true,
@@ -249,6 +251,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
     key: 'trade_session',
     name: 'Open Trade Session',
     icon: '🤝',
+    iconComponent: 'DjembeIcon',
     description: 'Start a sealed business chat with escrow',
     category: 'communication',
     opensBusinessSession: true,
@@ -308,6 +311,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
     key: 'escrow_release',
     name: 'Escrow Manager',
     icon: '🔒',
+    iconComponent: 'NkisiShield',
     description: 'Lock and release payments when both parties agree',
     category: 'finance',
     opensBusinessSession: false,
@@ -1905,6 +1909,38 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
     category: 'sports',
     opensBusinessSession: true,
     cowrieFlow: 'earns',
+  },
+
+  // ── Missing tools referenced by ROLE_REGISTRY ────────────────────────────
+
+  chat_secure: {
+    key: 'chat_secure',
+    name: 'Seso Chat (Secure)',
+    icon: '💬',
+    description: 'End-to-end encrypted messaging with clients, colleagues, and community',
+    category: 'communication',
+    opensBusinessSession: false,
+    cowrieFlow: 'neutral',
+  },
+
+  medical_records: {
+    key: 'medical_records',
+    name: 'Medical Records',
+    icon: '🩺',
+    description: 'Secure digital patient records — consultations, prescriptions, referrals',
+    category: 'health',
+    opensBusinessSession: true,
+    cowrieFlow: 'earns',
+  },
+
+  portfolio_tracker: {
+    key: 'portfolio_tracker',
+    name: 'Portfolio Tracker',
+    icon: '📊',
+    description: 'Track investment portfolio performance, assets, and returns',
+    category: 'finance',
+    opensBusinessSession: false,
+    cowrieFlow: 'neutral',
   },
 }
 

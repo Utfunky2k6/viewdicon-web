@@ -9,7 +9,6 @@ import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
 @keyframes vr-wave{0%,100%{height:4px}50%{height:var(--wh,18px)}}
 @keyframes vr-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.15)}}
 @keyframes vr-ring{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.2);opacity:0}}

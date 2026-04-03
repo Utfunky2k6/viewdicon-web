@@ -7,6 +7,39 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
 import { TOOL_REGISTRY, type ToolDefinition } from '@/constants/tools'
+import { ROLE_REGISTRY } from '@/constants/role-registry'
+
+/* ── Village-specific default tools — supplement roles that only have the 3 generic tools ── */
+const VILLAGE_DEFAULT_TOOLS: Record<string, string[]> = {
+  commerce:     ['quick_invoice','inventory_tracker','pos_dashboard','order_dashboard','price_checker','review_tracker','daily_settlement','payment_link'],
+  agriculture:  ['quick_invoice','cold_chain_tracker','collection_tracker','report_generator','alert_system','document_vault','delivery_tracker','daily_route'],
+  health:       ['medical_records','appointment_book','telemedicine','queue_manager','report_generator','billing_dashboard','client_tracker','prescription_tool'],
+  education:    ['booking_calendar','document_vault','report_generator','content_calendar','publication_vault','project_tracker','analytics_report','client_tracker'],
+  arts:         ['portfolio','booking_calendar','analytics_report','content_calendar','review_tracker','payment_link','social_shop','quick_invoice'],
+  builders:     ['work_order','site_survey','maintenance_log','project_tracker','safety_checklist','report_generator','supplier_connect','inventory_tracker'],
+  energy:       ['site_survey','maintenance_log','work_order','report_generator','project_tracker','safety_checklist','quality_log','compliance_checker'],
+  transport:    ['route_planner','fuel_tracker','daily_route','delivery_tracker','maintenance_log','runner_dispatch','fleet_manager','quick_invoice'],
+  technology:   ['code_project','api_tester','ticket_system','project_tracker','report_generator','document_vault','analytics_report','client_tracker'],
+  media:        ['content_calendar','analytics_report','booking_calendar','review_tracker','portfolio','social_shop','campaign_manager','payment_link'],
+  finance:      ['transaction_log','cash_tracker','risk_calculator','portfolio_tracker','credit_book','escrow_release','ajo_circle','report_generator'],
+  justice:      ['case_log','document_vault','publication_vault','compliance_checker','report_generator','client_tracker','project_tracker','quick_invoice'],
+  government:   ['campaign_manager','compliance_checker','grant_tracker','impact_tracker','report_generator','document_vault','community_alert','analytics_report'],
+  security:     ['alert_system','community_alert','safety_checklist','territory_map','report_generator','maintenance_log','document_vault','daily_target_tracker'],
+  spirituality: ['community_board','booking_calendar','campaign_manager','document_vault','report_generator','collection_tracker','analytics_report','client_tracker'],
+  sports:       ['tournament_manager','booking_calendar','analytics_report','report_generator','project_tracker','client_tracker','quick_invoice','daily_target_tracker'],
+  fashion:      ['portfolio','booking_calendar','analytics_report','order_dashboard','inventory_tracker','social_shop','review_tracker','payment_link'],
+  family:       ['document_vault','community_board','booking_calendar','report_generator','client_tracker','alert_system','collection_tracker','quick_invoice'],
+  hospitality:  ['booking_calendar','review_tracker','order_dashboard','analytics_report','daily_menu_board','report_generator','billing_dashboard','client_tracker'],
+  holdings:     ['quick_invoice','document_vault','report_generator','community_board','booking_calendar','analytics_report','project_tracker','daily_target_tracker'],
+}
+
+function enrichRoleTools(villageId: string, staticKeys: string[]): ToolDefinition[] {
+  const defaults = VILLAGE_DEFAULT_TOOLS[villageId] ?? []
+  const allKeys = staticKeys.length <= 3
+    ? [...new Set([...staticKeys, ...defaults])].slice(0, 8)
+    : staticKeys
+  return allKeys.map(k => TOOL_REGISTRY[k]).filter(Boolean) as ToolDefinition[]
+}
 import { useVillageStore } from '@/stores/villageStore'
 import { VillageFlagBg } from '@/components/village/VillageFlagBg'
 
@@ -18,7 +51,6 @@ type ApiRoleTool = {
 /* ── CSS ── */
 const INJ = 'vd-village-detail-css'
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @keyframes vdFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes vdPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.15)}}
 @keyframes vdSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
@@ -62,28 +94,28 @@ const CREST_REQUIRED: Record<string, number> = {
 }
 const MOCK_USER_CREST: number = 2 // mock: current user is Crest II
 
-/* ── AI features per village ── */
+/* ── AI features per village — guardian spirits from canonical Pan-African spec ── */
 const VILLAGE_AI: Record<string, { name: string; powers: string[] }> = {
-  commerce:    { name: 'Aja (Market Oracle)', powers: ['Price prediction alerts', 'Demand surge detector', 'Supplier match AI', 'Fraud pattern scanner'] },
-  agriculture: { name: 'Oko (Farm Spirit)', powers: ['Crop disease image scanner', 'Weather-yield predictor', 'Market price optimizer', 'Soil analysis advisor'] },
-  health:      { name: 'Osanyin (Healer Spirit)', powers: ['Symptom triage assistant', 'Drug interaction checker', 'Patient risk scorer', 'Telemedicine AI translator'] },
-  education:   { name: 'Orunmila (Wisdom Keeper)', powers: ['Curriculum AI planner', 'Student progress predictor', 'Exam question generator', 'Learning gap detector'] },
-  technology:  { name: 'Ayelala (Digital Spirit)', powers: ['Code review assistant', 'Bug prediction AI', 'Security vulnerability scanner', 'Architecture advisor'] },
-  finance:     { name: 'Aje (Wealth Spirit)', powers: ['Credit scoring AI', 'Fraud detection engine', 'Investment risk analyzer', 'Cash flow predictor'] },
-  builders:    { name: 'Ogun (Builder Spirit)', powers: ['Material cost estimator', 'Safety hazard detector', 'Project timeline optimizer', 'Quality defect scanner'] },
-  arts:        { name: 'Osun (Creative Spirit)', powers: ['Style transfer AI', 'Music composition assist', 'Trend prediction engine', 'Audience sentiment analyzer'] },
-  media:       { name: 'Sango (Thunder Voice)', powers: ['Fake news detector', 'Engagement optimizer', 'Content calendar AI', 'Audience growth predictor'] },
-  justice:     { name: 'Obatala (Justice Spirit)', powers: ['Case law research AI', 'Contract clause analyzer', 'Dispute resolution advisor', 'Compliance checker AI'] },
-  security:    { name: 'Esu (Guardian Spirit)', powers: ['Threat pattern analyzer', 'Anomaly detection engine', 'Incident response advisor', 'Risk assessment AI'] },
-  government:  { name: 'Sango (Governance Oracle)', powers: ['Policy impact simulator', 'Budget optimization AI', 'Public sentiment analyzer', 'Resource allocation advisor'] },
-  spirituality:{ name: 'Ifa (Divination Spirit)', powers: ['Community mood analyzer', 'Event attendance predictor', 'Donation optimizer', 'Volunteer match AI'] },
-  fashion:     { name: 'Yemoja (Fashion Spirit)', powers: ['Trend forecasting AI', 'Color palette generator', 'Body fit recommender', 'Style match engine'] },
-  family:      { name: 'Nana (Ancestor Spirit)', powers: ['Family conflict mediator', 'Heritage document scanner', 'Kinship mapper AI', 'Elder care advisor'] },
-  transport:   { name: 'Ogun (Road Spirit)', powers: ['Route optimization AI', 'Fuel consumption predictor', 'Demand surge calculator', 'Maintenance predictor'] },
-  energy:      { name: 'Sango (Energy Spirit)', powers: ['Load forecasting AI', 'Solar yield optimizer', 'Grid stability analyzer', 'Consumption pattern detector'] },
-  hospitality: { name: 'Osun (Host Spirit)', powers: ['Occupancy predictor', 'Review sentiment analyzer', 'Dynamic pricing AI', 'Guest preference engine'] },
-  sports:      { name: 'Ogun (Champion Spirit)', powers: ['Performance analytics AI', 'Injury risk predictor', 'Training plan optimizer', 'Opponent analysis engine'] },
-  holdings:    { name: 'Oduduwa (Sovereign Spirit)', powers: ['Portfolio optimizer', 'Market sentiment analyzer', 'Risk correlation engine', 'Valuation predictor'] },
+  commerce:    { name: 'Anansi · Akan · Ghana', powers: ['Price prediction alerts', 'Demand surge detector', 'Supplier match AI', 'Fraud pattern scanner'] },
+  agriculture: { name: 'Osiris · Ancient Egypt', powers: ['Crop disease image scanner', 'Weather-yield predictor', 'Market price optimizer', 'Soil analysis advisor'] },
+  health:      { name: 'Sekhmet · Ancient Egypt', powers: ['Symptom triage assistant', 'Drug interaction checker', 'Patient risk scorer', 'Telemedicine AI translator'] },
+  education:   { name: 'Thoth · Ancient Egypt', powers: ['Curriculum AI planner', 'Student progress predictor', 'Exam question generator', 'Learning gap detector'] },
+  technology:  { name: 'Thoth · Ancient Egypt', powers: ['Code review assistant', 'Bug prediction AI', 'Security vulnerability scanner', 'Architecture advisor'] },
+  finance:     { name: 'Aje · Yoruba · Nigeria', powers: ['Credit scoring AI', 'Fraud detection engine', 'Investment risk analyzer', 'Cash flow predictor'] },
+  builders:    { name: 'Dedwen · Nubia · Kush', powers: ['Material cost estimator', 'Safety hazard detector', 'Project timeline optimizer', 'Quality defect scanner'] },
+  arts:        { name: 'Oya · Yoruba · Nigeria', powers: ['Style transfer AI', 'Music composition assist', 'Trend prediction engine', 'Audience sentiment analyzer'] },
+  media:       { name: 'Kouyaté · Mandinka · Guinea', powers: ['Fake news detector', 'Engagement optimizer', 'Content calendar AI', 'Audience growth predictor'] },
+  justice:     { name: 'Imana · Kinyarwanda · Rwanda', powers: ['Case law research AI', 'Contract clause analyzer', 'Dispute resolution advisor', 'Compliance checker AI'] },
+  security:    { name: 'Ogun · Pan-African · West Africa', powers: ['Threat pattern analyzer', 'Anomaly detection engine', 'Incident response advisor', 'Risk assessment AI'] },
+  government:  { name: 'Negus Negusti · Ge\'ez · Ethiopia', powers: ['Policy impact simulator', 'Budget optimization AI', 'Public sentiment analyzer', 'Resource allocation advisor'] },
+  spirituality:{ name: 'Ifa / Orunmila · Pan-African', powers: ['Community mood analyzer', 'Event attendance predictor', 'Donation optimizer', 'Volunteer match AI'] },
+  fashion:     { name: 'Osun · Yoruba · Nigeria', powers: ['Trend forecasting AI', 'Color palette generator', 'Body fit recommender', 'Style match engine'] },
+  family:      { name: 'Nana Buluku · Fon · Benin Republic', powers: ['Family conflict mediator', 'Heritage document scanner', 'Kinship mapper AI', 'Elder care advisor'] },
+  transport:   { name: 'Mami Wata · Pan-African', powers: ['Route optimization AI', 'Fuel consumption predictor', 'Demand surge calculator', 'Maintenance predictor'] },
+  energy:      { name: 'Nzambi Mpungu · Kikongo · Congo', powers: ['Load forecasting AI', 'Solar yield optimizer', 'Grid stability analyzer', 'Consumption pattern detector'] },
+  hospitality: { name: 'Osun · Yoruba · Nigeria', powers: ['Occupancy predictor', 'Review sentiment analyzer', 'Dynamic pricing AI', 'Guest preference engine'] },
+  sports:      { name: 'Sango · Yoruba/Fon · Pan-African', powers: ['Performance analytics AI', 'Injury risk predictor', 'Training plan optimizer', 'Opponent analysis engine'] },
+  holdings:    { name: 'Esu / Elegba · Pan-African', powers: ['Village match analyzer', 'Role alignment predictor', 'Migration path optimizer', 'Community fit scorer'] },
 }
 
 /* ── village stats (fetched from backend when available, zeros as fallback) ── */
@@ -245,42 +277,30 @@ export default function VillageDetailPage() {
   }
 
   const ai = VILLAGE_AI[villageId] || { name: 'Village Oracle', powers: [] }
-  const roles = village.roles || []
+  /* ── Roles: ROLE_REGISTRY is primary (50 per village, works offline + on Vercel)
+        API tools enrich when backend is reachable ── */
+  const roles = (ROLE_REGISTRY[villageId] || village.roles || []) as Array<{ key: string; name: string; desc: string; tools?: string[] }>
   const hasApiTools = Object.keys(apiToolMap).length > 0
 
-  /* ── merge API tools with TOOL_REGISTRY for icon/desc ── */
+  /* ── Build tool list per role: API data first, static TOOL_REGISTRY fallback ── */
   const allRoleTools = React.useMemo(() => {
     return roles.map(role => {
-      let tools: ToolDefinition[]
-      if (hasApiTools) {
-        const apiTools = apiToolMap[role.key] || []
-        tools = apiTools.map(at => {
+      // API path (when backend is reachable)
+      const apiEntries = apiToolMap[role.key] || []
+      if (apiEntries.length > 0) {
+        const tools: ToolDefinition[] = apiEntries.map(at => {
           const base = TOOL_REGISTRY[at.toolKey]
-          if (base) {
-            return {
-              ...base,
-              cowrieFlow: at.earnsCowrie ? 'earns' : 'neutral',
-              opensBusinessSession: at.opensSession,
-            } as ToolDefinition
-          }
-          // API tool not in local registry — create minimal def
-          return {
-            key: at.toolKey,
-            name: at.toolName,
-            icon: '🛠',
-            description: `${at.toolName} tool`,
-            category: 'professional',
-            opensBusinessSession: at.opensSession,
-            cowrieFlow: at.earnsCowrie ? 'earns' : 'neutral',
-          } as ToolDefinition
+          if (base) return { ...base, cowrieFlow: at.earnsCowrie ? 'earns' : 'neutral', opensBusinessSession: at.opensSession } as ToolDefinition
+          return { key: at.toolKey, name: at.toolName, icon: '🛠', description: `${at.toolName} tool`, category: 'professional' as const, opensBusinessSession: at.opensSession, cowrieFlow: at.earnsCowrie ? 'earns' : 'neutral' } as ToolDefinition
         })
-      } else {
-        // fallback: no API data yet, show empty
-        tools = []
+        return { role, tools }
       }
+      // Static fallback: use tools from ROLE_REGISTRY, enriched with village defaults
+      const staticToolKeys: string[] = (role as any).tools ?? []
+      const tools: ToolDefinition[] = enrichRoleTools(villageId, staticToolKeys)
       return { role, tools }
     })
-  }, [roles, apiToolMap, hasApiTools])
+  }, [roles, apiToolMap])
 
   const totalToolCount = React.useMemo(() => {
     if (liveStats) return liveStats.toolCount

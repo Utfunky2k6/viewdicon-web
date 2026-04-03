@@ -45,7 +45,6 @@ const STATUS_CONFIG: Record<SessionStatus, { label: string; color: string; bg: s
 
 // ── CSS ───────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap');
 @keyframes ssFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes ssPulse{0%,100%{opacity:1}50%{opacity:.5}}
 @keyframes ssSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}

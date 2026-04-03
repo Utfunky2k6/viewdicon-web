@@ -8,7 +8,6 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap');
 @keyframes ng-fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes ng-check{0%{transform:scale(0)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
 @keyframes ng-pulse{0%,100%{opacity:1}50%{opacity:.5}}

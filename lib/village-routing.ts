@@ -5,7 +5,7 @@ export interface RouteResult {
   villageId: string
   villageName: string
   villageEmoji: string
-  villageYorubaName: string
+  villageAncientName: string
   confidence: number
   griotExplanation: string
 }
@@ -30,7 +30,7 @@ export function routeToVillage(answers: string[]): RouteResult {
     villageId,
     villageName: village.name,
     villageEmoji: village.emoji,
-    villageYorubaName: village.yorubaName,
+    villageAncientName: village.ancientName,
     confidence,
     griotExplanation: topScore > 0
       ? `Based on what you shared, your work aligns with the ${village.name}.`
