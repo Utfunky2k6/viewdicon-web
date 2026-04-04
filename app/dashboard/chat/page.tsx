@@ -359,11 +359,24 @@ export default function ChatInboxPage() {
 
   /* ── tab config ── */
   const TABS: { key: Tab; label: string; count?: number; countColor: string }[] = [
-    { key: 'all',      label: 'All',      count: 16, countColor: C.greenL },
-    { key: 'requests', label: 'Requests', count: 2,  countColor: '#ef4444' },
+    { key: 'all',      label: 'All',      count: (chats.length > 0 ? chats : ALL_CHATS).length,            countColor: C.greenL },
+    { key: 'requests', label: 'Requests', count: (requests.length > 0 ? requests : REQUESTS).length,       countColor: '#ef4444' },
     { key: 'trusted',  label: 'Trusted',  countColor: C.greenL },
-    { key: 'business', label: 'Business', count: 3,  countColor: C.goldL },
+    { key: 'business', label: 'Business', count: BIZ_ACTIVE.length,                                        countColor: C.goldL },
   ]
+
+  const displayChats = (chats.length > 0 ? chats : ALL_CHATS).filter((c: any) =>
+    !search ||
+    c.name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.lastMessage?.toLowerCase().includes(search.toLowerCase()) ||
+    c.lastMsg?.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const displayRequests = (requests.length > 0 ? requests : REQUESTS).filter((r: any) =>
+    !search ||
+    r.handle?.toLowerCase().includes(search.toLowerCase()) ||
+    r.message?.toLowerCase().includes(search.toLowerCase())
+  )
 
   const LANGS: Lang[] = ['EN', 'YO', 'IG', 'HA', 'SW', 'ZU', 'AR']
 
@@ -565,7 +578,7 @@ export default function ChatInboxPage() {
             </div>
 
             {/* Chat items */}
-            {(chats.length > 0 ? chats : ALL_CHATS).map(ch => (
+            {displayChats.map(ch => (
               <div key={ch.id} onClick={() => router.push(`/dashboard/chat/${ch.id}`)} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '14px 18px', cursor: 'pointer',
@@ -672,7 +685,7 @@ export default function ChatInboxPage() {
             </div>
 
             {/* Request cards */}
-            {(requests.length > 0 ? requests : REQUESTS).map((r, i) => (
+            {displayRequests.map((r, i) => (
               <div key={i} className="seso-slide" style={{
                 padding: 16, borderRadius: 14, marginBottom: 12,
                 background: 'rgba(255,255,255,0.025)',

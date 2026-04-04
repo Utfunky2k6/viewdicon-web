@@ -93,7 +93,9 @@ const CREST_REQUIRED: Record<string, number> = {
   // Elite tools need IV+
   value_calculator: 4, territory_map: 4, bulk_order_manager: 4,
 }
-const MOCK_USER_CREST: number = 2 // mock: current user is Crest II
+const storedAuth = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
+const parsedAuth = storedAuth ? (() => { try { return JSON.parse(storedAuth) } catch { return null } })() : null
+const USER_CREST: number = parsedAuth?.state?.user?.crestLevel ?? parsedAuth?.state?.user?.crest ?? 2
 
 /* ── AI features per village — guardian spirits from canonical Pan-African spec ── */
 const VILLAGE_AI: Record<string, { name: string; powers: string[] }> = {
@@ -119,10 +121,6 @@ const VILLAGE_AI: Record<string, { name: string; powers: string[] }> = {
   holdings:    { name: 'Esu / Elegba · Pan-African', powers: ['Village match analyzer', 'Role alignment predictor', 'Migration path optimizer', 'Community fit scorer'] },
 }
 
-/* ── village stats (fetched from backend when available, zeros as fallback) ── */
-const VILLAGE_STATS: Record<string, { members: number; sessions: number; cowrie: string }> = {}
-const EMPTY_STATS = { members: 0, sessions: 0, cowrie: '₡0' }
-
 /* ── single tool card ── */
 function ToolCard({
   tool, vc, roleKey, villageId, onLaunch,
@@ -130,7 +128,7 @@ function ToolCard({
   tool: ToolDefinition; vc: string; roleKey: string; villageId: string; onLaunch: (tool: ToolDefinition, roleKey: string) => void
 }) {
   const req = CREST_REQUIRED[tool.key] ?? 1
-  const locked = req > MOCK_USER_CREST
+  const locked = req > USER_CREST
   return (
     <div
       className="vd-tool-card"
@@ -357,14 +355,15 @@ export default function VillageDetailPage() {
     const p = new URLSearchParams({ village: villageId, role: roleKey })
     // Fire-and-forget: start a tool session in the background if tool opens sessions
     if (tool.opensBusinessSession) {
-      const token = typeof window !== 'undefined'
-        ? (JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.accessToken ?? '')
-        : ''
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
+      const parsed = stored ? JSON.parse(stored) : null
+      const token = parsed?.state?.token ?? ''
+      const userAfroId = parsed?.state?.user?.afroId ?? ''
       fetch('/api/v1/tool-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
-          userAfroId: JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.user?.afroId ?? '',
+          userAfroId,
           villageId, roleKey, toolKey: tool.key,
         }),
       }).catch(() => {})
@@ -630,7 +629,7 @@ export default function VillageDetailPage() {
                 {allRoleTools.map(({ role, tools }, ri) => {
                   const isCollapsed = collapsedRoles.has(role.key)
                   const isHighlighted = selectedRole === role.key
-                  const lockedCount = tools.filter(t => (CREST_REQUIRED[t.key] ?? 1) > MOCK_USER_CREST).length
+                  const lockedCount = tools.filter(t => (CREST_REQUIRED[t.key] ?? 1) > USER_CREST).length
                   return (
                     <div
                       key={role.key}
@@ -714,7 +713,7 @@ export default function VillageDetailPage() {
                 }}>
                   <p style={{ fontSize: 10, color: C.gold, fontWeight: 700, margin: '0 0 6px' }}>🔒 Crest Locking</p>
                   <p style={{ fontSize: 9.5, color: C.textDim, lineHeight: 1.5, margin: 0 }}>
-                    Some advanced tools require <strong style={{ color: C.text }}>Crest II, III or IV</strong>. Keep earning Cowrie, completing sessions, and rising in your village to unlock them. Your current level: <strong style={{ color: C.goldL }}>Crest {MOCK_USER_CREST === 1 ? 'I' : MOCK_USER_CREST === 2 ? 'II' : MOCK_USER_CREST === 3 ? 'III' : 'IV'}</strong>.
+                    Some advanced tools require <strong style={{ color: C.text }}>Crest II, III or IV</strong>. Keep earning Cowrie, completing sessions, and rising in your village to unlock them. Your current level: <strong style={{ color: C.goldL }}>Crest {USER_CREST === 1 ? 'I' : USER_CREST === 2 ? 'II' : USER_CREST === 3 ? 'III' : 'IV'}</strong>.
                   </p>
                 </div>
               </div>

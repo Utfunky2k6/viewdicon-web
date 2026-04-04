@@ -1,6 +1,8 @@
 'use client'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/stores/authStore'
+import { sorosokeApi, profileApi } from '@/lib/api'
 
 const EGBE_TABS = ['Profile', 'Posts', 'Connections', 'Kinsmen'] as const
 type EgbeTab = typeof EGBE_TABS[number]
@@ -49,6 +51,8 @@ const CSS = `
 export function EgbeProfile() {
   const [tab, setTab] = React.useState<EgbeTab>('Profile')
   const [editOpen, setEditOpen] = React.useState(false)
+  const user = useAuthStore(s => s.user)
+  const authorId = user?.id ?? ''
 
   React.useEffect(() => {
     if (typeof document !== 'undefined' && !document.getElementById('egbe-css')) {
@@ -78,7 +82,7 @@ export function EgbeProfile() {
       </div>
 
       {tab === 'Profile' && <EgbeProfileTab />}
-      {tab === 'Posts' && <EgbePostsTab />}
+      {tab === 'Posts' && <EgbePostsTab authorId={authorId} />}
       {tab === 'Connections' && <EgbeConnectionsTab />}
       {tab === 'Kinsmen' && <KinsmenTab />}
 
@@ -136,15 +140,45 @@ function EgbeProfileTab() {
 }
 
 // ── Posts tab with 3-type filter ──────────────────────────────────────────
-function EgbePostsTab() {
+function EgbePostsTab({ authorId }: { authorId: string }) {
   const [activeType, setActiveType] = React.useState<PostType | 'ALL'>('ALL')
-  const [stirs, setStirs]   = React.useState<Record<string, number>>(Object.fromEntries(INITIAL_EGBE_POSTS.map(p => [p.id, p.stir])))
+  const [posts, setPosts] = React.useState<EgbePost[]>(INITIAL_EGBE_POSTS)
+  const [loading, setLoading] = React.useState(false)
+  const [stirs, setStirs]   = React.useState<Record<string, number>>({})
   const [kila, setKila]     = React.useState<Set<string>>(new Set())
   const [drummed, setDrummed] = React.useState<Set<string>>(new Set())
   const [agree, setAgree]   = React.useState<Record<string, boolean>>({})
   const [disagree, setDisagree] = React.useState<Record<string, boolean>>({})
 
-  const filtered = activeType === 'ALL' ? INITIAL_EGBE_POSTS : INITIAL_EGBE_POSTS.filter(p => p.type === activeType)
+  React.useEffect(() => {
+    if (!authorId) return
+    setLoading(true)
+    sorosokeApi.userPosts(authorId)
+      .then((r: unknown) => {
+        const rows = (r as { data?: unknown[] })?.data
+        if (!Array.isArray(rows) || rows.length === 0) return
+        const mapped: EgbePost[] = rows.map((p: unknown) => {
+          const post = p as Record<string, unknown>
+          return {
+            id:   String(post.id || ''),
+            type: (['PERSONAL','VILLAGE','ORACLE'] as PostType[]).includes(post.type as PostType) ? post.type as PostType : 'PERSONAL',
+            text: String(post.body || post.content || ''),
+            time: post.createdAt ? new Date(post.createdAt as string).toLocaleDateString() : 'now',
+            heat: String(post.heatScore ?? 0),
+            stir: Number(post.stirCount ?? 0),
+            kila: Number(post.kilaCount ?? 0),
+            villageId:   post.villageId as string | undefined,
+            villageName: post.villageName as string | undefined,
+          }
+        })
+        setPosts(mapped)
+        setStirs(Object.fromEntries(mapped.map(p => [p.id, p.stir])))
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [authorId])
+
+  const filtered = activeType === 'ALL' ? posts : posts.filter(p => p.type === activeType)
 
   return (
     <>
@@ -164,6 +198,15 @@ function EgbePostsTab() {
           </button>
         ))}
       </div>
+
+      {loading && <div style={{ textAlign:'center', padding:'20px', fontSize:12, color:'rgba(255,255,255,.3)' }}>⏳ Loading posts…</div>}
+
+      {!loading && filtered.length === 0 && (
+        <div style={{ textAlign:'center', padding:'24px 16px' }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>🥁</div>
+          <div style={{ fontSize:12, color:'rgba(255,255,255,.4)' }}>No posts yet — drum your first thought to the village</div>
+        </div>
+      )}
 
       {/* Post cards */}
       {filtered.map(post => {
@@ -383,10 +426,35 @@ function KinsmenTab() {
 // ── Edit Profile Modal ────────────────────────────────────────────────────
 
 function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [displayName, setDisplayName] = React.useState('Lion of the Market')
-  const [handle, setHandle] = React.useState('LionHeart247')
-  const [bio, setBio] = React.useState('Commerce Village elder in training. Trade runs in my blood.')
+  const user = useAuthStore(s => s.user)
+  const [displayName, setDisplayName] = React.useState(user?.displayName ?? '')
+  const [handle, setHandle] = React.useState(user?.handle ?? user?.username ?? '')
+  const [bio, setBio] = React.useState(user?.bio ?? '')
+  const [saving, setSaving] = React.useState(false)
   const [toast, setToast] = React.useState('')
+
+  // Sync with user data when modal opens
+  React.useEffect(() => {
+    if (open) {
+      setDisplayName(user?.displayName ?? '')
+      setHandle(user?.handle ?? user?.username ?? '')
+      setBio(user?.bio ?? '')
+    }
+  }, [open, user])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await profileApi.update({ displayName, handle, bio })
+      setToast('✅ Profile updated!')
+      setTimeout(() => { setToast(''); onClose() }, 1200)
+    } catch {
+      setToast('⚠️ Could not save — try again')
+      setTimeout(() => setToast(''), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (!open) return null
 
@@ -412,8 +480,12 @@ function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => voi
         <p style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,.4)', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:4 }}>Bio</p>
         <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3} maxLength={150} style={{ width:'100%', padding:'10px 12px', background:'rgba(255,255,255,.05)', border:'1.5px solid rgba(255,255,255,.1)', borderRadius:10, fontSize:13, color:'#fff', outline:'none', resize:'none', boxSizing:'border-box', marginBottom:4 }} />
         <p style={{ fontSize:9, color:'rgba(255,255,255,.25)', textAlign:'right', marginBottom:14 }}>{bio.length}/150</p>
-        <button onClick={() => { setToast('✅ Profile updated!'); setTimeout(() => { setToast(''); onClose() }, 1200) }} style={{ width:'100%', padding:14, borderRadius:14, border:'none', background:'linear-gradient(135deg,#d97706,#92400e)', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-          Save Changes
+        <button
+          disabled={saving}
+          onClick={handleSave}
+          style={{ width:'100%', padding:14, borderRadius:14, border:'none', background: saving ? 'rgba(217,119,6,.4)' : 'linear-gradient(135deg,#d97706,#92400e)', color:'#fff', fontSize:14, fontWeight:700, cursor: saving ? 'wait' : 'pointer' }}
+        >
+          {saving ? '⏳ Saving…' : 'Save Changes'}
         </button>
         {toast && <p style={{ textAlign:'center', fontSize:12, color:'#4ade80', marginTop:8, fontWeight:600 }}>{toast}</p>}
       </div>

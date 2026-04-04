@@ -191,15 +191,7 @@ export const connectionApi = {
   block:           (handle: string) => api.post('/api/v1/connections/block', { handle }),
 }
 
-// ── Feed ──────────────────────────────────────────────────────
-export const feedApi = {
-  list:  (type?: string) => api.get(`/api/feed${type ? `?type=${type}` : ''}`),
-  create: (data: unknown) => api.post('/api/feed', data),
-  react:  (postId: string, action: string) =>
-    api.post(`/api/feed/${postId}/react`, { action }),
-  tip:    (postId: string, cowries: number) =>
-    api.post(`/api/feed/${postId}/tip`, { cowries }),
-}
+// ── Feed (legacy — removed, use sorosokeApi instead) ────────
 
 // ── Banking ───────────────────────────────────────────────────
 export const bankingApi = {
@@ -269,29 +261,36 @@ export const masqueradeApi = {
 
 // ── Soro Soke Feed Engine ─────────────────────────────────────
 export const sorosokeApi = {
-  villageFeed: (skinContext: string, villageId?: string | null, cursor?: string) => {
+  villageFeed: (skinContext: string, villageId?: string | null, cursor?: string, sort?: 'hot' | 'fresh' | 'ready') => {
     const p = new URLSearchParams({ skinContext })
     if (villageId) p.set('villageId', villageId)
     if (cursor)    p.set('cursor', cursor)
-    return api.get<{ ok: boolean; data: unknown[]; cursor: string | null }>(`/api/sorosoke/posts/feed?${p}`)
+    if (sort)      p.set('sort', sort)
+    return api.get<{ ok: boolean; data: unknown[]; cursor: string | null }>(`/api/feed?${p}`)
   },
   nationFeed: (cursor?: string) =>
     api.get<{ ok: boolean; data: unknown[]; cursor: string | null }>(
-      `/api/sorosoke/posts/feed/nation${cursor ? `?cursor=${cursor}` : ''}`
+      `/api/feed/nation${cursor ? `?cursor=${cursor}` : ''}`
     ),
-  createPost: (data: { body: string; villageId: string; skinContext: string; mediaUrls?: string[] }) =>
-    api.post('/api/sorosoke/posts', data),
-  kila:       (postId: string) => api.post(`/api/sorosoke/posts/${postId}/kila`, {}),
-  stir:       (postId: string) => api.post(`/api/sorosoke/posts/${postId}/stir`, {}),
+  createPost: (data: { body: string; villageId: string; skinContext: string; type?: string; mediaUrls?: string[] }) =>
+    api.post('/api/posts', data),
+  kila:       (postId: string) => api.post(`/api/posts/${postId}/kila`, {}),
+  stir:       (postId: string) => api.post(`/api/posts/${postId}/stir`, {}),
   drum:       (postId: string, data: { content: string }) =>
-    api.post(`/api/sorosoke/posts/${postId}/drum`, data),
-  ubuntu:     (postId: string) => api.post(`/api/sorosoke/posts/${postId}/ubuntu`, {}),
+    api.post(`/api/posts/${postId}/drum`, data),
+  ubuntu:     (postId: string) => api.post(`/api/posts/${postId}/ubuntu`, {}),
   spray:      (postId: string, data: { amount: number }) =>
-    api.post(`/api/sorosoke/posts/${postId}/spray`, data),
-  comments:   (postId: string) => api.get(`/api/sorosoke/posts/${postId}/comments`),
+    api.post(`/api/posts/${postId}/spray`, data),
+  comments:   (postId: string) => api.get(`/api/posts/${postId}/comments`),
   addComment: (postId: string, body: string) =>
-    api.post(`/api/sorosoke/posts/${postId}/comments`, { body }),
+    api.post(`/api/posts/${postId}/comments`, { body }),
   trending:   () => api.get('/api/sorosoke/posts/hashtags/trending'),
+  /** Fetch posts by a specific author (for profile) */
+  userPosts: (authorId: string, cursor?: string) => {
+    const p = new URLSearchParams({ authorId })
+    if (cursor) p.set('cursor', cursor)
+    return api.get<{ ok: boolean; data: unknown[]; cursor: string | null }>(`/api/feed?${p}`)
+  },
 }
 
 // ── AI Advisors (Orisha) ──────────────────────────────────────
@@ -315,6 +314,8 @@ export const jollofTvApi = {
     ),
   spray:       (streamId: string, amount: number) =>
     api.post(`/api/jollof/streams/${streamId}/spray`, { amount }),
+  kila:        (streamId: string) =>
+    api.post(`/api/jollof/streams/${streamId}/kila`, {}),
   endStream:   (streamId: string) =>
     api.post(`/api/jollof/streams/${streamId}/end`, {}),
 
@@ -549,6 +550,13 @@ export const ringsApi = {
     api.get<any>('/api/rings/invites'),
   acceptBond: (bondId: string) =>
     api.patch<any>(`/api/rings/bonds/${bondId}/accept`, {}),
+}
+
+// ── Business Sessions ─────────────────────────────────────────
+export const sessionsApi = {
+  myActive:    () => api.get<{ sessions: unknown[]; count: number }>('/api/sessions/my/active'),
+  myCompleted: () => api.get<{ sessions: unknown[]; count: number; summary?: { totalSealed: number } }>('/api/sessions/my/completed'),
+  getById:     (id: string) => api.get<unknown>(`/api/sessions/${id}`),
 }
 
 export { ApiError }

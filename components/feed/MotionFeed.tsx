@@ -64,9 +64,9 @@ export function MotionFeed({ posts, onInteract }: MotionFeedProps) {
       // Double tap detected
       const rect = containerRef.current?.getBoundingClientRect()
       let x = 0, y = 0
-      if ('touches' in e && e.touches.length > 0) {
-        x = e.touches[0].clientX - (rect?.left ?? 0)
-        y = e.touches[0].clientY - (rect?.top ?? 0)
+      if ('changedTouches' in e && e.changedTouches.length > 0) {
+        x = e.changedTouches[0].clientX - (rect?.left ?? 0)
+        y = e.changedTouches[0].clientY - (rect?.top ?? 0)
       } else if ('clientX' in e) {
         x = e.clientX - (rect?.left ?? 0)
         y = e.clientY - (rect?.top ?? 0)

@@ -6,6 +6,7 @@
 import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { AddToPotSheet } from '@/components/jollof/stream-viewer/AddToPotSheet'
+import { jollofTvApi } from '@/lib/api'
 
 // ── Types ─────────────────────────────────────────────────────────
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
@@ -36,7 +37,7 @@ interface StreamData {
   kilaCount: number; stirCount: number
   sprayCount: number; sprayCowrieTotal: number
   nkisi: NkisiLevel
-  pinnedProduct?: { name: string; price: number; soldCount: number; marketPercent: number }
+  pinnedProduct?: { id?: string; name: string; price: number; soldCount: number; marketPercent: number }
   craftProgress?: number; craftTitle?: string
   agreePercent?: number; speakers?: Speaker[]
   harvestCrop?: string; harvestBags?: number
@@ -65,22 +66,151 @@ const CSS = `
 `
 
 // ── Type Config ─────────────────────────────────────────────────
-const TYPE_CONFIG: Record<StreamType, { label: string; emoji: string; accent: string; bgGrad: string }> = {
-  market:    { label: 'Market',    emoji: '🛒', accent: '#e07b00', bgGrad: 'linear-gradient(170deg, #1a1005 0%, #0d0804 100%)' },
-  healing:   { label: 'Healing',   emoji: '⚕️', accent: '#0369a1', bgGrad: 'linear-gradient(170deg, #04121a 0%, #0d0804 100%)' },
-  craft:     { label: 'Craft',     emoji: '🎨', accent: '#7c3aed', bgGrad: 'linear-gradient(170deg, #120a1f 0%, #0d0804 100%)' },
-  farm:      { label: 'Farm',      emoji: '🌾', accent: '#1a7c3e', bgGrad: 'linear-gradient(170deg, #071a0e 0%, #0d0804 100%)' },
-  knowledge: { label: 'Knowledge', emoji: '🎓', accent: '#4f46e5', bgGrad: 'linear-gradient(170deg, #0a0a1f 0%, #0d0804 100%)' },
-  oracle:    { label: 'Oracle',    emoji: '🦅', accent: '#d4a017', bgGrad: 'linear-gradient(170deg, #1a1505 0%, #0d0804 100%)' },
+const TYPE_CONFIG: Record<StreamType, { label: string; emoji: string; accent: string; bgGrad: string; bg: string }> = {
+  market:    { label: 'Market',    emoji: '🛒', accent: '#e07b00', bgGrad: 'linear-gradient(170deg, #1a1005 0%, #0d0804 100%)', bg: '#1a1005' },
+  healing:   { label: 'Healing',   emoji: '⚕️', accent: '#0369a1', bgGrad: 'linear-gradient(170deg, #04121a 0%, #0d0804 100%)', bg: '#04121a' },
+  craft:     { label: 'Craft',     emoji: '🎨', accent: '#7c3aed', bgGrad: 'linear-gradient(170deg, #120a1f 0%, #0d0804 100%)', bg: '#120a1f' },
+  farm:      { label: 'Farm',      emoji: '🌾', accent: '#1a7c3e', bgGrad: 'linear-gradient(170deg, #071a0e 0%, #0d0804 100%)', bg: '#071a0e' },
+  knowledge: { label: 'Knowledge', emoji: '🎓', accent: '#4f46e5', bgGrad: 'linear-gradient(170deg, #0a0a1f 0%, #0d0804 100%)', bg: '#0a0a1f' },
+  oracle:    { label: 'Oracle',    emoji: '🦅', accent: '#d4a017', bgGrad: 'linear-gradient(170deg, #1a1505 0%, #0d0804 100%)', bg: '#1a1505' },
 }
-
-// ── Stream Data (initially empty -- fetched from jollof-tv backend) ──
-const STREAM_CACHE: Record<string, StreamData> = {}
 
 const INITIAL_CHAT: ChatMessage[] = []
 
+/** Map raw API response to typed StreamData */
+function mapApiStream(raw: Record<string, unknown>): StreamData {
+  const type = (['market','healing','craft','farm','knowledge','oracle'].includes(String(raw.type))
+    ? raw.type : 'market') as StreamType
+  return {
+    id:               String(raw.id ?? raw.streamId ?? ''),
+    type,
+    isLive:           Boolean(raw.isLive ?? raw.status === 'LIVE'),
+    viewerCount:      Number(raw.viewerCount ?? raw.viewers ?? 0),
+    title:            String(raw.title ?? 'Live Stream'),
+    streamerName:     String(raw.streamerName ?? raw.hostName ?? 'Streamer'),
+    streamerRole:     String(raw.streamerRole ?? raw.hostRole ?? ''),
+    village:          String(raw.village ?? raw.villageName ?? 'Village'),
+    villageEmoji:     String(raw.villageEmoji ?? '🏘'),
+    city:             String(raw.city ?? ''),
+    country:          String(raw.country ?? ''),
+    kilaCount:        Number(raw.kilaCount ?? 0),
+    stirCount:        Number(raw.stirCount ?? 0),
+    sprayCount:       Number(raw.sprayCount ?? 0),
+    sprayCowrieTotal: Number(raw.sprayCowrieTotal ?? 0),
+    nkisi:            (['GREEN','AMBER','RED'].includes(String(raw.nkisi)) ? raw.nkisi : 'GREEN') as NkisiLevel,
+    pinnedProduct:    raw.pinnedProduct as StreamData['pinnedProduct'],
+    craftProgress:    raw.craftProgress as number | undefined,
+    craftTitle:       raw.craftTitle as string | undefined,
+    agreePercent:     raw.agreePercent as number | undefined,
+    speakers:         raw.speakers as Speaker[] | undefined,
+    harvestCrop:      raw.harvestCrop as string | undefined,
+    harvestBags:      raw.harvestBags as number | undefined,
+    topBid:           raw.topBid as number | undefined,
+    marketPrice:      raw.marketPrice as number | undefined,
+    lessonTitle:      raw.lessonTitle as string | undefined,
+    availableLangs:   raw.availableLangs as string[] | undefined,
+    questionCount:    raw.questionCount as number | undefined,
+    appointmentCount: raw.appointmentCount as number | undefined,
+  }
+}
+
+/** Dev fallback mock so stream page is never empty */
+function mockStream(id: string): StreamData {
+  return {
+    id, type: 'market', isLive: true, viewerCount: 1247,
+    title: 'Lagos Market — Fresh Palm Oil & Spices',
+    streamerName: 'Mama Ngozi', streamerRole: 'Market Vendor',
+    village: 'Commerce', villageEmoji: '🧺', city: 'Lagos', country: 'NG',
+    kilaCount: 892, stirCount: 234, sprayCount: 56, sprayCowrieTotal: 8400,
+    nkisi: 'GREEN',
+    pinnedProduct: { name: 'Premium Palm Oil · 5L', price: 4200, soldCount: 31, marketPercent: 12 },
+  }
+}
+
 // ── Crest tiers (compact) ───────────────────────────────────────
 const CREST = ['', '🌱', '🌿', '🌳', '⭐', '👑', '🏛', '🦅']
+
+// ── Sub-components ───────────────────────────────────────────────
+
+function MarketProductRail({ products, streamId: _streamId, myAfroId: _myAfroId, accent, onAddToPot }: {
+  products: Array<{id?: string; name: string; price: number; soldCount?: number; marketPercent?: number}>
+  streamId: string; myAfroId: string; accent: string
+  onAddToPot: (productId: string, productName: string, price: number) => void
+}) {
+  return (
+    <div style={{ height:'100%', overflowY:'auto', scrollbarWidth:'none', padding:'12px 8px', display:'flex', flexDirection:'column', gap:10 }}>
+      <div style={{ fontSize:11, fontWeight:800, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:'.08em', padding:'0 4px 4px' }}>
+        🧺 {products.length} Products Live
+      </div>
+      {products.map((p, i) => {
+        const pid = p.id ?? p.name
+        const pct = p.marketPercent ?? 0
+        return (
+          <div key={i} style={{ background:'rgba(255,255,255,.05)', borderRadius:14, padding:'12px 11px', border:'1px solid rgba(255,255,255,.1)', display:'flex', flexDirection:'column', gap:8 }}>
+            {/* Product name */}
+            <div style={{ fontSize:13, fontWeight:700, color:'#f0f5ee', lineHeight:1.3 }}>{p.name}</div>
+            {/* Price row */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ fontSize:18, fontWeight:900, color: accent, fontFamily:'DM Mono,monospace' }}>₡{p.price.toLocaleString()}</div>
+              {(p.soldCount ?? 0) > 0 && (
+                <div style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,.4)', background:'rgba(255,255,255,.08)', borderRadius:99, padding:'3px 8px' }}>
+                  {p.soldCount} sold
+                </div>
+              )}
+            </div>
+            {/* Market price vs seller bar */}
+            {pct !== 0 && (
+              <div style={{ fontSize:9, color: pct < 0 ? '#4ade80' : '#f87171', fontWeight:700 }}>
+                {pct < 0 ? `↓ ${Math.abs(pct)}% below market` : `↑ ${pct}% above market`}
+              </div>
+            )}
+            {/* Add to Pot button */}
+            <button onClick={() => onAddToPot(pid, p.name, p.price)} style={{
+              width:'100%', padding:'9px', borderRadius:10, border:'none', cursor:'pointer',
+              background: `linear-gradient(135deg,${accent}cc,${accent}88)`,
+              fontSize:11, fontWeight:800, color:'#fff',
+            }}>
+              🫙 Add to Pot
+            </button>
+          </div>
+        )
+      })}
+      {products.length === 0 && (
+        <div style={{ textAlign:'center', padding:'24px 12px', color:'rgba(255,255,255,.3)', fontSize:12 }}>
+          No products listed yet
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OracleVoteBar({ agree, setAgree, accent }: { agree: number; setAgree: (n: number) => void; accent: string }) {
+  const disagree = 100 - agree
+  return (
+    <div style={{ padding:'14px 16px', background:'rgba(0,0,0,.6)', backdropFilter:'blur(10px)', borderTop:'1px solid rgba(255,255,255,.08)' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:'#4ade80' }}>✅ AGREE  {agree}%</div>
+        <div style={{ fontSize:10, fontWeight:700, color:'rgba(255,255,255,.4)' }}>LIVE VOTE</div>
+        <div style={{ fontSize:11, fontWeight:700, color:'#f87171' }}>{disagree}%  DISAGREE ❌</div>
+      </div>
+      {/* Bar */}
+      <div style={{ height:8, borderRadius:99, background:'rgba(255,255,255,.1)', overflow:'hidden', marginBottom:10 }}>
+        <div style={{ height:'100%', width:`${agree}%`, background:'linear-gradient(90deg,#1a7c3e,#4ade80)', borderRadius:99, transition:'width .6s ease' }} />
+      </div>
+      {/* Vote buttons */}
+      <div style={{ display:'flex', gap:10 }}>
+        <button onClick={() => setAgree(Math.min(99, agree + 3))} style={{
+          flex:1, padding:'12px', borderRadius:12, border:'2px solid rgba(74,222,128,.4)',
+          background:'rgba(74,222,128,.12)', color:'#4ade80', fontSize:13, fontWeight:800, cursor:'pointer'
+        }}>✅ Agree</button>
+        <button onClick={() => setAgree(Math.max(1, agree - 3))} style={{
+          flex:1, padding:'12px', borderRadius:12, border:'2px solid rgba(248,113,113,.4)',
+          background:'rgba(248,113,113,.12)', color:'#f87171', fontSize:13, fontWeight:800, cursor:'pointer'
+        }}>❌ Disagree</button>
+      </div>
+    </div>
+  )
+}
 
 // ════════════════════════════════════════════════════════════════
 // Main Component
@@ -89,7 +219,28 @@ export default function JollofStreamViewer() {
   const router = useRouter()
   const params = useParams()
   const streamId = params.streamId as string
-  const stream = STREAM_CACHE[streamId]
+
+  const storedAuth = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
+  const authState = storedAuth ? (() => { try { return JSON.parse(storedAuth) } catch { return null } })() : null
+  const myAfroId = authState?.state?.user?.afroId ?? 'guest'
+
+  const [stream, setStream] = React.useState<StreamData | null>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    if (!streamId) return
+    jollofTvApi.get(streamId)
+      .then((res) => {
+        const data = (res as { ok?: boolean; data?: unknown }).data
+        if (data && typeof data === 'object') {
+          setStream(mapApiStream(data as Record<string, unknown>))
+        } else {
+          setStream(mockStream(streamId))
+        }
+      })
+      .catch(() => setStream(mockStream(streamId)))
+      .finally(() => setLoading(false))
+  }, [streamId])
 
   const [showChat, setShowChat] = React.useState(true)
   const [showSpraySheet, setShowSpraySheet] = React.useState(false)
@@ -100,10 +251,23 @@ export default function JollofStreamViewer() {
   const [hearts, setHearts] = React.useState<Array<{ id: number; x: number }>>([])
   const [agreeVote, setAgreeVote] = React.useState<'agree' | 'disagree' | null>(null)
   const [handRaised, setHandRaised] = React.useState(false)
-  const [showProductSheet, setShowProductSheet] = React.useState(false)
+  const [addToPotOpen, setAddToPotOpen] = React.useState(false)
+  const [addToPotProduct, setAddToPotProduct] = React.useState<{id:string; name:string; price:number} | null>(null)
+  const [oracleAgree, setOracleAgree] = React.useState(67)
   const [bidAmount, setBidAmount] = React.useState('')
   const [activeLang, setActiveLang] = React.useState('EN')
+  const [showProductSheet, setShowProductSheet] = React.useState(false)
   const chatEndRef = React.useRef<HTMLDivElement>(null)
+
+  /* ── derives products list from stream or mock ── */
+  const products = React.useMemo(() => {
+    if (!stream) return []
+    // market stream has products array on the stream object; fall back to pinnedProduct as array of 1
+    const raw = (stream as unknown as Record<string, unknown>).products
+    if (Array.isArray(raw) && raw.length > 0) return raw as Array<{id?: string; name: string; price: number; soldCount?: number; marketPercent?: number}>
+    if (stream.pinnedProduct) return [{ ...stream.pinnedProduct, id: stream.pinnedProduct.id ?? stream.pinnedProduct.name }]
+    return []
+  }, [stream])
 
   React.useEffect(() => {
     if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return
@@ -114,6 +278,19 @@ export default function JollofStreamViewer() {
   React.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages])
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100dvh', background: '#0d0804', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 36, marginBottom: 12, animation: 'heartFloat 1.5s ease-in-out infinite' }}>📺</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(240,247,240,.5)', fontFamily: 'Sora, sans-serif' }}>
+            Tuning in…
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (!stream) {
     return (
@@ -142,6 +319,7 @@ export default function JollofStreamViewer() {
   }
 
   const tc = TYPE_CONFIG[stream.type]
+  const cfg = tc
 
   const handleSendChat = () => {
     if (!chatInput.trim()) return
@@ -160,6 +338,7 @@ export default function JollofStreamViewer() {
     }
     setChatMessages(prev => [...prev, msg])
     setShowSpraySheet(false)
+    jollofTvApi.spray(streamId, sprayAmount).catch(() => {})
   }
 
   const handleKila = () => {
@@ -168,6 +347,12 @@ export default function JollofStreamViewer() {
     const newHeart = { id: Date.now(), x: 20 + Math.random() * 60 }
     setHearts(prev => [...prev, newHeart])
     setTimeout(() => setHearts(prev => prev.filter(h => h.id !== newHeart.id)), 2000)
+    jollofTvApi.kila(streamId).catch(() => {})
+  }
+
+  const handleAddToPotFromRail = (productId: string, productName: string, price: number) => {
+    setAddToPotProduct({ id: productId, name: productName, price })
+    setAddToPotOpen(true)
   }
 
   // ── Type-specific overlay ─────────────────────────────────────
@@ -317,93 +502,7 @@ export default function JollofStreamViewer() {
         )
 
       case 'oracle':
-        return (
-          <div style={{
-            position: 'absolute', bottom: showChat ? 340 : 180, left: 14, right: 14,
-          }}>
-            {/* Speaker circles */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
-              background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(8px)',
-              borderRadius: 14, padding: '10px 14px',
-            }}>
-              {(stream.speakers ?? []).map((sp, i) => (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                  <div
-                    className={sp.speaking ? 'jv-speaker' : ''}
-                    style={{
-                      width: 42, height: 42, borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${sp.color}, ${sp.color}88)`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 800, color: '#fff',
-                      border: sp.speaking ? `2px solid ${sp.color}` : '2px solid transparent',
-                    }}
-                  >
-                    {sp.name.charAt(0)}
-                  </div>
-                  <div style={{ fontSize: 8, color: 'rgba(240,247,240,.5)' }}>{sp.name}</div>
-                </div>
-              ))}
-              <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                <div style={{ fontSize: 9, color: 'rgba(240,247,240,.4)' }}>Talking Stick</div>
-                <div className="jv-knot" style={{ fontSize: 18 }}>🪵</div>
-              </div>
-            </div>
-            {/* Pulse vote */}
-            <div style={{
-              background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(12px)',
-              borderRadius: 14, padding: '10px 14px',
-              border: '1px solid rgba(212,160,23,.2)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 14, fontWeight: 900, color: '#22c55e' }}>{stream.agreePercent}%</span>
-                <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,.08)', overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', width: `${stream.agreePercent}%`,
-                    background: 'linear-gradient(90deg, #22c55e, #4ade80)',
-                    borderRadius: 3, transition: 'width .4s',
-                  }} />
-                </div>
-                <span style={{ fontSize: 14, fontWeight: 900, color: '#ef4444' }}>{100 - (stream.agreePercent ?? 50)}%</span>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  onClick={() => setAgreeVote('agree')}
-                  style={{
-                    flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: agreeVote === 'agree' ? 'rgba(34,197,94,.25)' : 'rgba(255,255,255,.06)',
-                    color: agreeVote === 'agree' ? '#22c55e' : 'rgba(240,247,240,.5)',
-                    fontSize: 12, fontWeight: 700,
-                  }}
-                >
-                  ✓ Agree
-                </button>
-                <button
-                  onClick={() => setAgreeVote('disagree')}
-                  style={{
-                    flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: agreeVote === 'disagree' ? 'rgba(239,68,68,.25)' : 'rgba(255,255,255,.06)',
-                    color: agreeVote === 'disagree' ? '#ef4444' : 'rgba(240,247,240,.5)',
-                    fontSize: 12, fontWeight: 700,
-                  }}
-                >
-                  ✗ Disagree
-                </button>
-                <button
-                  onClick={() => setHandRaised(!handRaised)}
-                  style={{
-                    padding: '8px 14px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                    background: handRaised ? 'rgba(212,160,23,.25)' : 'rgba(255,255,255,.06)',
-                    color: handRaised ? '#d4a017' : 'rgba(240,247,240,.5)',
-                    fontSize: 12, fontWeight: 700,
-                  }}
-                >
-                  {handRaised ? '🤚' : '✋'} Raise
-                </button>
-              </div>
-            </div>
-          </div>
-        )
+        return <OracleVoteBar agree={oracleAgree} setAgree={setOracleAgree} accent={tc.accent} />
 
       case 'knowledge':
         return (
@@ -491,6 +590,162 @@ export default function JollofStreamViewer() {
       default:
         return null
     }
+  }
+
+  /* ── MARKET STREAM: split layout — products left, video right ── */
+  if (stream.type === 'market') {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        background: tc.bgGrad,
+        display: 'flex', flexDirection: 'column',
+        fontFamily: 'DM Sans, system-ui, sans-serif',
+      }}>
+        {/* Adinkra bg */}
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.025, pointerEvents: 'none', backgroundImage: `repeating-linear-gradient(45deg, ${tc.accent} 0px, transparent 1px, transparent 20px, ${tc.accent} 21px)`, backgroundSize: '28px 28px' }} />
+
+        {/* ── Compact HUD ── */}
+        <div style={{ flexShrink: 0, padding: '10px 14px', paddingTop: 'max(env(safe-area-inset-top), 10px)', background: 'rgba(0,0,0,.55)', borderBottom: '1px solid rgba(255,255,255,.07)', position: 'relative', zIndex: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => router.push('/dashboard/jollof')} style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,.1)', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
+            <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0, background: `linear-gradient(135deg, ${tc.accent}, ${tc.accent}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, color: '#fff' }}>{stream.streamerName.charAt(0)}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f7f0', fontFamily: 'Sora, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stream.streamerName} · {stream.title}</div>
+              <div style={{ fontSize: 9, color: 'rgba(240,247,240,.5)' }}>{stream.villageEmoji} {stream.village} · {products.length} products listed</div>
+            </div>
+            {stream.isLive && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 6, background: 'rgba(239,68,68,.2)', flexShrink: 0 }}>
+                <div className="jv-live" style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444' }} />
+                <span style={{ fontSize: 9, fontWeight: 800, color: '#ef4444' }}>LIVE</span>
+              </div>
+            )}
+            <div style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(255,255,255,.08)', fontSize: 9, fontWeight: 700, color: '#f0f7f0', flexShrink: 0 }}>👁 {stream.viewerCount.toLocaleString()}</div>
+          </div>
+        </div>
+
+        {/* ── Body: split view ── */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+
+          {/* LEFT PANEL: scrollable product rail — like an e-commerce shop */}
+          <div style={{ width: '42%', borderRight: '1px solid rgba(255,255,255,.07)', overflowY: 'auto', scrollbarWidth: 'none', flexShrink: 0, background: 'rgba(0,0,0,.2)' }}>
+            {/* Market header */}
+            <div style={{ padding: '10px 12px 6px', background: `linear-gradient(135deg, ${tc.accent}18, transparent)`, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: tc.accent, textTransform: 'uppercase', letterSpacing: '.06em' }}>🧺 Live Market</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>{products.length} items · Tap to buy</div>
+            </div>
+            {/* Products */}
+            <div style={{ padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {products.length === 0 && (
+                <div style={{ padding: '20px 12px', textAlign: 'center', color: 'rgba(255,255,255,.3)', fontSize: 11 }}>No products listed yet</div>
+              )}
+              {products.map((p, i) => {
+                const pid = (p as {id?:string; name:string; price:number; soldCount?:number; marketPercent?:number}).id ?? (p as {name:string}).name
+                const pct = (p as {marketPercent?:number}).marketPercent ?? 0
+                const sold = (p as {soldCount?:number}).soldCount ?? 0
+                const price = (p as {price:number}).price
+                const name = (p as {name:string}).name
+                return (
+                  <div key={i} style={{ background: 'rgba(255,255,255,.05)', borderRadius: 12, padding: '10px', border: '1px solid rgba(255,255,255,.09)', display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    {/* Product image placeholder */}
+                    <div style={{ height: 80, borderRadius: 8, background: `linear-gradient(135deg, ${tc.accent}30, ${tc.accent}10)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>🛒</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#f0f5ee', lineHeight: 1.3 }}>{name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 15, fontWeight: 900, color: tc.accent, fontFamily: 'DM Mono, monospace' }}>₡{price.toLocaleString()}</div>
+                      {sold > 0 && <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,.4)', background: 'rgba(255,255,255,.07)', borderRadius: 99, padding: '2px 6px' }}>{sold} sold</div>}
+                    </div>
+                    {pct !== 0 && <div style={{ fontSize: 9, color: pct < 0 ? '#4ade80' : '#f87171', fontWeight: 700 }}>{pct < 0 ? `↓ ${Math.abs(pct)}% below market` : `↑ ${pct}% above market`}</div>}
+                    <button onClick={() => handleAddToPotFromRail(pid, name, price)} style={{ width: '100%', padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer', background: `linear-gradient(135deg, ${tc.accent}cc, ${tc.accent}88)`, fontSize: 11, fontWeight: 800, color: '#fff' }}>🫙 Add to Pot</button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* RIGHT PANEL: live video stream */}
+          <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,.35)' }}>
+            {/* Video placeholder — big type emoji */}
+            <div style={{ fontSize: 72, color: 'rgba(255,255,255,.05)', fontWeight: 900, userSelect: 'none' }}>{tc.emoji}</div>
+            {/* Viewer overlay at top of video */}
+            <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', gap: 6 }}>
+              <div style={{ padding: '3px 8px', borderRadius: 6, background: 'rgba(0,0,0,.5)', fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.6)' }}>🔴 {stream.viewerCount.toLocaleString()} watching</div>
+            </div>
+            {/* Floating hearts */}
+            {hearts.map(h => (
+              <div key={h.id} style={{ position: 'absolute', bottom: '40%', left: `${h.x}%`, fontSize: 20, animation: 'heartFloat 2s ease-out forwards', pointerEvents: 'none' }}>⭐</div>
+            ))}
+            {/* Side action bar */}
+            <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+              <button onClick={handleKila} style={{ width: 42, height: 42, borderRadius: '50%', background: kilaed ? 'rgba(212,160,23,.3)' : 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 16 }}>⭐</span>
+                <span style={{ fontSize: 7, fontWeight: 700, color: kilaed ? '#d4a017' : 'rgba(255,255,255,.5)' }}>{stream.kilaCount}</span>
+              </button>
+              <button style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 16 }}>🔥</span>
+                <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,255,255,.5)' }}>{stream.stirCount}</span>
+              </button>
+              <button onClick={() => setShowSpraySheet(true)} style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(212,160,23,.2)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: 16 }}>🐚</span>
+                <span style={{ fontSize: 7, fontWeight: 700, color: '#d4a017' }}>{stream.sprayCount}</span>
+              </button>
+              <button onClick={() => setShowChat(!showChat)} style={{ width: 42, height: 42, borderRadius: '50%', background: showChat ? `${tc.accent}30` : 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>💬</button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Live Chat Panel ── */}
+        {showChat && (
+          <div style={{ height: 190, background: 'rgba(0,0,0,.88)', borderTop: '1px solid rgba(255,255,255,.07)', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'relative', zIndex: 5 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 14px', display: 'flex', flexDirection: 'column', gap: 5, scrollbarWidth: 'none' }}>
+              {chatMessages.map(msg => (
+                <div key={msg.id} className="jv-msg" style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                  {msg.isSpray ? (
+                    <div style={{ fontSize: 11, color: '#d4a017', fontWeight: 700 }}><span style={{ color: '#f0f7f0', fontWeight: 800 }}>{msg.author}</span> sprayed 🐚 ₡{msg.sprayAmount}</div>
+                  ) : (
+                    <div style={{ fontSize: 11, lineHeight: 1.5 }}>
+                      <span style={{ color: tc.accent, fontWeight: 800 }}>{CREST[msg.crestTier] ?? ''} {msg.author}</span>
+                      <span style={{ color: 'rgba(240,247,240,.7)', marginLeft: 4 }}>{msg.text}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <div style={{ padding: '6px 12px', paddingBottom: 'max(env(safe-area-inset-bottom), 10px)', display: 'flex', gap: 6 }}>
+              <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendChat()} placeholder="Ask about products..." style={{ flex: 1, padding: '9px 12px', borderRadius: 10, background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.1)', color: '#f0f7f0', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
+              <button onClick={handleSendChat} style={{ padding: '9px 14px', borderRadius: 10, border: 'none', cursor: 'pointer', background: `${tc.accent}30`, color: tc.accent, fontWeight: 800, fontSize: 13 }}>↑</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Spray Sheet ── */}
+        {showSpraySheet && (
+          <div onClick={() => setShowSpraySheet(false)} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'flex-end' }}>
+            <div onClick={e => e.stopPropagation()} style={{ width: '100%', background: '#1a1005', border: '1px solid rgba(212,160,23,.2)', borderRadius: '24px 24px 0 0', padding: '18px 18px 28px' }}>
+              <div style={{ width: 38, height: 4, borderRadius: 2, margin: '0 auto 14px', background: 'rgba(255,255,255,.15)' }} />
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#f0f7f0', textAlign: 'center', fontFamily: 'Sora, sans-serif', marginBottom: 3 }}>🐚 Spray Cowries</div>
+              <div style={{ fontSize: 10, color: 'rgba(240,247,240,.4)', textAlign: 'center', marginBottom: 14 }}>Show appreciation to {stream.streamerName}</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                {[50, 200, 500, 1000].map(amt => (
+                  <button key={amt} onClick={() => setSprayAmount(amt)} style={{ flex: 1, padding: '12px 0', borderRadius: 12, border: 'none', cursor: 'pointer', background: sprayAmount === amt ? 'rgba(212,160,23,.2)' : 'rgba(255,255,255,.05)', color: sprayAmount === amt ? '#d4a017' : 'rgba(240,247,240,.5)', fontSize: 13, fontWeight: 800 }}>₡{amt}</button>
+                ))}
+              </div>
+              <button onClick={handleSpray} style={{ width: '100%', padding: '13px', borderRadius: 13, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg, #d4a017, #e07b00)', color: '#000', fontSize: 13, fontWeight: 800 }}>🐚 Spray ₡{sprayAmount}</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Add to Pot commerce bridge ── */}
+        {addToPotOpen && addToPotProduct && (
+          <AddToPotSheet
+            streamId={streamId}
+            product={{ id: addToPotProduct.id, name: addToPotProduct.name, price: addToPotProduct.price, soldCount: 0, marketPercent: 0 }}
+            streamerName={stream.streamerName}
+            buyerAfroId={myAfroId}
+            onClose={() => setAddToPotOpen(false)}
+          />
+        )}
+      </div>
+    )
   }
 
   return (
@@ -813,14 +1068,14 @@ export default function JollofStreamViewer() {
         <AddToPotSheet
           streamId={streamId}
           product={{
-            id:            stream.pinnedProduct.name, // placeholder until real productId available
+            id:            stream.pinnedProduct.id ?? stream.pinnedProduct.name,
             name:          stream.pinnedProduct.name,
             price:         stream.pinnedProduct.price,
             soldCount:     stream.pinnedProduct.soldCount,
             marketPercent: stream.pinnedProduct.marketPercent,
           }}
           streamerName={stream.streamerName}
-          buyerAfroId="me" // replaced by auth context in production
+          buyerAfroId={myAfroId}
           onClose={() => setShowProductSheet(false)}
         />
       )}

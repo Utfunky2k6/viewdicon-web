@@ -24,8 +24,6 @@ export type ConnectionRing =
 
 export type PotState = 'EMBER' | 'SIMMER' | 'BOIL' | 'FEAST' | 'SHARE_OUT' | 'ASHES'
 
-export type SocialAction = 'KILA' | 'MWANGA' | 'UKUTYA' | 'UHURU_DRUM' | 'KALABASH' | 'SIT_BY_THE_FIRE'
-
 // ============================================================
 // LAYER 1 — Afro-ID (Sacred / Private / Bank-Grade)
 // Never shown publicly. Used for wallet, recovery, clan voting.
@@ -182,23 +180,6 @@ export interface Connection {
   connectedAt: string
   afroIdShared: boolean   // true once trust handshake completed
   sharedFires?: number    // mutual connections
-}
-
-export interface PotPost {
-  id: string
-  authorId: string
-  author: Pick<PublicProfile, 'avatarUrl' | 'nkisiState' | 'ubuntuRank'> & { displayName: string; handle: string }
-  content: string
-  state: PotState
-  heatScore: number          // drives EMBER→FEAST transition
-  kilaCount: number          // resonance
-  mwangaCount: number        // deep resonance
-  ukutyaCount: number        // additions to thread
-  kalabashTotal: number      // cowries tipped
-  createdAt: string
-  updatedAt: string
-  villageId?: string
-  feedType: 'VILLAGE_HEARTH' | 'SORO_SOKE' | 'MARKET_CROSSROADS' | 'ANCESTOR_TREE'
 }
 
 export interface Village {

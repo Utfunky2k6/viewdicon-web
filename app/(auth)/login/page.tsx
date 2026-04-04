@@ -1,7 +1,7 @@
 'use client'
 import * as React from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { authApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
 import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
@@ -174,7 +174,17 @@ function CountryPicker({
 type Step = 'INPUT' | 'OTP'
 
 export default function LoginPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <LoginPageContent />
+    </React.Suspense>
+  )
+}
+
+function LoginPageContent() {
   const router  = useRouter()
+  const searchParams = useSearchParams()
+  const nextUrl = searchParams.get('next') ?? '/dashboard'
   const { setTokens, setUser, completeCeremony } = useAuthStore()
 
   const [method, setMethod]     = React.useState<'PHONE' | 'AFROID'>('PHONE')
@@ -209,20 +219,25 @@ export default function LoginPage() {
     if (method === 'PHONE' && phone.length < 7) { setError('Enter a valid phone number'); return }
     if (method === 'AFROID' && afroId.length < 14) { setError('Enter your full Afro-ID'); return }
     setError('')
-    // ── ON-SCREEN OTP: generate code and show screen IMMEDIATELY ──
-    const localCode = String(Math.floor(100000 + Math.random() * 900000))
-    setDevCode(localCode)
-    otpStartedRef.current = false
-    setOtp('')
-    setStep('OTP')
-    setCountdown(60)
-    // ── Background: try to sync with backend so verifyOtp can work ──
-    // If backend responds with its own code, update the display (only if user hasn't typed yet)
-    authApi.sendOtp(identifier, 'en').then(res => {
-      if (res.devCode && !otpStartedRef.current) {
-        setDevCode(res.devCode)
-      }
-    }).catch(() => { /* backend offline — local code stays, local match will verify */ })
+    setLoading(true)
+    try {
+      // ── ON-SCREEN OTP: generate code and show screen IMMEDIATELY ──
+      const localCode = String(Math.floor(100000 + Math.random() * 900000))
+      setDevCode(localCode)
+      otpStartedRef.current = false
+      setOtp('')
+      setStep('OTP')
+      setCountdown(60)
+      // ── Background: try to sync with backend so verifyOtp can work ──
+      // If backend responds with its own code, update the display (only if user hasn't typed yet)
+      authApi.sendOtp(identifier, 'en').then(res => {
+        if (res.devCode && !otpStartedRef.current) {
+          setDevCode(res.devCode)
+        }
+      }).catch(() => { /* backend offline — local code stays, local match will verify */ })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleOtpComplete = () => {
@@ -243,11 +258,10 @@ export default function LoginPage() {
           document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${secure}`
         }
         setVerified(true)
-        setTimeout(() => router.push('/dashboard'), 700)
+        setTimeout(() => router.push(nextUrl), 700)
       } catch {
         // Backend offline or OTP mismatch — try local code match
         if (currentDevCode && currentOtp === currentDevCode) {
-          console.warn('[auth] local-code fallback used — no backend OTP validation')
           const syntheticToken = `local_${Date.now()}_${Math.random().toString(36).slice(2)}`
           const syntheticUser = {
             id: 'local', afroId: identifier, displayName: 'Traveller',
@@ -262,7 +276,7 @@ export default function LoginPage() {
             document.cookie = `afk_token=${syntheticToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${secure}`
           }
           setVerified(true)
-          setTimeout(() => router.push('/dashboard'), 700)
+          setTimeout(() => router.push(nextUrl), 700)
         } else {
           setError('Verification failed — check the code and try again')
           setOtp('')

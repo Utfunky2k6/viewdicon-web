@@ -1,13 +1,23 @@
 'use client'
 // ════════════════════════════════════════════════════════════════════
-// Cowrie Flow — Creator Monetization Dashboard
-// Shows: Today's stats · Root Planters · Spray Leaderboard
-//        Pot History · Withdraw (Pull Cowrie)
+// Cowrie Flow — Creator Monetization Dashboard  (Phase 4)
+// Shows: Balance · Revenue Breakdown · Weekly Payout Timeline
+//        Root Planters · Spray Leaderboard · Pot History · Withdraw
 // ════════════════════════════════════════════════════════════════════
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { cowrieFlowApi, rootApi } from '@/lib/api'
 import { VOCAB } from '@/constants/vocabulary'
+
+// ── Mock summary data (replaced by live fetch when backend is up) ──
+const MOCK_SUMMARY = {
+  balance:        12500,
+  rootCommission:  4200,
+  sprayRevenue:    3100,
+  potCommission:    890,
+  channelAds:       410,
+  weeklyPayouts:  [1200, 1800, 900, 2100, 3400, 2600],
+}
 
 // ── Empty initial data (fetched from backend) ──────────────────────
 const INITIAL_STATS = {
@@ -44,6 +54,7 @@ export default function CowrieFlowPage() {
   const router = useRouter()
   const [stats, setStats] = React.useState(INITIAL_STATS)
   const [roots, setRoots] = React.useState(INITIAL_ROOTS)
+  const [summary, setSummary] = React.useState(MOCK_SUMMARY)
   const [withdrawOpen, setWithdrawOpen] = React.useState(false)
   const [withdrawAmt, setWithdrawAmt] = React.useState('')
   const [withdrawDone, setWithdrawDone] = React.useState(false)
@@ -61,12 +72,19 @@ export default function CowrieFlowPage() {
         setRoots(prev => ({ ...prev, free: d.free ?? prev.free, paid: d.paid ?? prev.paid, ancestral: d.ancestral ?? prev.ancestral }))
       }
     }).catch(() => {/* use mock */})
+
+    // Fetch cowrie-flow summary (Phase 4 backend)
+    fetch('/api/cowrie-flow/summary/me')
+      .then(r => r.json())
+      .then((d: typeof MOCK_SUMMARY) => { if (d?.balance !== undefined) setSummary(d) })
+      .catch(() => {/* keep mock */})
   }, [])
 
   const handleWithdraw = () => {
     const amount = Number(withdrawAmt)
-    if (!amount || amount > stats.balance) return
+    if (!amount || amount > summary.balance) return
     cowrieFlowApi.withdraw(amount).catch(() => {/* offline */})
+    setSummary(prev => ({ ...prev, balance: prev.balance - amount }))
     setWithdrawDone(true)
     setTimeout(() => { setWithdrawOpen(false); setWithdrawDone(false); setWithdrawAmt('') }, 1800)
   }
@@ -128,7 +146,7 @@ export default function CowrieFlowPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 16 }}>
             <span style={{ fontSize: 36, fontWeight: 900, fontFamily: "'Sora', sans-serif", color: '#fbbf24' }}>
-              🐚 {stats.balance.toLocaleString()}
+              🐚 {summary.balance.toLocaleString()}
             </span>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}>Cowrie</span>
           </div>
@@ -142,6 +160,81 @@ export default function CowrieFlowPage() {
           >
             {VOCAB.withdraw} 🏧
           </button>
+        </div>
+
+        {/* ── Revenue Breakdown (2×2 grid) ─────────────────────── */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,.5)', letterSpacing: '.08em', marginBottom: 8 }}>
+            THIS MONTH · REVENUE BREAKDOWN
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {([
+              { label: VOCAB.rootCommission, value: summary.rootCommission,  color: '#1a7c3e', icon: '🌳' },
+              { label: VOCAB.sprayRevenue,   value: summary.sprayRevenue,    color: '#7c3aed', icon: '💸' },
+              { label: VOCAB.potCommission,  value: summary.potCommission,   color: '#d4a017', icon: '🫙' },
+              { label: VOCAB.channelAds,     value: summary.channelAds,      color: '#0369a1', icon: '📢' },
+            ] as { label: string; value: number; color: string; icon: string }[]).map(card => (
+              <div key={card.label} style={{
+                padding: '14px 14px',
+                background: `${card.color}12`,
+                border: `1px solid ${card.color}28`,
+                borderRadius: 16,
+              }}>
+                <div style={{ fontSize: 20, marginBottom: 6 }}>{card.icon}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: card.color }}>
+                  🐚 {card.value.toLocaleString()}
+                </div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,.38)', fontWeight: 700, marginTop: 3, letterSpacing: '.04em' }}>
+                  {card.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Weekly Payout Timeline (div-based bar chart) ─────── */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,.5)', letterSpacing: '.08em', marginBottom: 10 }}>
+            {VOCAB.weeklyPayout.toUpperCase()} · LAST 6 WEEKS
+          </div>
+          <div style={{
+            background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)',
+            borderRadius: 16, padding: '14px 12px',
+          }}>
+            {(() => {
+              const max = Math.max(...summary.weeklyPayouts, 1)
+              const weekLabels = ['W-5', 'W-4', 'W-3', 'W-2', 'W-1', 'This\nWeek']
+              return (
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 90 }}>
+                  {summary.weeklyPayouts.map((val, i) => {
+                    const pct = (val / max) * 100
+                    const isLatest = i === summary.weeklyPayouts.length - 1
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
+                        <div style={{ fontSize: 8, color: '#d4a017', fontWeight: 800, whiteSpace: 'nowrap', opacity: isLatest ? 1 : 0.6 }}>
+                          {val >= 1000 ? `${(val / 1000).toFixed(1)}K` : val}
+                        </div>
+                        <div style={{
+                          width: '100%',
+                          height: `${pct}%`,
+                          minHeight: 6,
+                          borderRadius: '4px 4px 2px 2px',
+                          background: isLatest
+                            ? 'linear-gradient(180deg, #fbbf24, #d4a017)'
+                            : 'rgba(212,160,23,.3)',
+                          border: isLatest ? '1px solid rgba(212,160,23,.5)' : 'none',
+                          transition: 'height .4s ease',
+                        }} />
+                        <div style={{ fontSize: 8, color: 'rgba(255,255,255,.3)', textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.2 }}>
+                          {weekLabels[i]}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </div>
         </div>
 
         {/* ── Today at a Glance ────────────────────────────────── */}
@@ -349,7 +442,7 @@ export default function CowrieFlowPage() {
               🏧 {VOCAB.withdraw}
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.4)', marginBottom: 20 }}>
-              Available: 🐚 {stats.balance.toLocaleString()}
+              Available: 🐚 {summary.balance.toLocaleString()}
             </div>
 
             {withdrawDone ? (

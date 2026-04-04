@@ -1,13 +1,19 @@
 'use client'
 import * as React from 'react'
 import { useSkinStore } from '@/stores/skinStore'
+import { useAuthStore } from '@/stores/authStore'
+import { ringsApi } from '@/lib/api'
 
 const IDILE_TABS = ['Profile', 'Ancestor Tree', 'Vault'] as const
 type IdileTab = typeof IDILE_TABS[number]
 
+type RingBond = { id: string; name?: string; status?: string; ringType?: string; emoji?: string }
+
 export function IdileProfile() {
   const { activeSkin, pinConfirmed, requestSkin } = useSkinStore()
+  const user = useAuthStore(s => s.user)
   const [tab, setTab] = React.useState<IdileTab>('Profile')
+  const [bonds, setBonds] = React.useState<RingBond[]>([])
 
   // Guard: redirect to PIN if not confirmed
   React.useEffect(() => {
@@ -16,7 +22,23 @@ export function IdileProfile() {
     }
   }, [activeSkin, pinConfirmed, requestSkin])
 
+  // Fetch family bonds
+  React.useEffect(() => {
+    if (!user?.id) return
+    ringsApi.getBonds(user.id)
+      .then((r: unknown) => {
+        const raw = (r as { bonds?: unknown[]; data?: unknown[] })
+        const rows = raw?.bonds ?? raw?.data ?? []
+        if (Array.isArray(rows)) setBonds(rows as RingBond[])
+      })
+      .catch(() => {})
+  }, [user?.id])
+
   if (activeSkin !== 'CLAN' || !pinConfirmed) return null
+
+  const activeBonds  = bonds.filter(b => b.status === 'ACTIVE' || b.status === 'ACCEPTED')
+  const familyCircle = bonds.length || 7
+  const quorumActive = activeBonds.length || 3
 
   return (
     <>
@@ -39,14 +61,14 @@ export function IdileProfile() {
         ))}
       </div>
 
-      {tab === 'Profile' && <IdileProfileTab />}
-      {tab === 'Ancestor Tree' && <IdileTreeTab />}
+      {tab === 'Profile' && <IdileProfileTab familyCircle={familyCircle} quorumActive={quorumActive} total={familyCircle} />}
+      {tab === 'Ancestor Tree' && <IdileTreeTab bonds={bonds} quorumActive={quorumActive} total={familyCircle} />}
       {tab === 'Vault' && <IdileVaultTab />}
     </>
   )
 }
 
-function IdileProfileTab() {
+function IdileProfileTab({ familyCircle, quorumActive, total }: { familyCircle:number; quorumActive:number; total:number }) {
   return (
     <>
       {/* Purple hero */}
@@ -63,7 +85,7 @@ function IdileProfileTab() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 16 }}>
-          {[{ v: '7', l: 'Family\nCircle' }, { v: '3 of 7', l: 'Quorum\nActive' }, { v: 'Secure', l: 'Vault\nStatus' }].map(({ v, l }) => (
+          {[{ v: String(familyCircle), l: 'Family\nCircle' }, { v: `${quorumActive} of ${total}`, l: 'Quorum\nActive' }, { v: 'Secure', l: 'Vault\nStatus' }].map(({ v, l }) => (
             <div key={l} style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: '#a78bfa' }}>{v}</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,.6)', whiteSpace: 'pre-line' }}>{l}</div>
@@ -82,20 +104,38 @@ function IdileProfileTab() {
   )
 }
 
-function IdileTreeTab() {
-  const QUORUM_MEMBERS = [
-    { name: 'Mama',   emoji: '👩', approved: true  },
-    { name: 'Brother', emoji: '👨', approved: true  },
-    { name: 'Sister', emoji: '👧', approved: true  },
-    { name: 'Cousin', emoji: '👦', approved: false },
-    { name: 'Uncle',  emoji: '👴', approved: false },
-  ]
+function IdileTreeTab({ bonds, quorumActive, total }: { bonds: RingBond[]; quorumActive: number; total: number }) {
+  const QUORUM_MEMBERS = bonds.length > 0
+    ? bonds.slice(0, 7).map(b => ({
+        name: b.name ?? 'Family Member',
+        emoji: b.emoji ?? '👤',
+        approved: b.status === 'ACTIVE' || b.status === 'ACCEPTED',
+      }))
+    : [
+        { name: 'Mama',   emoji: '👩', approved: true  },
+        { name: 'Brother', emoji: '👨', approved: true  },
+        { name: 'Sister', emoji: '👧', approved: true  },
+        { name: 'Cousin', emoji: '👦', approved: false },
+        { name: 'Uncle',  emoji: '👴', approved: false },
+      ]
 
-  const LINEAGE = [
-    { name: 'Utibe Senior', rel: 'Grandfather · Akwa Ibom', emoji: '👴', ghost: false, online: false, status: '✦'       },
-    { name: 'Mma Utibe',    rel: 'Mother · Akwa Ibom',      emoji: '👩', ghost: false, online: true,  status: '🟢 Online' },
-    { name: '■■■■■■',       rel: 'Sister · Ghost mode',     emoji: '🌫', ghost: true,  online: false, status: '👻'       },
-  ]
+  const LINEAGE = bonds.length > 0
+    ? bonds.slice(0, 3).map(b => ({
+        name: b.name ?? '■■■■■■',
+        rel: b.ringType ?? 'Family · Clan',
+        emoji: b.emoji ?? '👤',
+        ghost: b.status === 'GHOST',
+        online: b.status === 'ACTIVE',
+        status: b.status === 'ACTIVE' ? '🟢 Online' : '✦',
+      }))
+    : [
+        { name: 'Utibe Senior', rel: 'Grandfather · Akwa Ibom', emoji: '👴', ghost: false, online: false, status: '✦'       },
+        { name: 'Mma Utibe',    rel: 'Mother · Akwa Ibom',      emoji: '👩', ghost: false, online: true,  status: '🟢 Online' },
+        { name: '■■■■■■',       rel: 'Sister · Ghost mode',     emoji: '🌫', ghost: true,  online: false, status: '👻'       },
+      ]
+
+  const quorumNeeded = Math.ceil(total * 0.57)
+  const quorumPct    = total > 0 ? Math.round((quorumActive / total) * 100) : 43
 
   return (
     <>
@@ -103,7 +143,7 @@ function IdileTreeTab() {
 
       {/* Quorum card */}
       <div style={{ background: '#12062a', border: '1px solid #7c3aed', borderRadius: 12, padding: 12, margin: '8px 12px' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#a78bfa', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>🛡 Recovery Quorum · 3 of 7 active</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#a78bfa', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>🛡 Recovery Quorum · {quorumActive} of {total} active</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 10 }}>If you ever lose access, 4 family members must approve your recovery. This is your communal safety net.</div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
           {QUORUM_MEMBERS.map((m) => (
@@ -114,9 +154,9 @@ function IdileTreeTab() {
           ))}
         </div>
         <div style={{ height: 4, background: '#1e1e2e', borderRadius: 99, overflow: 'hidden', marginBottom: 6 }}>
-          <div style={{ height: '100%', borderRadius: 99, background: '#7c3aed', width: '43%', transition: 'width 0.4s' }} />
+          <div style={{ height: '100%', borderRadius: 99, background: '#7c3aed', width: `${quorumPct}%`, transition: 'width 0.4s' }} />
         </div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>3 of 7 approvals needed · 4 more to secure</div>
+        <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{quorumActive} of {total} approvals needed · {Math.max(0, quorumNeeded - quorumActive)} more to secure</div>
       </div>
 
       {/* Lineage tree */}

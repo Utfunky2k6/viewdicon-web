@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { HonorRankScreen } from '@/components/profile/HonorRankScreen'
+import { sessionsApi } from '@/lib/api'
 
 const ISE_TABS = ['Work', 'Tools', 'Villages'] as const
 type IseTab = typeof ISE_TABS[number]
@@ -78,6 +79,44 @@ export function IseProfile() {
 function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) {
   const rank = getRankFromXP(xp)
   const { progress, next } = getXPProgress(xp)
+  const router = useRouter()
+  const user   = useAuthStore(s => s.user)
+
+  type RealJob = { id:string; title:string; status:string; cowrie:string; time:string; emoji:string }
+  const [jobs,       setJobs]       = React.useState<RealJob[]>([])
+  const [stats,      setStats]      = React.useState({ completed:0, earned:0, disputes:0 })
+  const [loadingJobs, setLoadingJobs] = React.useState(true)
+
+  React.useEffect(() => {
+    const SESSION_EMOJI: Record<string, string> = {
+      GOODS_SALE:'🌾', SERVICE_DELIVERY:'🤝', DELIVERY_ONLY:'🚚',
+      CONSULTING:'💡', DEFAULT:'📋',
+    }
+    Promise.all([
+      sessionsApi.myCompleted().catch(() => ({ sessions: [], summary: undefined })),
+      sessionsApi.myActive().catch(() => ({ sessions: [] })),
+    ]).then(([completed, active]) => {
+      const allCompleted = (completed.sessions ?? []) as Record<string,unknown>[]
+      const allActive    = (active.sessions ?? []) as Record<string,unknown>[]
+
+      const totalEarned = allCompleted.reduce((sum, s) => sum + Number(s.cowrieAmount ?? 0), 0)
+      const disputes    = allActive.filter(s => s.status === 'DISPUTED').length
+
+      setStats({ completed: allCompleted.length, earned: totalEarned, disputes })
+
+      const recent = [...allActive, ...allCompleted].slice(0, 8).map(s => ({
+        id:     String(s.id ?? ''),
+        title:  String(s.title ?? s.sessionType ?? 'Business Session'),
+        status: String(s.status ?? 'OPEN'),
+        cowrie: s.cowrieAmount ? `₡${Number(s.cowrieAmount).toLocaleString()}` : '₡0',
+        time:   s.updatedAt ? new Date(s.updatedAt as string).toLocaleDateString() : 'recent',
+        emoji:  SESSION_EMOJI[(s.sessionType as string) ?? 'DEFAULT'] ?? '📋',
+      }))
+      setJobs(recent)
+    }).finally(() => setLoadingJobs(false))
+  }, [])
+
+  const jobsToShow = jobs.length > 0 ? jobs : RECENT_JOBS
 
   return (
     <>
@@ -112,15 +151,14 @@ function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) 
         </div>
       </button>
 
-      {/* Work Record — 4 stat cards */}
+      {/* Work Record — stat cards (real data) */}
       <div style={{ padding: '10px 14px 5px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Work Record</div>
       <div style={{ display: 'flex', gap: 8, padding: '0 12px', overflowX: 'auto' }}>
         {[
-          { v: '147', l: 'Completed\nJobs',  color: '#1a7c3e' },
-          { v: '0',   l: 'Open\nDisputes',   color: '#1a7c3e' },
-          { v: '₡18K', l: 'Total\nEarned',   color: '#d4a017' },
-          { v: '52',  l: 'Kíla\nReceived',   color: '#a78bfa' },
-          { v: '4.9', l: 'Honour\nScore',    color: '#f87171' },
+          { v: loadingJobs ? '…' : String(stats.completed),                       l: 'Completed\nJobs',  color: '#1a7c3e' },
+          { v: loadingJobs ? '…' : String(stats.disputes),                         l: 'Open\nDisputes',   color: '#f87171' },
+          { v: loadingJobs ? '…' : `₡${stats.earned.toLocaleString()}`,            l: 'Total\nEarned',    color: '#d4a017' },
+          { v: String(user?.ubuntuScore ?? xp ?? 0),                               l: 'Honour\nScore',    color: '#a78bfa' },
         ].map(({ v, l, color }) => (
           <div key={l} style={{ minWidth: 88, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 8px', flexShrink: 0, textAlign: 'center' }}>
             <div style={{ fontSize: 18, fontWeight: 700, color }}>{v}</div>
@@ -132,7 +170,11 @@ function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) 
       {/* Recent work log */}
       <div style={{ padding: '10px 14px 5px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Recent Activity</div>
       <div style={{ padding: '0 12px' }}>
-        {RECENT_JOBS.map((job) => (
+        {loadingJobs && <div style={{ textAlign:'center', padding:'16px', fontSize:12, color:'rgba(255,255,255,.3)' }}>⏳ Loading sessions…</div>}
+        {!loadingJobs && jobsToShow.length === 0 && (
+          <div style={{ textAlign:'center', padding:'20px 0', fontSize:12, color:'rgba(255,255,255,.3)' }}>No sessions yet — start a trade to build your work record</div>
+        )}
+        {jobsToShow.map((job) => (
           <div key={job.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, marginBottom: 6 }}>
             <div style={{ width: 34, height: 34, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, background: 'rgba(26,124,62,.1)', border: '1px solid rgba(26,124,62,.2)', flexShrink: 0 }}>{job.emoji}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -141,11 +183,14 @@ function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) 
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#1a7c3e' }}>{job.cowrie}</div>
-              <div style={{ fontSize: 8, fontWeight: 700, padding: '1px 6px', borderRadius: 99, background: `${JOB_STATUS_COLORS[job.status]}18`, color: JOB_STATUS_COLORS[job.status], border: `1px solid ${JOB_STATUS_COLORS[job.status]}33`, marginTop: 2, display: 'inline-block' }}>{job.status}</div>
+              <div style={{ fontSize: 8, fontWeight: 700, padding: '1px 6px', borderRadius: 99, background: `${JOB_STATUS_COLORS[job.status] ?? '#374151'}18`, color: JOB_STATUS_COLORS[job.status] ?? '#9ca3af', border: `1px solid ${JOB_STATUS_COLORS[job.status] ?? '#374151'}33`, marginTop: 2, display: 'inline-block' }}>{job.status}</div>
             </div>
           </div>
         ))}
-        <button onClick={() => {}} style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(26,124,62,.2)', background: 'rgba(26,124,62,.05)', color: '#4ade80', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginBottom: 16 }}>
+        <button
+          onClick={() => router.push('/dashboard/sessions')}
+          style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(26,124,62,.2)', background: 'rgba(26,124,62,.05)', color: '#4ade80', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginBottom: 16 }}
+        >
           📋 View All Sessions →
         </button>
       </div>
