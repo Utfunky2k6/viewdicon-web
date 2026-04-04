@@ -160,6 +160,7 @@ export interface UserProfile extends PublicProfile {
   roleKey?: string
   // ── Gamification ──
   crestLevel?: number   // 1-5 badge level shown on avatar
+  honorXp?: number      // total XP from honor-service
   phone?: string        // masked phone, shown in settings (never raw in public profile)
 }
 

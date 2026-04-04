@@ -202,7 +202,7 @@ export default function VillagesPage() {
   React.useEffect(() => {
     // Load the authenticated user's real village (set during ceremony)
     const token = typeof window !== 'undefined'
-      ? (JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.accessToken ?? '')
+      ? (JSON.parse(localStorage.getItem('afk-auth') || '{}')?.state?.accessToken ?? '')
       : ''
     if (token) {
       fetch('/api/v1/me', { headers: { Authorization: `Bearer ${token}` } })
@@ -265,7 +265,7 @@ export default function VillagesPage() {
     setActiveVillage(id)
     // Persist to village-registry (fire-and-forget)
     const token = typeof window !== 'undefined'
-      ? (JSON.parse(localStorage.getItem('vd-auth') || '{}')?.state?.accessToken ?? '')
+      ? (JSON.parse(localStorage.getItem('afk-auth') || '{}')?.state?.accessToken ?? '')
       : ''
     if (token) {
       fetch('/api/v1/village-memberships', {

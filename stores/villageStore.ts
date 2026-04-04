@@ -58,6 +58,26 @@ export const useVillageStore = create<VillageStore>()(
     }),
     {
       name: 'afk-village',
+      // After rehydrating from localStorage, if no village is set (e.g. fresh citizen
+      // arriving from ceremony where villageId lives in authStore but not villageStore),
+      // synchronously hydrate from the auth store so components never see a null flash.
+      onRehydrateStorage: () => (state, error) => {
+        if (!error && state && !state.activeVillageId && typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('afk-auth')
+            if (raw) {
+              const parsed = JSON.parse(raw)
+              const user = parsed?.state?.user
+              if (user?.villageId) {
+                state.setActiveVillage(user.villageId as string)
+                if (user.roleKey) state.setActiveRole(user.roleKey as string)
+              }
+            }
+          } catch {
+            // localStorage unavailable or malformed — silently ignore
+          }
+        }
+      },
     }
   )
 )

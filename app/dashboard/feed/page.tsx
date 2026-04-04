@@ -7,6 +7,10 @@
 import * as React from 'react'
 import StoriesRow from '@/components/feed/StoriesRow'
 import { CommentSheet } from '@/components/feed/CommentSheet'
+import { sorosokeApi } from '@/lib/api'
+import { MotionFeed } from '@/components/feed/MotionFeed'
+import { FeedProgressBar } from '@/components/feed/FeedProgressBar'
+import type { Post as MotionPost } from '@/components/feed/feedTypes'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'soro-styles'
@@ -120,7 +124,65 @@ const ALL_POSTS: Post[] = [
     eventPayload:'{"__type":"event_drum","eventId":"evt-006","title":"Pan-African Football Day","eventType":"SPORTS","date":"2026-04-25T14:00:00","venueName":"Teslim Balogun Stadium, Lagos","villageId":"sports","village":"Sports Village","villageEmoji":"🏅","villageColor":"#ef4444","coverEmoji":"⚽","drumScope":"NATION","tiers":[{"name":"Terrace","price":3000,"available":1200},{"name":"VIP Box","price":20000,"available":24}],"isHospitalityTier":true,"description":"5-a-side tournament followed by a 11v11 final. Live Jollof TV broadcast."}' },
 ]
 
-/* ── waveform bars ── */
+/* ── motion feed mock posts (MotionPost type from feedTypes.ts) ── */
+const MOTION_POSTS: MotionPost[] = [
+  {
+    id:'m1', type:'VIDEO_STORY', author:'Mama Kemi', afroId:'AFR-NGA-COM-010201',
+    avatarColor:'rgba(224,123,0,.3)', village:'Commerce', villageEmoji:'🧺', role:'Market Queen',
+    skinContext:'ise', content:'Fresh tomatoes arriving at Mile 12 market — watch the quality check live! 🍅', tags:['market','tomatoes','commerce'],
+    time:'2m ago', kilaCount:142, stirCount:33, ubuntuCount:18, commentCount:27, drumScope:1,
+    heatScore:88, crestTier:4, nkisi:'GREEN', videoUrl:'', videoDurationSec:45,
+  },
+  {
+    id:'m2', type:'IMAGE_JOURNAL', author:'Adaeze Obi', afroId:'AFR-NGA-ART-010334',
+    avatarColor:'rgba(124,58,237,.3)', village:'Arts', villageEmoji:'🎨', role:'Visual Storyteller',
+    skinContext:'egbe', content:'My journey through 30 days of Adinkra pattern design — swipe to see the evolution of each symbol 🖌', tags:['art','adinkra','design'],
+    time:'18m ago', kilaCount:289, stirCount:67, ubuntuCount:44, commentCount:51, drumScope:2,
+    heatScore:95, crestTier:3, nkisi:'GREEN', imageUrls:[], captionLocale:'en',
+  },
+  {
+    id:'m3', type:'AUDIO_LETTER', author:'Griot Seun Kuti', afroId:'AFR-NGA-MED-010089',
+    avatarColor:'rgba(79,70,229,.3)', village:'Media', villageEmoji:'🎙', role:'Griot Storyteller',
+    skinContext:'egbe', content:'A letter to the diaspora — "Your roots run deeper than the ocean that separates us. Come home." 🌍', tags:['griot','diaspora','heritage'],
+    time:'1h ago', kilaCount:534, stirCount:12, ubuntuCount:201, commentCount:89, drumScope:3,
+    heatScore:96, crestTier:5, nkisi:'GREEN', audioDurationSec:180, spiritVoiceEnabled:true,
+  },
+  {
+    id:'m4', type:'VIDEO_STORY', author:'Chef Tolu', afroId:'AFR-NGA-HSP-010452',
+    avatarColor:'rgba(178,34,34,.3)', village:'Hospitality', villageEmoji:'🍽', role:'Master Chef',
+    skinContext:'ise', content:'Making Jollof Rice the traditional way — fire, iron pot, wooden spoon. No shortcuts. 🍚🔥', tags:['jollof','cooking','tradition'],
+    time:'3h ago', kilaCount:891, stirCount:234, ubuntuCount:67, commentCount:156, drumScope:2,
+    heatScore:92, crestTier:3, nkisi:'GREEN', videoUrl:'', videoDurationSec:120,
+  },
+  {
+    id:'m5', type:'TEXT_DRUM', author:'Elder Council', afroId:'AFR-NGA-GOV-010001',
+    avatarColor:'rgba(212,160,23,.3)', village:'Government', villageEmoji:'🏛', role:'Elder Speaker',
+    skinContext:'egbe', content:'"Ẹni tó ń ta ìbon sókè, ìbẹ̀ ni ó ti bọ̀ sílẹ̀" — He who shoots bullets into the sky will have them rain down on his own head.\n\nLet us build, not destroy. The village remembers everything.', tags:['proverb','wisdom','governance'],
+    time:'5h ago', kilaCount:1247, stirCount:34, ubuntuCount:456, commentCount:201, drumScope:3,
+    heatScore:97, crestTier:5, nkisi:'GREEN',
+  },
+  {
+    id:'m6', type:'IMAGE_JOURNAL', author:'Zara Fashions', afroId:'AFR-NGA-FSH-010567',
+    avatarColor:'rgba(236,72,153,.3)', village:'Fashion', villageEmoji:'👗', role:'Designer',
+    skinContext:'ise', content:'New Ankara collection dropping this week — each piece tells a story of our ancestors 🧵', tags:['fashion','ankara','heritage'],
+    time:'6h ago', kilaCount:678, stirCount:145, ubuntuCount:89, commentCount:92, drumScope:2,
+    heatScore:84, crestTier:2, nkisi:'GREEN', imageUrls:[], captionLocale:'en',
+  },
+  {
+    id:'m7', type:'AUDIO_LETTER', author:'DJ Blackstar', afroId:'AFR-GHA-ART-010789',
+    avatarColor:'rgba(26,124,62,.3)', village:'Arts', villageEmoji:'🎨', role:'Sound Architect',
+    skinContext:'idile', content:'Pan-African beats mixtape — blending Afrobeats, Highlife, Amapiano, and Soukous into one ancestral rhythm 🥁🎶', tags:['music','panAfrican','mix'],
+    time:'8h ago', kilaCount:423, stirCount:89, ubuntuCount:167, commentCount:45, drumScope:3,
+    heatScore:79, crestTier:3, nkisi:'GREEN', audioDurationSec:240, spiritVoiceEnabled:false,
+  },
+  {
+    id:'m8', type:'VIDEO_STORY', author:'Kwame Builder', afroId:'AFR-GHA-BLD-010123',
+    avatarColor:'rgba(26,124,62,.3)', village:'Builders', villageEmoji:'🏗', role:'Architect',
+    skinContext:'ise', content:'Building Africa\'s first 3D-printed school in Kumasi — watch the walls rise in real time 🏫', tags:['building','innovation','education'],
+    time:'12h ago', kilaCount:1034, stirCount:278, ubuntuCount:345, commentCount:187, drumScope:3,
+    heatScore:99, crestTier:4, nkisi:'GREEN', videoUrl:'', videoDurationSec:90,
+  },
+]
 const WAVE_HEIGHTS = [12,24,36,20,44,16,32,28,12,36,20,28,24,40,18,32,14,28,36,22,30,16,42,24,18,34,20,26,38,14]
 
 function Waveform({ color, playing }: { color:string; playing:boolean }) {
@@ -446,6 +508,7 @@ function PostCard({ post }: { post:Post }) {
   const handleKila = () => {
     setKilaLit(!kilaLit)
     setKilaN(k => kilaLit ? k-1 : k+1)
+    sorosokeApi.kila(post.id).catch(() => {})
     showToast(kilaLit ? '⭐ Kíla removed' : '⭐ Kíla given! This honour will carry far.')
   }
 
@@ -453,6 +516,7 @@ function PostCard({ post }: { post:Post }) {
     const newSprays = Array.from({length:6},(_,i)=>({id:Date.now()+i, x:10+Math.random()*80}))
     setSprays(s => [...s,...newSprays])
     setTimeout(()=>setSprays([]),2200)
+    sorosokeApi.spray(post.id, { amount: 1 }).catch(() => {})
     showToast('💸 ₡500 Sprayed! Cowrie shells flying 🪙')
   }
 
@@ -772,9 +836,9 @@ function PostCard({ post }: { post:Post }) {
       <div style={{ display:'flex',gap:4,padding:'0 14px 8px',overflowX:'auto',flexWrap:'nowrap' }}>
         {[
           { key:'kila',  label:`⭐ Kíla ${kilaN}`,  lit:kilaLit, litBg:'rgba(255,215,0,.12)',  litC:'#fbbf24', litBorder:'rgba(255,215,0,.25)',   action:handleKila },
-          { key:'stir',  label:`🔥 Stir ${post.stir}`,  lit:false, action:()=>showToast('🔥 Stirred! Heat rising.') },
-          { key:'drum',  label:`🥁 Drum ${post.drum}`,  lit:false, action:()=>showToast('🥁 Drum sent! Author must approve.') },
-          { key:'ubuntu',label:'🤝 Ubuntu',               lit:false, action:()=>showToast('🤝 Ubuntu — "I am because we are"') },
+          { key:'stir',  label:`🔥 Stir ${post.stir}`,  lit:false, action:()=>{ sorosokeApi.stir(post.id).catch(()=>{}); showToast('🔥 Stirred! Heat rising.') } },
+          { key:'drum',  label:`🥁 Drum ${post.drum}`,  lit:false, action:()=>{ sorosokeApi.drum(post.id, { content: '' }).catch(()=>{}); showToast('🥁 Drum sent! Author must approve.') } },
+          { key:'ubuntu',label:'🤝 Ubuntu',               lit:false, action:()=>{ sorosokeApi.ubuntu(post.id).catch(()=>{}); showToast('🤝 Ubuntu — "I am because we are"') } },
           { key:'spray', label:`💸 Spray ${post.spray??0}`, lit:false, action:handleSpray },
           { key:'trade', label:'🛒 Trade',                 lit:false, action:()=>showToast('🤝 Opening Trade Session...') },
           { key:'griot', label:'🦅 Griot',                 lit:false, action:()=>showToast('🦅 "The wisdom here speaks to village unity."') },
@@ -941,7 +1005,7 @@ function CreateSheet({ open, onClose, onPosted }: { open:boolean; onClose:()=>vo
    MAIN PAGE
 ════════════════════════════════════════ */
 const GEO_TABS = [['village','🏘 My Village'],['state','🏙 My State'],['country','🌍 Nigeria'],['continent','🌐 Africa'],['global','⭐ Global']] as const
-const LAYER_TABS = [['drum','🥁 Village Drum'],['nation','🌍 Nation Square'],['motion','📺 Jollof Links']] as const
+const LAYER_TABS = [['drum','🥁 Village Drum'],['nation','🌍 Nation Square'],['motion','📺 Motion']] as const
 
 export default function SoroFeedPage() {
   const [skin, setSkin] = React.useState<Skin>('ise')
@@ -1112,12 +1176,9 @@ export default function SoroFeedPage() {
         {/* griot card (nation layer) */}
         {layer==='nation' && <GriotCard />}
 
-        {/* jollof links layer */}
+        {/* motion feed layer — TikTok-style full-screen vertical scroll */}
         {layer==='motion' && (
-          <div style={{ margin:'8px 12px',background:'rgba(178,34,34,.06)',border:'1px solid rgba(178,34,34,.2)',borderRadius:14,padding:'14px',textAlign:'center' }}>
-            <div style={{ fontSize:13,fontWeight:700,color:'#f87171',marginBottom:6 }}>📺 Jollof TV Links</div>
-            <div style={{ fontSize:11,color:'rgba(255,255,255,.5)' }}>Live streams shared from your village appear here. Visit Jollof TV to watch live.</div>
-          </div>
+          <MotionFeed posts={MOTION_POSTS} onInteract={(type, id) => { sorosokeApi[type as 'kila'|'stir']?.(id).catch(()=>{}) }} />
         )}
 
         {/* section label — geo aware */}

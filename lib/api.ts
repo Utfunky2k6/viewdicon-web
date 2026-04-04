@@ -283,6 +283,11 @@ export const sorosokeApi = {
     api.post('/api/sorosoke/posts', data),
   kila:       (postId: string) => api.post(`/api/sorosoke/posts/${postId}/kila`, {}),
   stir:       (postId: string) => api.post(`/api/sorosoke/posts/${postId}/stir`, {}),
+  drum:       (postId: string, data: { content: string }) =>
+    api.post(`/api/sorosoke/posts/${postId}/drum`, data),
+  ubuntu:     (postId: string) => api.post(`/api/sorosoke/posts/${postId}/ubuntu`, {}),
+  spray:      (postId: string, data: { amount: number }) =>
+    api.post(`/api/sorosoke/posts/${postId}/spray`, data),
   comments:   (postId: string) => api.get(`/api/sorosoke/posts/${postId}/comments`),
   addComment: (postId: string, body: string) =>
     api.post(`/api/sorosoke/posts/${postId}/comments`, { body }),
@@ -312,6 +317,65 @@ export const jollofTvApi = {
     api.post(`/api/jollof/streams/${streamId}/spray`, { amount }),
   endStream:   (streamId: string) =>
     api.post(`/api/jollof/streams/${streamId}/end`, {}),
+
+  // Channels
+  channels:        () => api.get<{ channels: any[] }>('/api/jollof/channels'),
+  channel:         (id: string) => api.get<any>(`/api/jollof/channels/${id}`),
+  updateChannel:   (id: string, data: Record<string, any>) => api.patch<any>(`/api/jollof/channels/${id}`, data),
+  channelSchedule: (id: string) => api.get<{ schedules: any[] }>(`/api/jollof/channels/${id}/schedule`),
+  channelPrograms: (id: string) => api.get<{ programs: any[] }>(`/api/jollof/channels/${id}/programs`),
+  channelChat:     (id: string, limit = 50) => api.get<{ chats: any[] }>(`/api/jollof/channels/${id}/chat?limit=${limit}`),
+  sendChat:        (channelId: string, data: { userId: string; message: string; type?: string; amountPaid?: number }) =>
+    api.post<any>(`/api/jollof/channels/${channelId}/chat`, data),
+
+  // Programs
+  programs:      (params?: { channelId?: string; hostId?: string }) =>
+    api.get<{ programs: any[] }>(`/api/jollof/programs${params ? '?' + new URLSearchParams(params as any).toString() : ''}`),
+  program:       (id: string) => api.get<any>(`/api/jollof/programs/${id}`),
+  createProgram: (data: Record<string, any>) => api.post<any>('/api/jollof/programs', data),
+  bookSchedule:  (data: { channelId: string; programId?: string; startTime: string; endTime: string; price?: number; bookedBy?: string }) =>
+    api.post<any>('/api/jollof/schedules/book', data),
+
+  // Reality TV
+  realityShows:       (params?: { isActive?: boolean }) =>
+    api.get<{ shows: any[] }>(`/api/jollof/reality-shows${params?.isActive !== undefined ? `?isActive=${params.isActive}` : ''}`),
+  realityShow:        (id: string) => api.get<any>(`/api/jollof/reality-shows/${id}`),
+  realityLeaderboard: (id: string) => api.get<{ leaderboard: any[] }>(`/api/jollof/reality-shows/${id}/leaderboard`),
+  realityVote:        (showId: string, data: { contestantId: string; voterId: string; amountPaid?: number }) =>
+    api.post<any>(`/api/jollof/reality-shows/${showId}/vote`, data),
+
+  // Audio Rooms
+  audioRooms:      (params?: { villageId?: string; isLive?: boolean }) =>
+    api.get<{ rooms: any[] }>(`/api/jollof/audio-rooms${params ? '?' + new URLSearchParams(params as any).toString() : ''}`),
+  audioRoom:       (id: string) => api.get<any>(`/api/jollof/audio-rooms/${id}`),
+  createAudioRoom: (data: { title: string; hostId: string; villageId?: string; topic?: string }) =>
+    api.post<any>('/api/jollof/audio-rooms', data),
+  joinAudioRoom:   (id: string, userId: string) => api.post<any>(`/api/jollof/audio-rooms/${id}/join`, { userId }),
+  endAudioRoom:    (id: string) => api.patch<any>(`/api/jollof/audio-rooms/${id}/end`, {}),
+
+  // Podcasts
+  podcasts:         (params?: { villageId?: string; category?: string; creatorId?: string }) =>
+    api.get<{ podcasts: any[] }>(`/api/jollof/podcasts${params ? '?' + new URLSearchParams(params as any).toString() : ''}`),
+  podcast:          (id: string) => api.get<any>(`/api/jollof/podcasts/${id}`),
+  createPodcast:    (data: Record<string, any>) => api.post<any>('/api/jollof/podcasts', data),
+  podcastEpisodes:  (id: string) => api.get<{ episodes: any[] }>(`/api/jollof/podcasts/${id}/episodes`),
+  addPodcastEpisode:(id: string, data: Record<string, any>) => api.post<any>(`/api/jollof/podcasts/${id}/episodes`, data),
+
+  // Radio
+  radioStreams: (params?: { villageId?: string; isLive?: boolean }) =>
+    api.get<{ streams: any[] }>(`/api/jollof/radio${params ? '?' + new URLSearchParams(params as any).toString() : ''}`),
+  createRadio:  (data: Record<string, any>) => api.post<any>('/api/jollof/radio', data),
+  radioStream:  (id: string) => api.get<any>(`/api/jollof/radio/${id}`),
+
+  // Ads
+  adCampaigns:    (params?: { creatorId?: string; isActive?: boolean }) =>
+    api.get<{ campaigns: any[] }>(`/api/jollof/ads/campaigns${params ? '?' + new URLSearchParams(params as any).toString() : ''}`),
+  adCampaign:     (id: string) => api.get<any>(`/api/jollof/ads/campaigns/${id}`),
+  createAdSlot:   (data: { channelId: string; startTime: string; endTime: string; basePrice: number }) =>
+    api.post<any>('/api/jollof/ads/slots', data),
+  channelAdSlots: (channelId: string) => api.get<{ slots: any[] }>(`/api/jollof/channels/${channelId}/ads/slots`),
+  bookAd:         (data: { adId: string; slotId: string; costPaid: number; bookedBy?: string }) =>
+    api.post<any>('/api/jollof/ads/book', data),
 }
 
 // ── Plant Your Root (Subscriptions) ──────────────────────────
@@ -459,6 +523,32 @@ export const villageApplicationApi = {
     api.get<{ ok: boolean; data: unknown[] }>('/api/v1/village-applications/me'),
   endorse: (applicationId: string, data: { endorserAfroId: string; note?: string }) =>
     api.post(`/api/v1/village-applications/${applicationId}/endorse`, data),
+}
+
+// ── Honor Service ─────────────────────────────────────────────
+export const honorApi = {
+  getProfile: (afroId: string) =>
+    api.get<any>(`/api/honor/${afroId}`),
+  getTiers: () =>
+    api.get<any>('/api/honor/tiers'),
+  getUnlocks: (afroId: string) =>
+    api.get<any>(`/api/honor/unlocks/${afroId}`),
+  getVillageLife: (afroId: string, villageId: string) =>
+    api.get<any>(`/api/honor/village-life/${afroId}/${villageId}`),
+  getStreamEligibility: (afroId: string, villageId: string, streamType: string) =>
+    api.get<any>(`/api/honor/stream-eligibility/${afroId}/${villageId}/${streamType}`),
+}
+
+// ── Rings (Social Bonds) ───────────────────────────────────────
+export const ringsApi = {
+  getBonds: (userId: string) =>
+    api.get<any>(`/api/rings/bonds/${userId}`),
+  sendInvite: (to: string) =>
+    api.post<any>('/api/rings/invite', { to }),
+  getInvites: () =>
+    api.get<any>('/api/rings/invites'),
+  acceptBond: (bondId: string) =>
+    api.patch<any>(`/api/rings/bonds/${bondId}/accept`, {}),
 }
 
 export { ApiError }

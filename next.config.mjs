@@ -49,6 +49,16 @@ const nextConfig = {
       { source: '/api/events/:path*',       destination: `${eventEngineUrl}/:path*`           },
       { source: '/api/event/:path*',        destination: `${eventEngineUrl}/event/:path*`     },
       { source: '/api/ticket/:path*',       destination: `${eventEngineUrl}/ticket/:path*`    },
+      // ── Honor service (XP, tiers, unlocks, progression) ──────
+      {
+        source: '/api/honor/:path*',
+        destination: `${process.env.HONOR_SERVICE_URL || 'http://localhost:3065'}/honor/:path*`,
+      },
+      // ── Rings service (bonds, invitations) ────────────────────
+      {
+        source: '/api/rings/:path*',
+        destination: `${process.env.RINGS_SERVICE_URL || 'http://localhost:3060'}/:path*`,
+      },
       // ── Gate Guardian (port 3059) ─────────────────────────────
       { source: '/api/gate-guardian/:path*',destination: `${gateGuardianUrl}/:path*`          },
       // ── Auth Core (family BEFORE generic v1) ─────────────────

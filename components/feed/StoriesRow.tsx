@@ -166,16 +166,33 @@ export default function StoriesRow() {
           </div>
 
           {/* Slide content */}
-          <div style={{
-            flex:1, display:'flex', alignItems:'center', justifyContent:'center',
-            background: story.slides[activeSlide]?.bg || '#111',
-            padding:24, position:'relative',
-          }}>
+          <div
+            style={{
+              flex:1, display:'flex', alignItems:'center', justifyContent:'center',
+              background: story.slides[activeSlide]?.bg || '#111',
+              padding:24, position:'relative',
+              overflow:'hidden',
+            }}
+            onTouchStart={e => {
+              (e.currentTarget as HTMLDivElement).dataset.touchX = String(e.touches[0].clientX)
+              ;(e.currentTarget as HTMLDivElement).dataset.touchY = String(e.touches[0].clientY)
+            }}
+            onTouchEnd={e => {
+              const startX = Number((e.currentTarget as HTMLDivElement).dataset.touchX ?? 0)
+              const startY = Number((e.currentTarget as HTMLDivElement).dataset.touchY ?? 0)
+              const dx = e.changedTouches[0].clientX - startX
+              const dy = e.changedTouches[0].clientY - startY
+              // Only trigger if horizontal swipe is dominant
+              if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+                dx < 0 ? goNext() : goPrev()
+              }
+            }}
+          >
             {/* Tap zones */}
             <div onClick={goPrev} style={{ position:'absolute', left:0, top:0, bottom:0, width:'30%', cursor:'pointer', zIndex:2 }}/>
             <div onClick={goNext} style={{ position:'absolute', right:0, top:0, bottom:0, width:'70%', cursor:'pointer', zIndex:2 }}/>
 
-            <div style={{ textAlign:'center', maxWidth:320, zIndex:1 }}>
+            <div style={{ textAlign:'center', maxWidth:320, zIndex:1, animation:'storySlideIn .3s ease both' }}>
               {story.slides[activeSlide]?.type === 'proverb' && (
                 <span style={{ fontSize:28, display:'block', marginBottom:12 }}>📜</span>
               )}
@@ -206,8 +223,8 @@ export default function StoriesRow() {
             }}>❤️</button>
           </div>
 
-          {/* Inject progress keyframe */}
-          <style>{`@keyframes storyProgress{from{width:0}to{width:100%}}`}</style>
+          {/* Inject progress + slide keyframes */}
+          <style>{`@keyframes storyProgress{from{width:0}to{width:100%}}@keyframes storySlideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}`}</style>
         </div>
       )}
     </>

@@ -10,27 +10,28 @@ import { TOOL_REGISTRY, type ToolDefinition } from '@/constants/tools'
 import { ROLE_REGISTRY } from '@/constants/role-registry'
 
 /* ── Village-specific default tools — supplement roles that only have the 3 generic tools ── */
+// ── Canonical 8 tools per village — first role's tools from spec ──
 const VILLAGE_DEFAULT_TOOLS: Record<string, string[]> = {
-  commerce:     ['quick_invoice','inventory_tracker','pos_dashboard','order_dashboard','price_checker','review_tracker','daily_settlement','payment_link'],
-  agriculture:  ['quick_invoice','cold_chain_tracker','collection_tracker','report_generator','alert_system','document_vault','delivery_tracker','daily_route'],
-  health:       ['medical_records','appointment_book','telemedicine','queue_manager','report_generator','billing_dashboard','client_tracker','prescription_tool'],
-  education:    ['booking_calendar','document_vault','report_generator','content_calendar','publication_vault','project_tracker','analytics_report','client_tracker'],
-  arts:         ['portfolio','booking_calendar','analytics_report','content_calendar','review_tracker','payment_link','social_shop','quick_invoice'],
-  builders:     ['work_order','site_survey','maintenance_log','project_tracker','safety_checklist','report_generator','supplier_connect','inventory_tracker'],
-  energy:       ['site_survey','maintenance_log','work_order','report_generator','project_tracker','safety_checklist','quality_log','compliance_checker'],
-  transport:    ['route_planner','fuel_tracker','daily_route','delivery_tracker','maintenance_log','runner_dispatch','fleet_manager','quick_invoice'],
-  technology:   ['code_project','api_tester','ticket_system','project_tracker','report_generator','document_vault','analytics_report','client_tracker'],
-  media:        ['content_calendar','analytics_report','booking_calendar','review_tracker','portfolio','social_shop','campaign_manager','payment_link'],
-  finance:      ['transaction_log','cash_tracker','risk_calculator','portfolio_tracker','credit_book','escrow_release','ajo_circle','report_generator'],
-  justice:      ['case_log','document_vault','publication_vault','compliance_checker','report_generator','client_tracker','project_tracker','quick_invoice'],
-  government:   ['campaign_manager','compliance_checker','grant_tracker','impact_tracker','report_generator','document_vault','community_alert','analytics_report'],
-  security:     ['alert_system','community_alert','safety_checklist','territory_map','report_generator','maintenance_log','document_vault','daily_target_tracker'],
-  spirituality: ['community_board','booking_calendar','campaign_manager','document_vault','report_generator','collection_tracker','analytics_report','client_tracker'],
-  sports:       ['tournament_manager','booking_calendar','analytics_report','report_generator','project_tracker','client_tracker','quick_invoice','daily_target_tracker'],
-  fashion:      ['portfolio','booking_calendar','analytics_report','order_dashboard','inventory_tracker','social_shop','review_tracker','payment_link'],
-  family:       ['document_vault','community_board','booking_calendar','report_generator','client_tracker','alert_system','collection_tracker','quick_invoice'],
-  hospitality:  ['booking_calendar','review_tracker','order_dashboard','analytics_report','daily_menu_board','report_generator','billing_dashboard','client_tracker'],
-  holdings:     ['quick_invoice','document_vault','report_generator','community_board','booking_calendar','analytics_report','project_tracker','daily_target_tracker'],
+  commerce:     ['quick_invoice','price_checker','pos_dashboard','stock_tracker','runner_dispatch','bulk_order_manager','review_tracker','community_board'],
+  agriculture:  ['price_checker','forecast_share','community_board','alert_system','inventory_tracker','quick_invoice','cold_chain_tracker','delivery_tracker'],
+  health:       ['appointment_book','telemedicine','billing_dashboard','client_tracker','prescription_vault','referral_generator','analytics_report','community_alert'],
+  education:    ['attendance_tracker','content_calendar','report_generator','project_tracker','community_board','client_tracker','daily_target_tracker','alert_system'],
+  arts:         ['portfolio_vault','content_calendar','payment_link','analytics_report','social_shop','review_tracker','recording_vault','community_board'],
+  builders:     ['site_survey','project_tracker','technical_docs','blueprint_vault','compliance_checker','client_tracker','billing_dashboard','portfolio_vault'],
+  energy:       ['work_order','site_survey','parts_finder','safety_checklist','client_tracker','quick_invoice','maintenance_log','review_tracker'],
+  transport:    ['daily_route','fuel_tracker','route_planner','safety_checklist','delivery_tracker','community_board','quick_invoice','alert_system'],
+  technology:   ['code_project','api_tester','ticket_system','debug_log','audit_log','project_tracker','analytics_report','community_board'],
+  media:        ['article_vault','content_calendar','publication_vault','source_log','analytics_report','community_board','campaign_manager','outreach_planner'],
+  finance:      ['transaction_log','daily_settlement','compliance_checker','audit_report','client_tracker','billing_dashboard','risk_calculator','document_vault'],
+  justice:      ['case_log','document_vault','billing_dashboard','research_vault','client_tracker','compliance_checker','booking_calendar','analytics_report'],
+  government:   ['document_vault','compliance_checker','report_generator','queue_manager','daily_target_tracker','attendance_tracker','alert_system','community_board'],
+  security:     ['territory_map','alert_system','community_alert','incident_log','report_generator','compliance_checker','daily_target_tracker','route_planner'],
+  spirituality: ['community_board','attendance_tracker','outreach_planner','content_calendar','booking_calendar','community_connect','alert_system','report_generator'],
+  sports:       ['content_calendar','portfolio_vault','payment_link','analytics_report','community_board','social_shop','booking_calendar','review_tracker'],
+  fashion:      ['design_brief','portfolio_vault','product_listing','client_tracker','social_shop','review_tracker','payment_link','content_calendar'],
+  family:       ['community_board','document_vault','alert_system','community_connect','session_log','outreach_planner','impact_tracker','report_generator'],
+  hospitality:  ['booking_calendar','staff_manager','daily_settlement','quality_log','review_tracker','analytics_report','alert_system','community_board'],
+  holdings:     ['analytics_report','community_board','daily_target_tracker','portfolio_vault','risk_calculator','outreach_planner','community_connect','content_calendar'],
 }
 
 function enrichRoleTools(villageId: string, staticKeys: string[]): ToolDefinition[] {

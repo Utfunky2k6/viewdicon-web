@@ -16,9 +16,9 @@ const DRUM_CSS = `
   18%,54% { transform: translateX(-7px) }
   36%,72% { transform: translateX(7px) }
 }
-@keyframes otpGlow {
-  0%,100% { box-shadow: 0 0 0 0 transparent }
-  50%     { box-shadow: 0 0 18px 4px var(--otp-accent) }
+@keyframes otpCursorBlink {
+  0%,49% { opacity: 1 }
+  50%,100% { opacity: 0 }
 }
 `
 
@@ -41,38 +41,32 @@ export function DrumOtpBoxes({
   label = '🥁 TALKING DRUM CODE',
   isDark = true,
 }: DrumOtpBoxesProps) {
-  // Theme-derived colour tokens — keeps dark as default for backwards compat
   const textFilled  = isDark ? '#ffffff'               : '#1a0f08'
   const textEmpty   = isDark ? 'rgba(255,255,255,.22)' : 'rgba(26,15,8,.28)'
-  const bgEmpty     = isDark ? 'rgba(255,255,255,.03)' : 'rgba(0,0,0,.04)'
-  const bgCursor    = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'
-  const borderEmpty = isDark ? 'rgba(255,255,255,.1)'  : 'rgba(0,0,0,.13)'
-  const inputRefs = [
-    React.useRef<HTMLInputElement>(null),
-    React.useRef<HTMLInputElement>(null),
-    React.useRef<HTMLInputElement>(null),
-    React.useRef<HTMLInputElement>(null),
-    React.useRef<HTMLInputElement>(null),
-    React.useRef<HTMLInputElement>(null),
-  ]
+  const bgEmpty     = isDark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)'
+  const bgCursor    = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)'
+  const borderEmpty = isDark ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.13)'
 
+  // Single hidden input — handles ALL keyboard/paste on mobile
+  const hiddenRef = React.useRef<HTMLInputElement>(null)
+  const containerRef = React.useRef<HTMLDivElement>(null)
   const allFilled = value.length === 6
   const [shake, setShake] = React.useState(false)
+  const [focused, setFocused] = React.useState(false)
   const prevError = React.useRef(error)
 
-  // Auto-focus first box on mount only (not on re-renders)
+  // Auto-focus on mount
   React.useEffect(() => {
-    const t = setTimeout(() => inputRefs[0].current?.focus(), 150)
+    const t = setTimeout(() => hiddenRef.current?.focus(), 150)
     return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Fire onComplete when 6 digits are entered
+  // Fire onComplete when 6 digits
   React.useEffect(() => {
     if (value.length === 6) onComplete()
   }, [value, onComplete])
 
-  // Shake animation when a new error appears
+  // Shake on new error
   React.useEffect(() => {
     if (error && error !== prevError.current) {
       setShake(true)
@@ -82,62 +76,37 @@ export function DrumOtpBoxes({
     prevError.current = error
   }, [error])
 
-  // Re-focus first empty box when value is cleared externally
+  // Re-focus when value cleared
   React.useEffect(() => {
     if (value === '') {
-      setTimeout(() => inputRefs[0].current?.focus(), 60)
+      setTimeout(() => hiddenRef.current?.focus(), 60)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
-  const handleChange = (i: number, raw: string) => {
-    // Accept only single digits
-    const digit = raw.replace(/\D/g, '').slice(-1)
-    const arr = (value + '      ').split('').slice(0, 6)
-    arr[i] = digit
-    const next = arr.join('').trimEnd()
-    onChange(next)
-    if (digit && i < 5) inputRefs[i + 1].current?.focus()
-  }
-
-  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
-      if (value[i]) {
-        // Clear current
-        const arr = (value + '      ').split('').slice(0, 6)
-        arr[i] = ' '
-        onChange(arr.join('').trimEnd())
-      } else if (i > 0) {
-        inputRefs[i - 1].current?.focus()
-      }
-    }
-    if (e.key === 'ArrowLeft' && i > 0) inputRefs[i - 1].current?.focus()
-    if (e.key === 'ArrowRight' && i < 5) inputRefs[i + 1].current?.focus()
-  }
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    const digits = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
-    if (!digits) return
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 6)
     onChange(digits)
-    // Focus the next empty box or last box
-    const focusIdx = Math.min(digits.length, 5)
-    setTimeout(() => inputRefs[focusIdx].current?.focus(), 20)
   }
 
-  // Click already-filled box → focus it so user can overwrite
-  const handleClick = (i: number) => {
-    inputRefs[i].current?.select()
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // On backspace with empty value, do nothing special
+    if (e.key === 'Backspace' && value.length === 0) {
+      e.preventDefault()
+    }
   }
 
-  // Drum bars — height varies per bar for visual rhythm
+  const focusInput = () => {
+    hiddenRef.current?.focus()
+  }
+
+  // Drum bars
   const barHeights = [10, 16, 22, 18, 12, 14]
   const barDelays  = ['0s', '0.16s', '0.32s', '0.22s', '0.08s', '0.27s']
+  const boxes = [0, 1, 2, 3, 4, 5]
 
   return (
     <div
       style={{
-        // CSS custom prop consumed by otpGlow keyframe
         ['--otp-accent' as string]: `${accentColor}80`,
         animation: shake ? 'otpShake .5s ease' : 'none',
       }}
@@ -155,39 +124,56 @@ export function DrumOtpBoxes({
         </div>
       )}
 
-      {/* Six digit boxes */}
+      {/* Hidden real input — captures ALL keyboard/paste */}
+      <input
+        ref={hiddenRef}
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        pattern="[0-9]*"
+        maxLength={6}
+        value={value}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          position: 'absolute',
+          opacity: 0,
+          width: 1,
+          height: 1,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Visual boxes — tap anywhere to focus the hidden input */}
       <div
-        style={{ display: 'flex', gap: 8 }}
-        onPaste={handlePaste}
+        ref={containerRef}
+        onClick={focusInput}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(6, 1fr)',
+          gap: 'clamp(6px, 2.5vw, 12px)',
+          cursor: 'text',
+        }}
       >
-        {inputRefs.map((ref, i) => {
-          const filled   = !!value[i]
-          const isCursor = value.length === i  // next box to fill
+        {boxes.map(i => {
+          const digit = value[i]
+          const filled = !!digit
+          const isCursor = value.length === i && focused
 
           return (
-            <input
+            <div
               key={i}
-              ref={ref}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={2}  // allow 2 so replace to single-digit works on Android
-              value={value[i] ?? ''}
-              placeholder="·"
-              onChange={e => handleChange(i, e.target.value)}
-              onKeyDown={e => handleKeyDown(i, e)}
-              onClick={() => handleClick(i)}
               style={{
-                // Square — flex-grow but capped by aspect-ratio
-                flex: 1,
-                minWidth: 0,
-                aspectRatio: '1 / 1',
-                maxWidth: 64,
+                position: 'relative',
+                height: 'clamp(48px, 14vw, 64px)',
                 borderRadius: 14,
-                textAlign: 'center',
-                fontSize: 22,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 'clamp(20px, 6vw, 28px)',
                 fontWeight: 900,
-                lineHeight: 1,
                 color: filled ? textFilled : textEmpty,
                 background: allFilled
                   ? `linear-gradient(145deg, ${accentColor}45, ${accentColor}22)`
@@ -196,16 +182,15 @@ export function DrumOtpBoxes({
                     : isCursor
                       ? bgCursor
                       : bgEmpty,
-                border: `2.5px solid ${
+                border: `2px solid ${
                   allFilled
                     ? accentColor
                     : filled
                       ? `${accentColor}cc`
                       : isCursor
-                        ? `${accentColor}55`
+                        ? `${accentColor}66`
                         : borderEmpty
                 }`,
-                outline: 'none',
                 boxShadow: allFilled
                   ? `0 0 22px ${accentColor}55, inset 0 1px 0 rgba(255,255,255,.18)`
                   : filled
@@ -213,22 +198,34 @@ export function DrumOtpBoxes({
                     : 'none',
                 animation: filled ? 'drumFill .32s cubic-bezier(.34,1.56,.64,1) both' : 'none',
                 transition: 'border-color .15s, background .15s, box-shadow .18s',
-                caretColor: 'transparent',
-                WebkitAppearance: 'none',
-                cursor: 'pointer',
+                userSelect: 'none',
+                WebkitTapHighlightColor: 'transparent',
               }}
-            />
+            >
+              {digit || ''}
+              {/* Blinking cursor */}
+              {isCursor && (
+                <div style={{
+                  position: 'absolute',
+                  width: 2,
+                  height: '40%',
+                  background: accentColor,
+                  borderRadius: 2,
+                  animation: 'otpCursorBlink 1s ease-in-out infinite',
+                }} />
+              )}
+            </div>
           )
         })}
       </div>
 
-      {/* Drum-wave bars — one under each box */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+      {/* Drum-wave bars */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 'clamp(6px, 2.5vw, 12px)', marginTop: 10 }}>
         {barHeights.map((h, i) => (
           <div
             key={i}
             style={{
-              flex: 1, display: 'flex',
+              display: 'flex',
               justifyContent: 'center', alignItems: 'flex-end',
               height: 22,
             }}

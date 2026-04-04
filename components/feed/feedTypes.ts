@@ -15,6 +15,9 @@ export type PostType =
   | 'KILA_MOMENT'
   | 'GRIOT_WISDOM'
   | 'EVENT_DRUM'
+  | 'VIDEO_STORY'
+  | 'IMAGE_JOURNAL'
+  | 'AUDIO_LETTER'
 
 export interface ProverbBranch {
   author: string
@@ -69,4 +72,14 @@ export interface Post {
   // Blood call
   bloodCallType?: string
   urgencyLevel?: 'critical' | 'urgent' | 'notice'
+  // Video story (motion feed)
+  videoUrl?: string
+  videoDurationSec?: number
+  thumbnailUrl?: string
+  // Image journal (motion feed)
+  imageUrls?: string[]
+  captionLocale?: string
+  // Audio letter (motion feed)
+  audioUrl?: string
+  spiritVoiceEnabled?: boolean
 }

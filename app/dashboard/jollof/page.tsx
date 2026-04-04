@@ -5,6 +5,7 @@
 // Guide · Station A (Reality) · Station B (Reels) · Station C (Broadcast)
 // ═══════════════════════════════════════════════════════════════════
 import * as React from 'react'
+import { jollofTvApi } from '@/lib/api'
 
 /* ── inject-once CSS ── */
 const CSS_ID = 'jollof-css'
@@ -90,7 +91,19 @@ function LiveTicker({ onBack, label, color }: { onBack?:()=>void; label:string; 
 /* ═══════════════════════════════════════════════════════════════════
    GUIDE SCREEN
 ═══════════════════════════════════════════════════════════════════ */
-function GuideScreen({ onStation }: { onStation:(s:StationView)=>void }) {
+function GuideScreen({ onStation, schedule }: { onStation:(s:StationView)=>void; schedule?: any[] }) {
+  const displaySchedule = React.useMemo(() => {
+    if (!schedule || schedule.length === 0) return SCHEDULE
+    return schedule.map((s: any) => ({
+      time: s.startTime ? new Date(s.startTime).toISOString().slice(11,16) : (s.time ?? '00:00'),
+      village: s.villageName ?? s.channelName ?? '🌍 Village',
+      title: s.programTitle ?? s.title ?? 'Programme',
+      type: s.isLive ? 'live' : (s.type ?? 'broadcast'),
+      ai: s.isAiGenerated ?? s.ai ?? false,
+      dur: s.durationMinutes ? `${s.durationMinutes}m` : (s.dur ?? '60m'),
+    }))
+  }, [schedule])
+
   const STATIONS = [
     { id:'stationA' as StationView, emoji:'🎭', num:'Station A', name:'Village Reality', now:'The Real Village · S2 E8', viewers:'2.4K', color:'#e07b00' },
     { id:'stationB' as StationView, emoji:'📡', num:'Station B', name:'LIVE',            now:'6 live streams now',       viewers:'6.8K', color:'#b22222' },
@@ -134,7 +147,7 @@ function GuideScreen({ onStation }: { onStation:(s:StationView)=>void }) {
       <div style={{ padding:'6px 14px',fontFamily:'Sora,sans-serif',fontSize:12,fontWeight:700,color:'rgba(255,255,255,.4)',display:'flex',alignItems:'center',gap:6,textTransform:'uppercase',letterSpacing:'.07em' }}>
         Today's Programme · All 20 Villages  <div style={{ flex:1,height:1,background:'rgba(255,255,255,.06)' }} />
       </div>
-      {SCHEDULE.map((p,i)=>{
+      {displaySchedule.map((p,i)=>{
         const isNow = i===3
         const stC = p.type==='live'?'#b22222':p.ai?'#7c3aed':'#d4a017'
         return (
@@ -177,7 +190,7 @@ const CHAT_POOL = [
   {av:'🧺',c:'#fb923c',name:'Chioma',msg:'Real village things! No scripts here'},
 ]
 
-function StationA({ onBack }: { onBack:()=>void }) {
+function StationA({ onBack, activeShow, leaderboard: showLeaderboard }: { onBack:()=>void; activeShow?: any; leaderboard?: any[] }) {
   type ChatMsg = { id:number; av:string; c:string; name:string; msg?:string; spray?:string }
   const [chat,setChat] = React.useState<ChatMsg[]>([
     {id:1,av:'🧺',c:'#fb923c',name:'Chioma',msg:'Mama Ngozi just said that! 😂'},
@@ -215,8 +228,8 @@ function StationA({ onBack }: { onBack:()=>void }) {
         <div style={{ background:'rgba(255,255,255,.04)',borderRadius:8,padding:'8px 10px',display:'flex',alignItems:'center',gap:8 }}>
           <span style={{ fontSize:16 }}>🎭</span>
           <div style={{ flex:1,minWidth:0 }}>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:12,fontWeight:700,color:'#f0f5ee',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>The Real Village — Season 2, Episode 8</div>
-            <div style={{ fontSize:10,color:'rgba(255,255,255,.4)',marginTop:1 }}>Live Reality Show · Commerce Village · 2h 14min remaining</div>
+            <div style={{ fontFamily:'Sora,sans-serif',fontSize:12,fontWeight:700,color:'#f0f5ee',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{activeShow?.title ?? 'The Real Village — Season 2, Episode 8'}</div>
+            <div style={{ fontSize:10,color:'rgba(255,255,255,.4)',marginTop:1 }}>{activeShow?.description ? `Live Reality Show · ${activeShow.description}` : 'Live Reality Show · Commerce Village · 2h 14min remaining'}</div>
           </div>
           <span style={{ fontSize:9,fontWeight:700,color:'#fbbf24',border:'1px solid rgba(212,160,23,.2)',borderRadius:99,padding:'2px 8px',flexShrink:0 }}>NEXT: Farm Life S3</span>
         </div>
@@ -268,7 +281,7 @@ function StationA({ onBack }: { onBack:()=>void }) {
       <div style={{ background:'linear-gradient(90deg,rgba(224,123,0,.95),rgba(180,80,0,.95))',padding:'5px 12px',display:'flex',alignItems:'center',gap:8,flexShrink:0,overflow:'hidden' }}>
         <span style={{ fontFamily:'Sora,sans-serif',fontSize:9,fontWeight:900,color:'#fff',letterSpacing:'.08em',textTransform:'uppercase',flexShrink:0 }}>Reality TV</span>
         <div style={{ width:1,height:12,background:'rgba(255,255,255,.3)' }} />
-        <div style={{ fontSize:11,color:'#fff',overflow:'hidden',whiteSpace:'nowrap',flex:1 }}>The Real Village S2E8 · Tonight: Chioma and Kofi debate market price floor · Oracle vote: 68% agree · Spray Cowrie to support your favourite!</div>
+        <div style={{ fontSize:11,color:'#fff',overflow:'hidden',whiteSpace:'nowrap',flex:1 }}>{activeShow?.title ?? 'The Real Village S2E8'} · Tonight: Chioma and Kofi debate market price floor · Oracle vote: 68% agree · Spray Cowrie to support your favourite!</div>
       </div>
       {/* live chat */}
       <div style={{ flex:1,overflowY:'auto',padding:'6px 12px 4px' }}>
@@ -310,7 +323,26 @@ function StationA({ onBack }: { onBack:()=>void }) {
 /* ═══════════════════════════════════════════════════════════════════
    STATION B — LIVE REELS
 ═══════════════════════════════════════════════════════════════════ */
-function StationB({ onBack }: { onBack:()=>void }) {
+function StationB({ onBack, liveStreams }: { onBack:()=>void; liveStreams?: any[] }) {
+  const displayReels: any[] = React.useMemo(() => {
+    if (!liveStreams || liveStreams.length === 0) return REELS
+    return liveStreams.map((s: any, i: number) => ({
+      id: s.id ?? `stream-${i}`,
+      type: s.streamType ?? 'market',
+      emoji: '📡',
+      color: '#b22222',
+      colorBg: 'rgba(178,34,34,.15)',
+      streamer: s.streamerName ?? s.title ?? 'Live Stream',
+      village: s.villageName ?? '🌍 Village',
+      viewers: s.viewerCount != null ? String(s.viewerCount) : '0',
+      label: `📡 ${s.villageName ?? 'Live'} · Station B`,
+      desc: s.description ?? 'Live stream in progress.',
+      kila: s.kilaCount ?? 0,
+      spray: s.sprayCount ?? 0,
+      drum: s.drumCount ?? 0,
+    }))
+  }, [liveStreams])
+
   const [activeReel, setActiveReel] = React.useState(0)
   const [agree, setAgree] = React.useState(68)
   const [sprays, setSprays] = React.useState<{id:number;x:number;reel:string}[]>([])
@@ -329,7 +361,7 @@ function StationB({ onBack }: { onBack:()=>void }) {
       {toast && <div style={{ position:'fixed',top:60,left:'50%',transform:'translateX(-50%)',background:'#151e12',border:'1px solid rgba(74,222,128,.2)',borderRadius:12,padding:'8px 16px',fontSize:12,fontWeight:600,color:'#f0f5ee',zIndex:300,whiteSpace:'nowrap',boxShadow:'0 4px 20px rgba(0,0,0,.6)' }}>{toast}</div>}
 
       <div style={{ flex:1,overflowY:'auto',scrollSnapType:'y mandatory' }}>
-        {REELS.map((reel,idx)=>{
+        {displayReels.map((reel,idx)=>{
           const isActive = activeReel===idx
           return (
             <div key={reel.id} onClick={()=>setActiveReel(idx)} style={{ height:'calc(100dvh - 130px)',scrollSnapAlign:'start',position:'relative',overflow:'hidden',background:`linear-gradient(160deg,${reel.colorBg},#070900 60%)`,flexShrink:0,cursor:'pointer' }}>
@@ -363,7 +395,7 @@ function StationB({ onBack }: { onBack:()=>void }) {
               </div>
               {/* reel dot indicators */}
               <div style={{ position:'absolute',right:0,top:'50%',transform:'translateY(-50%)',display:'flex',flexDirection:'column',gap:4,paddingRight:4,zIndex:10 }}>
-                {REELS.map((_,j)=><div key={j} style={{ width:3,height:j===idx?28:16,borderRadius:99,background:j===idx?'#fff':'rgba(255,255,255,.2)',transition:'all .2s' }} />)}
+                {displayReels.map((_,j)=><div key={j} style={{ width:3,height:j===idx?28:16,borderRadius:99,background:j===idx?'#fff':'rgba(255,255,255,.2)',transition:'all .2s' }} />)}
               </div>
               {/* bottom content */}
               <div style={{ position:'absolute',bottom:0,left:0,right:0,padding:'12px 14px 14px',background:'linear-gradient(transparent,rgba(0,0,0,.92)',zIndex:5 }}>
@@ -452,7 +484,21 @@ function StationB({ onBack }: { onBack:()=>void }) {
 /* ═══════════════════════════════════════════════════════════════════
    STATION C — JOLLOF BROADCAST
 ═══════════════════════════════════════════════════════════════════ */
-function StationC({ onBack }: { onBack:()=>void }) {
+function StationC({ onBack, audioRooms, podcasts }: { onBack:()=>void; audioRooms?: any[]; podcasts?: any[] }) {
+  const displayBlocks = React.useMemo(() => {
+    if (!audioRooms || audioRooms.length === 0) return VILLAGE_BLOCKS
+    return audioRooms.map((r: any) => ({
+      village: r.villageName ?? r.title ?? '🎤 Audio Room',
+      time: r.scheduledTime ?? 'Live Now',
+      slots: [{
+        title: r.topic ?? r.title ?? 'Audio Discussion',
+        type: 'live' as const,
+        ai: r.isAiGenerated ?? false,
+        dur: r.durationMinutes ? `${r.durationMinutes}m` : '60m',
+      }],
+    }))
+  }, [audioRooms])
+
   const [tier,setTier] = React.useState(0)
   const [booked,setBooked] = React.useState(false)
   const [toast,setToast] = React.useState('')
@@ -512,7 +558,7 @@ function StationC({ onBack }: { onBack:()=>void }) {
         <div style={{ margin:'0 12px 8px',padding:'7px 12px',background:'rgba(124,58,237,.07)',border:'1px solid rgba(124,58,237,.15)',borderRadius:8,fontSize:10,color:'rgba(192,132,252,.7)',display:'flex',alignItems:'center',gap:6 }}>
           🤖 AI-labelled content generated by Griot Orunmila AI. Always clearly marked. Never presented as human-created.
         </div>
-        {VILLAGE_BLOCKS.map((vb,i)=>(
+        {displayBlocks.map((vb,i)=>(
           <div key={i} style={{ margin:'4px 12px',background:'rgba(255,255,255,.03)',border:'1px solid rgba(255,255,255,.06)',borderRadius:12,overflow:'hidden',cursor:'pointer',marginBottom:6 }}>
             <div style={{ padding:'10px 12px',display:'flex',alignItems:'center',gap:8,borderBottom:'1px solid rgba(255,255,255,.06)' }}>
               <span style={{ fontFamily:'Sora,sans-serif',fontSize:12,fontWeight:700,color:'#f0f5ee',flex:1 }}>{vb.village}</span>
@@ -578,6 +624,60 @@ function StationC({ onBack }: { onBack:()=>void }) {
 export default function JollofPage() {
   const [view, setView] = React.useState<StationView>('guide')
 
+  // ── API state ─────────────────────────────────────────────────
+  const [channels, setChannels] = React.useState<any[]>([])
+  const [mainChannelId, setMainChannelId] = React.useState<string>('')
+  const [mainTvSchedule, setMainTvSchedule] = React.useState<any[]>([])
+  const [liveStreams, setLiveStreams] = React.useState<any[]>([])
+  const [activeShow, setActiveShow] = React.useState<any>(null)
+  const [leaderboard, setLeaderboard] = React.useState<any[]>([])
+  const [audioRooms, setAudioRooms] = React.useState<any[]>([])
+  const [podcasts, setPodcasts] = React.useState<any[]>([])
+
+  // ── Fetch channels on mount ───────────────────────────────────
+  React.useEffect(() => {
+    jollofTvApi.channels().then(data => setChannels(data.channels ?? [])).catch(() => {})
+  }, [])
+
+  // ── Set mainChannelId when channels load ──────────────────────
+  React.useEffect(() => {
+    if (channels.length > 0) {
+      const mainTv = channels.find((c: any) => c.name === 'MAIN_TV')
+      if (mainTv) setMainChannelId(mainTv.id)
+    }
+  }, [channels])
+
+  // ── Fetch channel schedule when mainChannelId is set ─────────
+  React.useEffect(() => {
+    if (mainChannelId) {
+      jollofTvApi.channelSchedule(mainChannelId).then(d => setMainTvSchedule(d.schedules ?? [])).catch(() => {})
+    }
+  }, [mainChannelId])
+
+  // ── Fetch live streams on mount ───────────────────────────────
+  React.useEffect(() => {
+    jollofTvApi.list({ status: 'LIVE' }).then(data => setLiveStreams((data as any).streams ?? (data as any).data ?? [])).catch(() => {})
+  }, [])
+
+  // ── Fetch active reality show on mount ────────────────────────
+  React.useEffect(() => {
+    jollofTvApi.realityShows({ isActive: true }).then(data => {
+      if (data.shows?.length > 0) setActiveShow(data.shows[0])
+    }).catch(() => {})
+  }, [])
+
+  // ── Fetch leaderboard when activeShow loads ───────────────────
+  React.useEffect(() => {
+    if (!activeShow?.id) return
+    jollofTvApi.realityLeaderboard(activeShow.id).then(data => setLeaderboard(data.leaderboard ?? [])).catch(() => {})
+  }, [activeShow?.id])
+
+  // ── Fetch audio rooms + podcasts on mount ─────────────────────
+  React.useEffect(() => {
+    jollofTvApi.audioRooms({ isLive: true }).then(data => setAudioRooms(data.rooms ?? [])).catch(() => {})
+    jollofTvApi.podcasts().then(data => setPodcasts(data.podcasts ?? [])).catch(() => {})
+  }, [])
+
   React.useEffect(()=>{ injectCSS() },[])
 
   const SB_LABEL: Record<StationView,string> = {
@@ -613,10 +713,10 @@ export default function JollofPage() {
       <LiveTicker onBack={view!=='guide'?()=>setView('guide'):undefined} label={SB_LABEL[view]} color="#d4a017" />
       {/* views */}
       <div style={{ flex:1,display:'flex',flexDirection:'column',overflow:'hidden' }}>
-        {view==='guide' && <GuideScreen onStation={setView} />}
-        {view==='stationA' && <StationA onBack={()=>setView('guide')} />}
-        {view==='stationB' && <StationB onBack={()=>setView('guide')} />}
-        {view==='stationC' && <StationC onBack={()=>setView('guide')} />}
+        {view==='guide' && <GuideScreen onStation={setView} schedule={mainTvSchedule} />}
+        {view==='stationA' && <StationA onBack={()=>setView('guide')} activeShow={activeShow} leaderboard={leaderboard} />}
+        {view==='stationB' && <StationB onBack={()=>setView('guide')} liveStreams={liveStreams} />}
+        {view==='stationC' && <StationC onBack={()=>setView('guide')} audioRooms={audioRooms} podcasts={podcasts} />}
       </div>
     </div>
   )

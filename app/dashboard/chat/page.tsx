@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import FamilyTreeBuilder from '@/components/onboarding/FamilyTreeBuilder'
 import { VOCAB } from '@/constants/vocabulary'
+import { sesoChatApi } from '@/lib/api'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'seso-chat-styles'
@@ -201,6 +202,11 @@ export default function ChatInboxPage() {
   const [toast, setToast] = React.useState<string | null>(null)
   const [toastOut, setToastOut] = React.useState(false)
 
+  const [chats, setChats] = React.useState<any[]>([])
+  const [requests, setRequests] = React.useState<any[]>([])
+  const [onlineUsers, setOnlineUsers] = React.useState<any[]>([])
+  const [chatLoading, setChatLoading] = React.useState(true)
+
   /* inject CSS once */
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -209,6 +215,20 @@ export default function ChatInboxPage() {
     s.id = INJECT_ID
     s.textContent = STYLES
     document.head.appendChild(s)
+  }, [])
+
+  /* fetch live chat data on mount */
+  React.useEffect(() => {
+    setChatLoading(true)
+    Promise.all([
+      sesoChatApi.listChats().catch(() => ({ ok: false, data: [] })),
+      fetch('/api/seso/requests').then(r => r.ok ? r.json() : { requests: [] }).catch(() => ({ requests: [] })),
+      sesoChatApi.listConnections().catch(() => ({ connections: [] })),
+    ]).then(([chatsRes, requestsRes, connectionsRes]: any[]) => {
+      setChats(chatsRes.data ?? [])
+      setRequests(requestsRes.requests ?? requestsRes.data ?? [])
+      setOnlineUsers(connectionsRes.connections ?? connectionsRes.data ?? [])
+    }).finally(() => setChatLoading(false))
   }, [])
 
   /* family gate check — require at least 3 members, then show login button */
@@ -502,7 +522,7 @@ export default function ChatInboxPage() {
               display: 'flex', gap: 14, padding: '16px 18px 6px 18px',
               overflowX: 'auto',
             }}>
-              {ONLINE.map((c, i) => (
+              {(onlineUsers.length > 0 ? onlineUsers : ONLINE).map((c, i) => (
                 <div key={i} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                   flexShrink: 0, cursor: 'pointer',
@@ -545,7 +565,7 @@ export default function ChatInboxPage() {
             </div>
 
             {/* Chat items */}
-            {ALL_CHATS.map(ch => (
+            {(chats.length > 0 ? chats : ALL_CHATS).map(ch => (
               <div key={ch.id} onClick={() => router.push(`/dashboard/chat/${ch.id}`)} style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '14px 18px', cursor: 'pointer',
@@ -652,7 +672,7 @@ export default function ChatInboxPage() {
             </div>
 
             {/* Request cards */}
-            {REQUESTS.map((r, i) => (
+            {(requests.length > 0 ? requests : REQUESTS).map((r, i) => (
               <div key={i} className="seso-slide" style={{
                 padding: 16, borderRadius: 14, marginBottom: 12,
                 background: 'rgba(255,255,255,0.025)',
@@ -695,13 +715,23 @@ export default function ChatInboxPage() {
 
                 {/* action buttons */}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => flash('Whisper accepted')} style={{
+                  <button onClick={() => {
+                    sesoChatApi.respondToWhisper(r.id, 'accept')
+                      .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
+                      .catch(() => {})
+                    flash('Whisper accepted')
+                  }} style={{
                     flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer',
                     background: C.green, border: `1px solid ${C.greenL}`,
                     color: '#fff', fontSize: 12, fontWeight: 700,
                     fontFamily: 'Sora, sans-serif',
                   }}>✓ Accept</button>
-                  <button onClick={() => flash('Request declined')} style={{
+                  <button onClick={() => {
+                    sesoChatApi.respondToWhisper(r.id, 'decline')
+                      .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
+                      .catch(() => {})
+                    flash('Request declined')
+                  }} style={{
                     flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer',
                     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
                     color: C.textDim, fontSize: 12, fontWeight: 700,

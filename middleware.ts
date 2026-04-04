@@ -10,7 +10,19 @@ const rateMap = new Map<string, { count: number; reset: number }>()
 const RATE_LIMIT = 120   // requests per window
 const RATE_WINDOW = 60_000 // 1 minute
 
+// Lazy cleanup: prune expired entries every ~100 requests
+// NOTE: setInterval is not available in Edge Runtime — use counter-based approach
+let reqCount = 0
+function pruneRateMap() {
+  if (++reqCount % 100 !== 0) return
+  const now = Date.now()
+  for (const [key, val] of rateMap.entries()) {
+    if (val.reset < now) rateMap.delete(key)
+  }
+}
+
 function checkRateLimit(ip: string): boolean {
+  pruneRateMap()
   const now = Date.now()
   const entry = rateMap.get(ip)
   if (!entry || now > entry.reset) {
