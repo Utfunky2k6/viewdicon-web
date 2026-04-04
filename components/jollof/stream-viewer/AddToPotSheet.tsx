@@ -31,8 +31,6 @@ interface AddToPotSheetProps {
 
 type Stage = 'idle' | 'confirming' | 'success' | 'error'
 
-const JOLLOF_TV_URL = process.env.NEXT_PUBLIC_JOLLOF_TV_URL ?? 'http://localhost:3018'
-
 export function AddToPotSheet({
   streamId, product, streamerName, buyerAfroId, onClose,
 }: AddToPotSheetProps) {
@@ -45,7 +43,7 @@ export function AddToPotSheet({
     setStage('confirming')
     setErrorMsg('')
     try {
-      const res = await fetch(`${JOLLOF_TV_URL}/streams/${streamId}/add-to-pot`, {
+      const res = await fetch(`/api/jollof/streams/${streamId}/add-to-pot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId: product.id, buyerId: buyerAfroId }),
