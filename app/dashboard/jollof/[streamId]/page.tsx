@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { AddToPotSheet } from '@/components/jollof/stream-viewer/AddToPotSheet'
 
 // ── Types ─────────────────────────────────────────────────────────
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
@@ -807,69 +808,21 @@ export default function JollofStreamViewer() {
         </div>
       )}
 
-      {/* ── Product Sheet (Market type) ───────────────────────── */}
+      {/* ── Add to Pot Sheet (Commerce Bridge) ───────────────── */}
       {showProductSheet && stream.pinnedProduct && (
-        <div
-          onClick={() => setShowProductSheet(false)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 60,
-            background: 'rgba(0,0,0,.6)',
-            display: 'flex', alignItems: 'flex-end',
+        <AddToPotSheet
+          streamId={streamId}
+          product={{
+            id:            stream.pinnedProduct.name, // placeholder until real productId available
+            name:          stream.pinnedProduct.name,
+            price:         stream.pinnedProduct.price,
+            soldCount:     stream.pinnedProduct.soldCount,
+            marketPercent: stream.pinnedProduct.marketPercent,
           }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              width: '100%', background: '#1a1005',
-              border: '1px solid rgba(224,123,0,.2)',
-              borderRadius: '24px 24px 0 0', padding: '20px 20px 32px',
-            }}
-          >
-            <div style={{
-              width: 40, height: 4, borderRadius: 2, margin: '0 auto 20px',
-              background: 'rgba(255,255,255,.15)',
-            }} />
-            <div style={{
-              width: 80, height: 80, borderRadius: 16, margin: '0 auto 16px',
-              background: 'linear-gradient(135deg, #e07b00, #d4a017)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 36,
-            }}>🛒</div>
-            <div style={{
-              fontSize: 18, fontWeight: 900, color: '#f0f7f0', textAlign: 'center',
-              fontFamily: 'Sora, sans-serif', marginBottom: 4,
-            }}>
-              {stream.pinnedProduct.name}
-            </div>
-            <div style={{ fontSize: 12, color: 'rgba(240,247,240,.4)', textAlign: 'center', marginBottom: 12 }}>
-              {stream.pinnedProduct.soldCount} sold · {stream.pinnedProduct.marketPercent}% of market price
-            </div>
-            <div style={{
-              fontSize: 28, fontWeight: 900, color: '#4ade80', textAlign: 'center',
-              fontFamily: 'Sora, sans-serif', marginBottom: 20,
-            }}>
-              ₡{stream.pinnedProduct.price.toLocaleString()}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={() => setShowProductSheet(false)}
-                style={{
-                  flex: 1, padding: '14px 0', borderRadius: 14, border: 'none', cursor: 'pointer',
-                  background: 'rgba(255,255,255,.06)', color: '#f0f7f0', fontWeight: 700, fontSize: 14,
-                }}
-              >
-                Back
-              </button>
-              <button style={{
-                flex: 2, padding: '14px 0', borderRadius: 14, border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #e07b00, #d4a017)',
-                color: '#000', fontWeight: 900, fontSize: 15, fontFamily: 'Sora, sans-serif',
-              }}>
-                🫙 Add to Pot
-              </button>
-            </div>
-          </div>
-        </div>
+          streamerName={stream.streamerName}
+          buyerAfroId="me" // replaced by auth context in production
+          onClose={() => setShowProductSheet(false)}
+        />
       )}
     </div>
   )

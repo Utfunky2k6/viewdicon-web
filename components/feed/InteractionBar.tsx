@@ -152,7 +152,7 @@ export function InteractionBar({
             borderColor: drummed ? 'rgba(26,124,62,.45)' : 'rgba(26,124,62,.2)',
             animation: !drummed ? 'ib-drum-pulse 2.5s ease-in-out infinite' : 'none',
           }}>
-            🥁 {drummed ? 'Drummed ✓' : 'Drum to Region'}
+            {drummed ? VOCAB.drummed : VOCAB.drumToRegion}
           </button>
         )}
 
@@ -177,7 +177,7 @@ export function InteractionBar({
             background: tradeOpen ? 'rgba(224,123,0,.22)' : 'rgba(224,123,0,.07)',
             borderColor: tradeOpen ? 'rgba(224,123,0,.5)' : 'rgba(224,123,0,.25)',
           }}>
-            🛒 {tradeOpen ? 'Session Open' : 'Open Trade'}
+            🛒 {tradeOpen ? VOCAB.sessionOpen : VOCAB.openTrade}
           </button>
         )}
 
@@ -201,7 +201,7 @@ export function InteractionBar({
             borderColor: 'rgba(255,255,255,.1)',
             fontSize: 10,
           }}>
-            💬 {post.commentCount > 0 ? post.commentCount : 'Comment'}
+            {post.commentCount > 0 ? `💬 ${post.commentCount}` : VOCAB.comment}
           </button>
 
           {/* ↗ Share */}
