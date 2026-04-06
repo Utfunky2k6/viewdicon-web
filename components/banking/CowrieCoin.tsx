@@ -3,11 +3,12 @@
 /**
  * CowrieCoin — Pan-African dual-currency coin visual.
  *
- * CWR (Cowrie Shell): Terracotta/gold gradient, stylised cowrie shell
- *   with central ridge slit and diamond rim pattern.
- * AFC (AfriCoin): Deep cosmic blue/gold gradient, African continent
- *   silhouette with sun rays and constellation dots.
+ * CWR (Cowrie Shell): Warm terracotta/gold — authentic cowrie shell body,
+ *   central ridge slit with teeth, diamond rim knurling.
+ * AFC (AfriCoin): Deep forest-green/gold — Africa continent silhouette,
+ *   Adinkra Gye Nyame pattern background, radiant sun rays.
  *
+ * Designed to stand as equals to Bitcoin/Ethereum coin visuals.
  * Pure SVG. Zero dependencies. Scalable at any size.
  */
 
@@ -21,7 +22,7 @@ interface CowrieCoinProps {
 }
 
 /* ── Keyframe animation injected once ────────────────────────── */
-const STYLE_ID = '__cowrie-coin-glow'
+const STYLE_ID = '__cowrie-coin-anim'
 
 function ensureKeyframes() {
   if (typeof document === 'undefined') return
@@ -29,240 +30,170 @@ function ensureKeyframes() {
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = `
-    @keyframes cowrieCoinGlow {
-      0%   { filter: drop-shadow(0 0 4px rgba(201,168,76,0.30)); }
-      50%  { filter: drop-shadow(0 0 12px rgba(201,168,76,0.65)); }
-      100% { filter: drop-shadow(0 0 4px rgba(201,168,76,0.30)); }
+    @keyframes coinGlow {
+      0%,100% { filter: drop-shadow(0 0 3px rgba(201,168,76,0.25)) drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+      50%      { filter: drop-shadow(0 0 10px rgba(201,168,76,0.55)) drop-shadow(0 2px 12px rgba(0,0,0,0.6)); }
+    }
+    @keyframes coinGlowGreen {
+      0%,100% { filter: drop-shadow(0 0 3px rgba(74,222,128,0.2)) drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+      50%      { filter: drop-shadow(0 0 10px rgba(74,222,128,0.45)) drop-shadow(0 2px 12px rgba(0,0,0,0.6)); }
+    }
+    @keyframes coinSpin {
+      0%   { transform: rotateY(0deg); }
+      100% { transform: rotateY(360deg); }
     }
   `
   document.head.appendChild(style)
 }
 
-/* ── Cowrie shell face ───────────────────────────────────────── */
+/* ── Knurled rim — 24 ridge marks ───────────────────────────── */
+function KnurledRim({ count = 24 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => {
+        const angle = (i / count) * 2 * Math.PI
+        const r1 = 47.2, r2 = 49.2
+        const x1 = 50 + r1 * Math.cos(angle), y1 = 50 + r1 * Math.sin(angle)
+        const x2 = 50 + r2 * Math.cos(angle), y2 = 50 + r2 * Math.sin(angle)
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#C9A84C" strokeWidth="1.2" opacity={0.55} />
+      })}
+    </>
+  )
+}
+
+/* ── Cowrie Shell face (CWR) ─────────────────────────────────── */
 function CwrFace() {
   return (
     <g>
-      {/* Diamond rim pattern — 16 diamonds evenly spaced */}
-      {Array.from({ length: 16 }).map((_, i) => {
-        const angle = (i * 22.5 * Math.PI) / 180
-        const cx = 50 + 41 * Math.cos(angle)
-        const cy = 50 + 41 * Math.sin(angle)
-        return (
-          <polygon
-            key={i}
-            points={`${cx},${cy - 2.8} ${cx + 1.6},${cy} ${cx},${cy + 2.8} ${cx - 1.6},${cy}`}
-            fill="#C9A84C"
-            opacity={0.65}
-          />
-        )
-      })}
+      {/* Gye Nyame mini pattern — background texture at low opacity */}
+      <g opacity="0.07" fill="#C9A84C">
+        {[[-6,-6],[6,-6],[-6,6],[6,6]].map(([dx,dy],i)=>(
+          <g key={i} transform={`translate(${50+dx},${50+dy})`}>
+            <ellipse rx="2.5" ry="1.4"/><ellipse ry="2.5" rx="1.4"/>
+            <circle r="0.7" cy="-3.2"/><circle r="0.7" cy="3.2"/>
+          </g>
+        ))}
+      </g>
 
       {/* Inner decorative ring */}
-      <circle cx="50" cy="50" r="35" fill="none" stroke="#C9A84C" strokeWidth="0.4" opacity="0.35" />
+      <circle cx="50" cy="50" r="38" fill="none" stroke="#C9A84C" strokeWidth="0.5" opacity="0.3" />
+      <circle cx="50" cy="50" r="34" fill="none" stroke="#C9A84C" strokeWidth="0.25" opacity="0.18" />
 
-      {/* Main cowrie shell body — the smooth oval shape */}
-      <ellipse cx="50" cy="50" rx="17" ry="23" fill="url(#cwr-shell)" />
+      {/* Main cowrie shell body */}
+      <ellipse cx="50" cy="50" rx="15" ry="21" fill="url(#cwr-shell)" />
 
-      {/* Shell body highlight — top-left sheen */}
-      <ellipse
-        cx="44"
-        cy="42"
-        rx="8"
-        ry="10"
-        fill="white"
-        opacity="0.08"
-        transform="rotate(-15, 44, 42)"
-      />
+      {/* Shell 3D highlight — top sheen */}
+      <ellipse cx="44" cy="42" rx="7" ry="9" fill="white" opacity="0.10" transform="rotate(-12, 44, 42)" />
 
-      {/* Central ridge / slit — the natural cowrie opening */}
-      <ellipse cx="50" cy="50" rx="4.5" ry="17" fill="none" stroke="#5C2A0A" strokeWidth="2" />
+      {/* Central ridge / slit */}
+      <ellipse cx="50" cy="50" rx="4" ry="16.5" fill="none" stroke="#3D1A06" strokeWidth="2.2" />
+      <ellipse cx="50" cy="50" rx="2.6" ry="14.5" fill="none" stroke="#6B3A18" strokeWidth="0.8" opacity="0.6" />
 
-      {/* Inner ridge shadow for depth */}
-      <ellipse cx="50" cy="50" rx="3" ry="15" fill="none" stroke="#8B4513" strokeWidth="0.6" opacity="0.5" />
+      {/* Cowrie teeth — 7 serrations */}
+      {Array.from({length:7}).map((_,i) => {
+        const y = 50 + (i - 3) * 4.2
+        return <line key={i} x1={46.5} y1={y} x2={53.5} y2={y} stroke="#5C2A0A" strokeWidth="0.8" opacity={0.55} />
+      })}
 
-      {/* Cowrie teeth — serrations along the slit opening */}
-      {[-4, -2.5, -1, 0.5, 2, 3.5].map((offset, i) => (
-        <line
-          key={i}
-          x1={50 - 4}
-          y1={50 + offset * 3.2}
-          x2={50 + 4}
-          y2={50 + offset * 3.2}
-          stroke="#6B4226"
-          strokeWidth="0.7"
-          opacity="0.6"
-        />
-      ))}
+      {/* Shell end caps */}
+      <ellipse cx="50" cy="31.5" rx="3.2" ry="2" fill="#C9A84C" opacity="0.7" />
+      <ellipse cx="50" cy="68.5" rx="3.2" ry="2" fill="#C9A84C" opacity="0.7" />
 
-      {/* Shell tip accents — natural cowrie has rounded ends */}
-      <ellipse cx="50" cy="29" rx="3" ry="1.8" fill="#C9A84C" opacity="0.6" />
-      <ellipse cx="50" cy="71" rx="3" ry="1.8" fill="#C9A84C" opacity="0.6" />
+      {/* Dotted ornamental border */}
+      {Array.from({length:20}).map((_,i)=>{
+        const a = (i/20)*2*Math.PI
+        return <circle key={i} cx={50+31*Math.cos(a)} cy={50+31*Math.sin(a)} r="0.9" fill="#C9A84C" opacity={0.22} />
+      })}
 
       {/* "COWRIE" arced at top */}
       <defs>
-        <path id="cwr-arc-top" d="M 15,50 A 35,35 0 0,1 85,50" fill="none" />
+        <path id="cwr-arc-t" d="M 14,50 A 36,36 0 0,1 86,50" fill="none" />
+        <path id="cwr-arc-b" d="M 86,50 A 36,36 0 0,1 14,50" fill="none" />
       </defs>
-      <text
-        fontFamily="'Georgia', serif"
-        fontSize="6.5"
-        fontWeight="bold"
-        fill="#FFE082"
-        letterSpacing="3"
-      >
-        <textPath href="#cwr-arc-top" startOffset="50%" textAnchor="middle">
-          COWRIE
-        </textPath>
+      <text fontFamily="'Georgia',serif" fontSize="6.2" fontWeight="bold" fill="#FFE082" letterSpacing="2.5">
+        <textPath href="#cwr-arc-t" startOffset="50%" textAnchor="middle">COWRIE SHELL</textPath>
       </text>
-
-      {/* "CWR" at bottom center */}
-      <text
-        x="50"
-        y="90"
-        textAnchor="middle"
-        fontFamily="'Georgia', serif"
-        fontSize="10"
-        fontWeight="bold"
-        fill="#FFE082"
-        letterSpacing="2.5"
-      >
-        CWR
+      <text fontFamily="'Georgia',serif" fontSize="7" fontWeight="bold" fill="#FFE082" letterSpacing="3">
+        <textPath href="#cwr-arc-b" startOffset="50%" textAnchor="middle">₡ · CWR</textPath>
       </text>
     </g>
   )
 }
 
-/* ── AfriCoin face ───────────────────────────────────────────── */
+/* ── AfriCoin face (AFC) ─────────────────────────────────────── */
 function AfcFace() {
-  /* Constellation star positions — scattered organically */
+  /* Constellation dots */
   const stars = [
-    { x: 22, y: 24, r: 1.1 }, { x: 78, y: 22, r: 0.8 }, { x: 14, y: 40, r: 0.6 },
-    { x: 86, y: 38, r: 1.0 }, { x: 18, y: 60, r: 0.7 }, { x: 82, y: 58, r: 0.9 },
-    { x: 25, y: 76, r: 0.6 }, { x: 76, y: 75, r: 0.7 }, { x: 30, y: 32, r: 0.5 },
-    { x: 70, y: 30, r: 0.5 }, { x: 15, y: 50, r: 0.8 }, { x: 85, y: 50, r: 0.6 },
-    { x: 28, y: 68, r: 0.5 }, { x: 72, y: 66, r: 0.6 }, { x: 35, y: 82, r: 0.7 },
-    { x: 65, y: 80, r: 0.5 }, { x: 20, y: 34, r: 0.4 }, { x: 80, y: 44, r: 0.4 },
-    { x: 32, y: 22, r: 0.6 }, { x: 68, y: 78, r: 0.5 }, { x: 40, y: 18, r: 0.4 },
-    { x: 60, y: 84, r: 0.4 }, { x: 12, y: 30, r: 0.5 }, { x: 88, y: 70, r: 0.5 },
+    {x:20,y:22,r:1.0},{x:78,y:20,r:0.7},{x:13,y:42,r:0.6},{x:87,y:38,r:0.9},
+    {x:16,y:62,r:0.7},{x:83,y:60,r:0.8},{x:24,y:78,r:0.6},{x:75,y:76,r:0.7},
+    {x:31,y:30,r:0.5},{x:69,y:28,r:0.5},{x:14,y:50,r:0.7},{x:86,y:52,r:0.6},
+    {x:26,y:68,r:0.5},{x:73,y:67,r:0.5},{x:36,y:84,r:0.6},{x:64,y:82,r:0.5},
+    {x:42,y:17,r:0.4},{x:58,y:85,r:0.4},{x:11,y:32,r:0.5},{x:89,y:72,r:0.5},
   ]
+
+  /* Africa continent — clean accurate path */
+  const africa = [
+    'M48,24', 'Q52,22 57,25',   // N Morocco → Tunisia
+    'L61,28', 'L63,34',           // Libya
+    'L65,39', 'Q66,44 64,47',    // Horn approach
+    'L62,51', 'L63,57',           // East coast
+    'L60,62', 'L56,67',           // Mozambique
+    'Q52,72 50,74',               // Cape of Good Hope
+    'Q48,72 44,67',               // West of Cape
+    'L40,62', 'L37,56',           // Angola/Namibia
+    'L36,50', 'L35,44',           // Congo/Gabon
+    'Q34,39 36,35',               // West Africa bulge
+    'L39,30', 'L44,26',           // Mauritania/Senegal
+    'Z',
+  ].join(' ')
 
   return (
     <g>
-      {/* Constellation dots */}
-      {stars.map((s, i) => (
-        <circle
-          key={`star-${i}`}
-          cx={s.x}
-          cy={s.y}
-          r={s.r}
-          fill="#FFE082"
-          opacity={0.2 + (i % 4) * 0.12}
-        />
+      {/* Star field */}
+      {stars.map((s,i)=>(
+        <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#FFE082" opacity={0.15+(i%5)*0.05} />
       ))}
 
-      {/* Sun rays emanating from behind continent */}
-      {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i * 30 * Math.PI) / 180
-        const x1 = 50 + 12 * Math.cos(angle)
-        const y1 = 50 + 12 * Math.sin(angle)
-        const x2 = 50 + 30 * Math.cos(angle)
-        const y2 = 50 + 30 * Math.sin(angle)
-        return (
-          <line
-            key={i}
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
-            stroke="#C9A84C"
-            strokeWidth={i % 3 === 0 ? '1.8' : '1'}
-            opacity={i % 3 === 0 ? 0.5 : 0.3}
-            strokeLinecap="round"
-          />
-        )
+      {/* Adinkra Gye Nyame watermark behind continent */}
+      <g opacity="0.08" fill="#4ade80">
+        <ellipse cx="50" cy="50" rx="9" ry="5"/><ellipse cx="50" cy="50" rx="5" ry="9"/>
+        <circle cx="50" cy="40" r="1.5"/><circle cx="50" cy="60" r="1.5"/>
+        <circle cx="40" cy="50" r="1.5"/><circle cx="60" cy="50" r="1.5"/>
+        <circle cx="50" cy="50" r="3.5" fill="none" stroke="#4ade80" strokeWidth="1"/>
+      </g>
+
+      {/* Radiant sun rays — 16 rays */}
+      {Array.from({length:16}).map((_,i)=>{
+        const a = (i/16)*2*Math.PI
+        const x1=50+14*Math.cos(a), y1=50+14*Math.sin(a)
+        const x2=50+30*Math.cos(a), y2=50+30*Math.sin(a)
+        const thick = i%4===0
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#C9A84C" strokeWidth={thick?2.2:1.1} opacity={thick?0.5:0.25} strokeLinecap="round"/>
       })}
 
-      {/* Sun glow core behind continent */}
-      <circle cx="50" cy="48" r="10" fill="#C9A84C" opacity="0.12" />
-      <circle cx="50" cy="48" r="6" fill="#FFE082" opacity="0.08" />
+      {/* Sun halo */}
+      <circle cx="50" cy="50" r="11" fill="none" stroke="#C9A84C" strokeWidth="0.8" opacity="0.2"/>
+      <circle cx="50" cy="50" r="7" fill="#C9A84C" opacity="0.10"/>
 
-      {/* African continent silhouette — refined shape */}
-      <path
-        d={[
-          'M 48,26',            // NW coast (Morocco)
-          'Q 52,24 56,26',     // N coast (Tunisia)
-          'L 59,28',            // NE (Libya)
-          'L 61,32',            // Suez area
-          'L 63,37',            // Horn of Africa approach
-          'Q 64,41 63,44',     // Horn of Africa tip
-          'L 61,47',            // East coast (Somalia/Kenya)
-          'L 62,51',            // Tanzania
-          'L 60,56',            // Mozambique
-          'L 57,61',            // Madagascar channel
-          'L 54,66',            // South Africa east
-          'Q 51,71 50,73',     // Cape of Good Hope
-          'Q 49,71 46,66',     // South Africa west
-          'L 43,61',            // Namibia
-          'L 40,56',            // Angola
-          'L 38,51',            // Congo coast
-          'L 37,47',            // Gabon
-          'L 37,43',            // Nigeria
-          'Q 36,39 37,36',     // West African bulge
-          'L 39,32',            // Senegal/Mauritania
-          'L 42,28',            // Western Sahara
-          'Z',
-        ].join(' ')}
-        fill="url(#afc-gold)"
-        opacity="0.92"
-      />
+      {/* Africa continent */}
+      <path d={africa} fill="url(#afc-gold)" opacity="0.96"/>
 
       {/* Continent edge glow */}
-      <path
-        d={[
-          'M 48,26',
-          'Q 52,24 56,26',
-          'L 59,28', 'L 61,32', 'L 63,37',
-          'Q 64,41 63,44',
-          'L 61,47', 'L 62,51', 'L 60,56', 'L 57,61', 'L 54,66',
-          'Q 51,71 50,73',
-          'Q 49,71 46,66',
-          'L 43,61', 'L 40,56', 'L 38,51', 'L 37,47', 'L 37,43',
-          'Q 36,39 37,36',
-          'L 39,32', 'L 42,28', 'Z',
-        ].join(' ')}
-        fill="none"
-        stroke="#FFE082"
-        strokeWidth="0.6"
-        opacity="0.55"
-      />
+      <path d={africa} fill="none" stroke="#FFE082" strokeWidth="0.8" opacity="0.5"/>
 
-      {/* "AFRICOIN" arced at top */}
+      {/* Inner decorative ring */}
+      <circle cx="50" cy="50" r="38" fill="none" stroke="#4ade80" strokeWidth="0.5" opacity="0.2"/>
+
+      {/* "AFRICOIN" arc text */}
       <defs>
-        <path id="afc-arc-top" d="M 13,50 A 37,37 0 0,1 87,50" fill="none" />
+        <path id="afc-arc-t" d="M 13,50 A 37,37 0 0,1 87,50" fill="none"/>
+        <path id="afc-arc-b" d="M 87,50 A 37,37 0 0,1 13,50" fill="none"/>
       </defs>
-      <text
-        fontFamily="'Georgia', serif"
-        fontSize="6"
-        fontWeight="bold"
-        fill="#FFE082"
-        letterSpacing="2"
-      >
-        <textPath href="#afc-arc-top" startOffset="50%" textAnchor="middle">
-          AFRICOIN
-        </textPath>
+      <text fontFamily="'Georgia',serif" fontSize="6.2" fontWeight="bold" fill="#FFE082" letterSpacing="2">
+        <textPath href="#afc-arc-t" startOffset="50%" textAnchor="middle">AFRICOIN · AFC</textPath>
       </text>
-
-      {/* "AFC" at bottom center */}
-      <text
-        x="50"
-        y="90"
-        textAnchor="middle"
-        fontFamily="'Georgia', serif"
-        fontSize="10"
-        fontWeight="bold"
-        fill="#FFE082"
-        letterSpacing="2.5"
-      >
-        AFC
+      <text fontFamily="'Georgia',serif" fontSize="7" fontWeight="bold" fill="#4ade80" letterSpacing="3">
+        <textPath href="#afc-arc-b" startOffset="50%" textAnchor="middle">₳ · SOVEREIGN</textPath>
       </text>
     </g>
   )
@@ -288,86 +219,76 @@ export default function CowrieCoin({
       viewBox="0 0 100 100"
       style={{
         display: 'block',
-        animation: animated ? 'cowrieCoinGlow 2.8s ease-in-out infinite' : 'none',
+        animation: animated ? `${isCWR ? 'coinGlow' : 'coinGlowGreen'} 3s ease-in-out infinite` : 'none',
         ...style,
       }}
     >
       <defs>
         {/* ── CWR gradients ──────────────────────────── */}
-        <radialGradient id="cwr-bg" cx="38%" cy="32%" r="68%">
-          <stop offset="0%" stopColor="#D2691E" />
-          <stop offset="40%" stopColor="#8B4513" />
-          <stop offset="100%" stopColor="#4A1E06" />
+        <radialGradient id="cwr-bg" cx="35%" cy="28%" r="72%">
+          <stop offset="0%" stopColor="#C47A3A" />
+          <stop offset="35%" stopColor="#8B4513" />
+          <stop offset="75%" stopColor="#5C2A0A" />
+          <stop offset="100%" stopColor="#3A1505" />
         </radialGradient>
 
-        <radialGradient id="cwr-shell" cx="45%" cy="38%" r="60%">
-          <stop offset="0%" stopColor="#F5D78E" />
-          <stop offset="50%" stopColor="#C9A84C" />
-          <stop offset="100%" stopColor="#8B6914" />
+        <radialGradient id="cwr-shell" cx="40%" cy="32%" r="65%">
+          <stop offset="0%" stopColor="#F8E4A0" />
+          <stop offset="40%" stopColor="#D4A84C" />
+          <stop offset="80%" stopColor="#96681A" />
+          <stop offset="100%" stopColor="#6B4614" />
         </radialGradient>
 
         {/* ── AFC gradients ──────────────────────────── */}
-        <radialGradient id="afc-bg" cx="40%" cy="35%" r="70%">
-          <stop offset="0%" stopColor="#283593" />
-          <stop offset="50%" stopColor="#1A237E" />
-          <stop offset="100%" stopColor="#0A0F3C" />
+        <radialGradient id="afc-bg" cx="38%" cy="30%" r="72%">
+          <stop offset="0%" stopColor="#1A5C30" />
+          <stop offset="40%" stopColor="#0D3B1E" />
+          <stop offset="75%" stopColor="#071A0E" />
+          <stop offset="100%" stopColor="#020C06" />
         </radialGradient>
 
-        <radialGradient id="afc-gold" cx="48%" cy="45%" r="55%">
+        <radialGradient id="afc-gold" cx="45%" cy="40%" r="58%">
           <stop offset="0%" stopColor="#FFE082" />
-          <stop offset="60%" stopColor="#C9A84C" />
-          <stop offset="100%" stopColor="#9A7B2F" />
+          <stop offset="55%" stopColor="#C9A84C" />
+          <stop offset="100%" stopColor="#8B6914" />
         </radialGradient>
 
-        {/* ── Shared rim gradient ────────────────────── */}
-        <linearGradient id="rim-shine" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFE082" stopOpacity="0.95" />
-          <stop offset="35%" stopColor="#C9A84C" stopOpacity="0.7" />
-          <stop offset="70%" stopColor="#8B6914" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#C9A84C" stopOpacity="0.6" />
+        {/* ── Shared outer rim ───────────────────────── */}
+        <linearGradient id="rim-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stopColor="#FFE082" stopOpacity="1.0" />
+          <stop offset="25%"  stopColor="#C9A84C" stopOpacity="0.8" />
+          <stop offset="55%"  stopColor="#7A5A18" stopOpacity="0.5" />
+          <stop offset="80%"  stopColor="#C9A84C" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="#FFE082" stopOpacity="0.9" />
         </linearGradient>
 
-        {/* ── Edge bevel gradient ────────────────────── */}
-        <linearGradient id="rim-bevel" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFE082" stopOpacity="0.4" />
-          <stop offset="50%" stopColor="#8B6914" stopOpacity="0.1" />
-          <stop offset="100%" stopColor="#FFE082" stopOpacity="0.3" />
-        </linearGradient>
+        {/* ── Top specular ───────────────────────────── */}
+        <radialGradient id="top-sheen" cx="35%" cy="25%" r="55%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
-      {/* ── Outer rim ring ───────────────────────────── */}
-      <circle cx="50" cy="50" r="49.5" fill="url(#rim-shine)" />
+      {/* ── Outer rim (gold band) ────────────────────── */}
+      <circle cx="50" cy="50" r="49.5" fill="url(#rim-gold)" />
 
-      {/* ── Rim bevel (edge depth) ───────────────────── */}
-      <circle cx="50" cy="50" r="48" fill="none" stroke="url(#rim-bevel)" strokeWidth="1.2" />
+      {/* ── Knurled edge marks ───────────────────────── */}
+      <KnurledRim count={36} />
 
       {/* ── Main coin body ───────────────────────────── */}
       <circle cx="50" cy="50" r="46" fill={isCWR ? 'url(#cwr-bg)' : 'url(#afc-bg)'} />
 
       {/* ── Inner rim line ───────────────────────────── */}
-      <circle
-        cx="50"
-        cy="50"
-        r="44.5"
-        fill="none"
-        stroke="#C9A84C"
-        strokeWidth="0.5"
-        strokeOpacity="0.4"
-      />
+      <circle cx="50" cy="50" r="44" fill="none" stroke="#C9A84C" strokeWidth="0.6" strokeOpacity="0.35" />
 
       {/* ── Currency face ────────────────────────────── */}
       {isCWR ? <CwrFace /> : <AfcFace />}
 
       {/* ── Top specular highlight (3D sheen) ────────── */}
-      <ellipse
-        cx="40"
-        cy="35"
-        rx="14"
-        ry="8"
-        fill="white"
-        opacity="0.055"
-        transform="rotate(-20, 40, 35)"
-      />
+      <ellipse cx="38" cy="33" rx="16" ry="9" fill="url(#top-sheen)" transform="rotate(-18, 38, 33)" />
+
+      {/* ── Bottom shadow (depth) ────────────────────── */}
+      <ellipse cx="60" cy="70" rx="14" ry="7" fill="rgba(0,0,0,0.18)" transform="rotate(-18, 60, 70)" />
     </svg>
   )
 }

@@ -24,6 +24,7 @@ import {
 } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
 import { bankingQueue } from '@/lib/offline-db'
+import CowrieCoin from '@/components/banking/CowrieCoin'
 
 // ─── Offline ──────────────────────────────────────────────────────────────────
 function useNetworkStatus() {
@@ -984,19 +985,27 @@ function CoinPanel() {
       {COINS.map(coin => (
         <div key={coin.symbol} style={{ marginBottom: 18 }}>
           <div style={{ background: coin.gradient, borderRadius: 20, padding: '20px 18px', position: 'relative', overflow: 'hidden', marginBottom: 10 }}>
-            <div style={{ position: 'absolute', top: -20, right: -20, fontSize: 80, opacity: 0.08 }}>{coin.emoji}</div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            {/* Coin SVG — positioned as watermark behind content */}
+            <div style={{ position: 'absolute', top: '50%', right: -10, transform: 'translateY(-50%)', opacity: 0.18, pointerEvents: 'none' }}>
+              <CowrieCoin currency={coin.symbol as 'CWR' | 'AFC'} size={120} animated={false} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
               <div>
-                <div style={{ fontSize: 11, color: coin.chip, fontWeight: 700, letterSpacing: '0.15em', fontFamily: S.font }}>{coin.symbol}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: coin.text, fontFamily: S.head, marginTop: 2 }}>{coin.name}</div>
-                <div style={{ fontSize: 10, color: `${coin.text}80`, fontFamily: S.font, marginTop: 4, maxWidth: 200 }}>{coin.tagline}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <CowrieCoin currency={coin.symbol as 'CWR' | 'AFC'} size={44} animated />
+                  <div>
+                    <div style={{ fontSize: 11, color: coin.chip, fontWeight: 700, letterSpacing: '0.15em', fontFamily: S.font }}>{coin.symbol}</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: coin.text, fontFamily: S.head }}>{coin.name}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: `${coin.text}80`, fontFamily: S.font, maxWidth: 200 }}>{coin.tagline}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: 24, fontWeight: 900, color: coin.chip, fontFamily: S.head }}>${coin.usdRate.toFixed(4)}</div>
                 <div style={{ fontSize: 9, color: `${coin.text}60`, fontFamily: S.font, marginTop: 2 }}>Supply: {coin.supply}</div>
               </div>
             </div>
-            <div style={{ marginTop: 14, padding: '8px 10px', background: 'rgba(0,0,0,.2)', borderRadius: 8 }}>
+            <div style={{ marginTop: 14, padding: '8px 10px', background: 'rgba(0,0,0,.2)', borderRadius: 8, position: 'relative', zIndex: 1 }}>
               <div style={{ fontSize: 9, color: `${coin.text}60`, fontFamily: S.font }}>Backing: {coin.backing}</div>
             </div>
           </div>
@@ -3226,9 +3235,14 @@ export default function BankingPage() {
           backgroundSize: '24px 24px',
         }} />
         <div style={{ padding: '24px 20px', background: 'linear-gradient(160deg,rgba(7,14,7,.98),rgba(10,22,10,.95))', textAlign: 'center', position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
-            <span style={{ fontSize: 14 }}>🌍</span>
-            <span style={{ fontSize: 9, letterSpacing: '0.18em', color: '#d4a017', fontWeight: 800, fontFamily: S.head }}>ILE OWO · PAN-AFRICAN TREASURY</span>
+          {/* Coin pair display */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
+            <CowrieCoin currency="CWR" size={52} animated />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0 6px' }}>
+              <span style={{ fontSize: 9, letterSpacing: '0.18em', color: '#d4a017', fontWeight: 800, fontFamily: S.head }}>ILE OWO</span>
+              <span style={{ fontSize: 7, letterSpacing: '0.12em', color: 'rgba(255,255,255,.25)', fontFamily: S.head }}>PAN-AFRICAN TREASURY</span>
+            </div>
+            <CowrieCoin currency="AFC" size={52} animated />
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 12, background: 'rgba(255,255,255,.04)', borderRadius: 10, padding: 3, width: 'fit-content', margin: '0 auto 12px' }}>
             {(['cow','usd','local'] as const).map(v => (
@@ -3251,14 +3265,18 @@ export default function BankingPage() {
 
       {/* ── Quick Actions Row ── */}
       <div style={{ margin: '16px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-        {[
-          { icon: '↗', label: 'Send', color: '#4ade80', bg: 'rgba(74,222,128,.1)', border: 'rgba(74,222,128,.2)', key: 'vault' },
-          { icon: '↙', label: 'Receive', color: '#818cf8', bg: 'rgba(129,140,248,.1)', border: 'rgba(129,140,248,.2)', key: 'vault' },
-          { icon: '🧾', label: 'Pay Bills', color: '#fbbf24', bg: 'rgba(251,191,36,.1)', border: 'rgba(251,191,36,.2)', key: 'bills' },
-          { icon: '＋', label: 'Top Up', color: '#fb923c', bg: 'rgba(251,146,60,.1)', border: 'rgba(251,146,60,.2)', key: 'caravan' },
-        ].map(q => (
-          <button key={q.key + q.icon} onClick={() => toggle(q.key)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 16, background: q.bg, border: `1px solid ${q.border}`, cursor: 'pointer', transition: 'all .2s', outline: 'none' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 14, background: q.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: q.icon.length > 1 ? 16 : 20, color: '#000', fontWeight: 900 }}>{q.icon}</div>
+        {([
+          { label: 'Send', color: '#4ade80', bg: 'rgba(74,222,128,.1)', border: 'rgba(74,222,128,.2)', key: 'vault',
+            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 19L19 5M19 5H9M19 5V15" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" fill="#000" opacity=".4"/></svg> },
+          { label: 'Receive', color: '#818cf8', bg: 'rgba(129,140,248,.1)', border: 'rgba(129,140,248,.2)', key: 'vault',
+            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M19 5L5 19M5 19H15M5 19V9" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="19" cy="5" r="2" fill="#000" opacity=".4"/></svg> },
+          { label: 'Pay Bills', color: '#fbbf24', bg: 'rgba(251,191,36,.1)', border: 'rgba(251,191,36,.2)', key: 'bills',
+            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="#000" strokeWidth="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#000" strokeWidth="2" strokeLinecap="round"/></svg> },
+          { label: 'Top Up', color: '#fb923c', bg: 'rgba(251,146,60,.1)', border: 'rgba(251,146,60,.2)', key: 'caravan',
+            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#000" strokeWidth="2.5" strokeLinecap="round"/><circle cx="12" cy="12" r="9" stroke="#000" strokeWidth="1.5" opacity=".4"/></svg> },
+        ] as const).map(q => (
+          <button key={q.key + q.label} onClick={() => toggle(q.key)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 16, background: q.bg, border: `1px solid ${q.border}`, cursor: 'pointer', transition: 'all .2s', outline: 'none' }}>
+            <div style={{ width: 44, height: 44, borderRadius: 14, background: q.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{q.icon}</div>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.75)', fontFamily: S.head }}>{q.label}</span>
           </button>
         ))}

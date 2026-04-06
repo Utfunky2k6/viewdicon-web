@@ -175,9 +175,9 @@ export const VOCAB = {
   vsqWisdom:      '📖 Wisdom',
 
   // ── Skin / Masquerade Contexts ────────────────────────────────────
-  skinIse:        '⚒ Ìṣẹ́ · Work',
-  skinEgbe:       '⭕ Egbé · Social',
-  skinIdile:      '🌳 Ìdílé · Clan',
+  skinIse:        '⚒ Kazi · Work',
+  skinEgbe:       '⭕ Jamii · Social',
+  skinIdile:      '🌳 Ukoo · Clan',
   switchSkin:     '🎭 Change Mask',
 
   // ── Geo Layers ────────────────────────────────────────────────────
@@ -241,6 +241,63 @@ export const VOCAB = {
   edit:           '✏ Edit',
   copy:           '📋 Copy',
   send:           '📡 Send',
+
+  // ── Jollof TV & Radio (Pan-African) ─────────────────────────────
+  jollofTV:        '📺 Jollof TV',
+  palaver:         '🏛 Palaver Hut',
+  palaverSub:      'Live Audio Spaces',
+  podcast:         '🎙 Story Pod',
+  podcastSub:      'Voice & Vision Stories',
+  radio:           '📻 Continental Radio',
+  radioSub:        'Live Stations Across Africa',
+  realityTV:       '🎭 Masquerade Stage',
+  realitySub:      'Reality Shows & Competitions',
+  tvGuide:         '📅 Channel Guide',
+  tvGuideSub:      'Full Program Schedule',
+  creatorStudio:   '🎙 Griot Studio',
+  studioSub:       'Your Broadcasting HQ',
+  adMarket:        '📢 Ad Marketplace',
+  adMarketSub:     'Promote & Broadcast',
+  tvSchedule:      '📅 Schedule Board',
+  scheduleSub:     'Upcoming Broadcasts',
+  callIn:          '📞 Call the Fire',
+  callInSub:       'Live Phone-In · Cowrie Powered',
+  globalCast:      '🌍 Global Cast',
+  globalCastSub:   'Broadcast to OBS · vMix · World TV',
+  watchTogether:   '👥 Watch Together',
+  watchTogetherSub:'Shared Viewing Rooms',
+  castFar:         '🎬 Cast Far',
+  castFarSub:      'Stream to External Platforms',
+  comingSoon:      'COMING SOON',
+
+  // ── Voting (Pan-African) ────────────────────────────────────────
+  vote:            '🗳 Cast Your Voice',
+  voteFor:         '✋ Raise for',
+  voteFree:        '🕊 Free Voice',
+  votePaid:        '💰 Powered Voice',
+  voteResult:      '📊 Village Verdict',
+  voteLeader:      '👑 Leading Voice',
+  eliminated:      '🌙 Returned to Village',
+
+  // ── Call-In (Pan-African) ───────────────────────────────────────
+  callerMode:      '📞 Caller',
+  hostMode:        '🎙 Host',
+  standardTier:    '🟡 Village Line',
+  vipTier:         '👑 Elder Line',
+  callQueue:       '📋 Waiting Line',
+  onAir:           '🔴 On the Fire',
+  callsToday:      '📞 Calls Today',
+  earningsToday:   '💰 Earnings Today',
+
+  // ── Ad System (Pan-African) ─────────────────────────────────────
+  adCampaigns:     '📢 Campaigns',
+  adSlotBooking:   '📅 Book Slots',
+  adAnalytics:     '📊 Insights',
+  communityVoice:  '🗣 Community Voice',
+  preRollAd:       '📡 Opening Broadcast',
+  midRollAd:       '⏸ Mid-Stream Spot',
+  bannerAd:        '🏷 Banner Overlay',
+  sponsoredShow:   '🤝 Sponsored Program',
 
 } as const
 

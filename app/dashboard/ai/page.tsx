@@ -64,8 +64,28 @@ const FALLBACK_POOLS: Record<GodId, string[]> = {
 interface Message {
   role: 'user' | 'god'
   content: string
-  timestamp: Date
+  timestamp: number | Date  // backend sends number (epoch ms)
+  powerId?: string
   godId?: GodId
+}
+
+// ── Memory info from backend ──────────────────────────────────────
+interface MemoryInfo {
+  hasMemory: boolean
+  userName?: string
+  totalMessages?: number
+  firstMet?: number
+  lastSeen?: number
+  daysSinceFirstMet?: number
+  daysSinceLastSeen?: number
+  topicsDiscussed?: string[]
+  language?: string
+}
+
+// ── Timestamp formatting helper ──────────────────────────────────
+function formatTimestamp(ts: number | Date): string {
+  const d = typeof ts === 'number' ? new Date(ts) : ts
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 // ── Zeus orchestration input ──────────────────────────────────────
@@ -307,9 +327,11 @@ export default function AiGodsPage() {
   const [messages, setMessages] = React.useState<Message[]>([])
   const [input, setInput] = React.useState('')
   const [loading, setLoading] = React.useState(false)
+  const [chatLoading, setChatLoading] = React.useState(false)
   const [showPowers, setShowPowers] = React.useState(false)
   const [zeusInput, setZeusInput] = React.useState('')
   const [zeusLoading, setZeusLoading] = React.useState(false)
+  const [memoryInfo, setMemoryInfo] = React.useState<MemoryInfo | null>(null)
 
   const endRef = React.useRef<HTMLDivElement>(null)
 
@@ -320,16 +342,136 @@ export default function AiGodsPage() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Load greeting when god changes
+  // ── Load chat history + memory when entering a god's chat ──────
   React.useEffect(() => {
-    if (view === 'chat') {
-      setMessages([{
-        role: 'god',
-        content: activeGod.greeting,
-        timestamp: new Date(),
-        godId: activeGodId,
-      }])
+    if (view !== 'chat') return
+
+    let cancelled = false
+    setChatLoading(true)
+    setMemoryInfo(null)
+
+    // Fetch chat history and memory in parallel
+    const loadChat = async () => {
+      try {
+        const res = await aiGodsApi.chat(activeGodId, 50) as {
+          ok?: boolean
+          data?: {
+            messages?: Array<{ role: 'user' | 'god'; content: string; timestamp: number; powerId?: string }>
+            messageCount?: number
+          }
+        }
+        if (cancelled) return
+
+        const history = res?.data?.messages ?? []
+        if (history.length > 0) {
+          // We have existing chat history — restore it
+          setMessages(history.map(m => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+            powerId: m.powerId,
+            godId: m.role === 'god' ? activeGodId : undefined,
+          })))
+        } else {
+          // No chat history — send initial greeting to trigger first-meeting intro
+          // Set a temporary greeting while the API call goes through
+          setMessages([{
+            role: 'god',
+            content: activeGod.greeting,
+            timestamp: Date.now(),
+            godId: activeGodId,
+          }])
+
+          // Fire off a "Hello" to backend to trigger first-meeting introduction
+          try {
+            const introRes = await aiGodsApi.query(activeGodId, 'Hello') as {
+              ok?: boolean
+              data?: {
+                response?: string
+                introduction?: string
+                isFirstMeeting?: boolean
+                xpAwarded?: number
+              }
+              response?: string
+            }
+            if (cancelled) return
+
+            const intro = introRes?.data?.introduction
+            const reply = introRes?.data?.response ?? introRes?.response ?? ''
+            const fullReply = intro ? `${intro}\n\n${reply}` : reply
+
+            if (fullReply) {
+              // Replace the static greeting with the backend's response
+              setMessages([
+                { role: 'user', content: 'Hello', timestamp: Date.now() - 1, godId: undefined },
+                { role: 'god', content: fullReply, timestamp: Date.now(), godId: activeGodId },
+              ])
+            }
+            // If no reply, we keep the static greeting from constants
+          } catch {
+            // Failed to get first-meeting intro — keep the static greeting
+          }
+        }
+      } catch {
+        // Chat history fetch failed — fall back to static greeting from constants
+        if (!cancelled) {
+          setMessages([{
+            role: 'god',
+            content: activeGod.greeting,
+            timestamp: Date.now(),
+            godId: activeGodId,
+          }])
+        }
+      } finally {
+        if (!cancelled) setChatLoading(false)
+      }
     }
+
+    const loadMemory = async () => {
+      try {
+        const res = await aiGodsApi.memory(activeGodId) as {
+          ok?: boolean
+          data?: {
+            hasMemory?: boolean
+            memory?: {
+              userName?: string
+              totalMessages?: number
+              firstMet?: number
+              lastSeen?: number
+              daysSinceFirstMet?: number
+              daysSinceLastSeen?: number
+              topicsDiscussed?: string[]
+              language?: string
+            }
+          }
+        }
+        if (cancelled) return
+
+        if (res?.data?.hasMemory && res.data.memory) {
+          setMemoryInfo({
+            hasMemory: true,
+            userName: res.data.memory.userName,
+            totalMessages: res.data.memory.totalMessages,
+            firstMet: res.data.memory.firstMet,
+            lastSeen: res.data.memory.lastSeen,
+            daysSinceFirstMet: res.data.memory.daysSinceFirstMet,
+            daysSinceLastSeen: res.data.memory.daysSinceLastSeen,
+            topicsDiscussed: res.data.memory.topicsDiscussed,
+            language: res.data.memory.language,
+          })
+        } else {
+          setMemoryInfo({ hasMemory: false })
+        }
+      } catch {
+        // Memory fetch failed — no memory info shown
+        if (!cancelled) setMemoryInfo(null)
+      }
+    }
+
+    loadChat()
+    loadMemory()
+
+    return () => { cancelled = true }
   }, [activeGodId, view]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const invokeGod = (godId: GodId) => {
@@ -344,30 +486,55 @@ export default function AiGodsPage() {
     setMessages(prev => [...prev, {
       role: 'user',
       content: text,
-      timestamp: new Date(),
+      timestamp: Date.now(),
     }])
     setInput('')
     setLoading(true)
 
     try {
       const res = await aiGodsApi.query(activeGodId, fullText) as {
-        ok?: boolean; data?: { response?: string; xpAwarded?: number }; response?: string
+        ok?: boolean
+        data?: {
+          response?: string
+          introduction?: string
+          isFirstMeeting?: boolean
+          xpAwarded?: number
+          messageCount?: number
+        }
+        response?: string
       }
+
+      const intro = res?.data?.introduction
       const reply = res?.data?.response ?? res?.response ?? ''
-      if (!reply) throw new Error('empty')
+      const fullReply = intro ? `${intro}\n\n${reply}` : reply
+
+      if (!fullReply) throw new Error('empty')
+
       setMessages(prev => [...prev, {
         role: 'god',
-        content: reply,
-        timestamp: new Date(),
+        content: fullReply,
+        timestamp: Date.now(),
         godId: activeGodId,
       }])
+
+      // If first meeting, update memory info
+      if (res?.data?.isFirstMeeting) {
+        setMemoryInfo({
+          hasMemory: true,
+          totalMessages: res.data.messageCount ?? 1,
+          daysSinceFirstMet: 0,
+        })
+      } else if (memoryInfo?.hasMemory && res?.data?.messageCount) {
+        // Update message count
+        setMemoryInfo(prev => prev ? { ...prev, totalMessages: res.data?.messageCount } : prev)
+      }
     } catch {
       const pool = FALLBACK_POOLS[activeGodId]
       const fallback = pool[Math.floor(Math.random() * pool.length)]
       setMessages(prev => [...prev, {
         role: 'god',
         content: fallback,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         godId: activeGodId,
       }])
     } finally {
@@ -390,12 +557,6 @@ export default function AiGodsPage() {
       await new Promise<void>(resolve => {
         // Route zeus queries to chat
         setActiveGodId('zeus')
-        setMessages([{
-          role: 'god',
-          content: AI_GODS.zeus.greeting,
-          timestamp: new Date(),
-          godId: 'zeus',
-        }])
         setView('chat')
         // Then send after state update
         setTimeout(() => {
@@ -412,14 +573,24 @@ export default function AiGodsPage() {
 
   // Auto-send after zeus portal routing
   React.useEffect(() => {
-    if (view === 'chat' && input) {
+    if (view === 'chat' && input && !chatLoading) {
       const t = input
       setInput('')
       // Small delay to let messages init
       const tid = setTimeout(() => sendMessage(t), 100)
       return () => clearTimeout(tid)
     }
-  }, [view]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [view, chatLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Helper: format "first met X days ago" ──────────────────────
+  function formatFirstMet(days?: number): string {
+    if (days === undefined || days === null) return ''
+    if (days === 0) return 'Met today'
+    if (days === 1) return 'First met yesterday'
+    if (days < 30) return `First met ${days}d ago`
+    if (days < 365) return `First met ${Math.floor(days / 30)}mo ago`
+    return `First met ${Math.floor(days / 365)}y ago`
+  }
 
   // ── PORTAL VIEW ────────────────────────────────────────────────
   if (view === 'portal') {
@@ -596,7 +767,7 @@ export default function AiGodsPage() {
           {activeGod.symbol}
         </div>
 
-        {/* Info */}
+        {/* Info + memory tags */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 15, fontWeight: 900, fontFamily: S.head,
@@ -606,6 +777,38 @@ export default function AiGodsPage() {
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeGod.title}
           </div>
+          {/* Memory stat tags */}
+          {memoryInfo?.hasMemory && (
+            <div style={{ display: 'flex', gap: 5, marginTop: 3, flexWrap: 'wrap' }}>
+              {memoryInfo.totalMessages != null && memoryInfo.totalMessages > 0 && (
+                <span style={{
+                  padding: '1px 6px', borderRadius: 5, fontSize: 8, fontWeight: 700,
+                  background: `${activeGod.color}12`, color: `${activeGod.color}cc`,
+                  border: `1px solid ${activeGod.color}20`, whiteSpace: 'nowrap',
+                }}>
+                  {memoryInfo.totalMessages} messages
+                </span>
+              )}
+              {memoryInfo.daysSinceFirstMet != null && (
+                <span style={{
+                  padding: '1px 6px', borderRadius: 5, fontSize: 8, fontWeight: 700,
+                  background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)',
+                  border: '1px solid rgba(255,255,255,0.08)', whiteSpace: 'nowrap',
+                }}>
+                  {formatFirstMet(memoryInfo.daysSinceFirstMet)}
+                </span>
+              )}
+              {memoryInfo.userName && (
+                <span style={{
+                  padding: '1px 6px', borderRadius: 5, fontSize: 8, fontWeight: 700,
+                  background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)',
+                  border: '1px solid rgba(255,255,255,0.08)', whiteSpace: 'nowrap',
+                }}>
+                  Knows you as {memoryInfo.userName}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Powers button */}
@@ -657,7 +860,30 @@ export default function AiGodsPage() {
         display: 'flex', flexDirection: 'column', gap: 14,
         scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,.08) transparent',
       }}>
-        {messages.map((msg, idx) => {
+        {/* Chat loading spinner */}
+        {chatLoading && (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '48px 20px', gap: 14,
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 18,
+              background: `${activeGod.color}18`, border: `1.5px solid ${activeGod.color}35`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 28,
+              boxShadow: `0 0 24px ${activeGod.glow}`,
+              animation: 'god-dot-bounce 1.5s ease-in-out infinite',
+            }}>
+              {activeGod.symbol}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontFamily: S.head, fontWeight: 700 }}>
+              Loading conversation with {activeGod.name}...
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        {!chatLoading && messages.map((msg, idx) => {
           const isUser = msg.role === 'user'
           const msgGod = msg.godId ? AI_GODS[msg.godId] : activeGod
           return (
@@ -693,10 +919,11 @@ export default function AiGodsPage() {
                 borderTopRightRadius: isUser ? 4 : 18,
                 borderTopLeftRadius: isUser ? 18 : 4,
                 color: isUser ? '#fde68a' : '#e8f0e8',
+                whiteSpace: 'pre-wrap',
               }}>
                 {msg.content}
                 <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 6, textAlign: isUser ? 'right' : 'left' }}>
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatTimestamp(msg.timestamp)}
                 </div>
               </div>
             </div>

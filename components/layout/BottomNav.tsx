@@ -9,7 +9,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   BaobabTree, DjembeIcon, UbuntuRing, MaskFace, KowrieIcon,
-  ToolSigil, CouncilHut, FireCircle, NkisiShield
+  ToolSigil, CouncilHut, FireCircle, NkisiShield,
+  AkomaHeart, HarvestCalendar,
 } from '@/components/ui/afro-icons'
 
 interface Tab { path: string; icon: React.ReactNode; label: string; exact?: boolean }
@@ -37,14 +38,14 @@ export function BottomNav() {
   const GOLD = '#fbbf24'
 
   const QUICK_ACTIONS = [
-    { icon: <DjembeIcon  size={28} />, label: 'New Post',      href: '/dashboard/feed',          color: '#1a7c3e' },
-    { icon: <KowrieIcon  size={28} />, label: 'UnionPay',     href: '/dashboard/banking',       color: '#d4a017' },
-    { icon: <span style={{ fontSize: 28 }}>💛</span>, label: 'Union Path', href: '/dashboard/love',       color: '#D4AF37' },
-    { icon: <span style={{ fontSize: 28 }}>🔥</span>, label: 'Kèréwà',    href: '/dashboard/kerawa',     color: '#FF3B30' },
-    { icon: <ToolSigil   size={28} />, label: 'Launch Tool',   href: '/dashboard/villages',      color: '#7c3aed' },
-    { icon: <CouncilHut  size={28} />, label: 'My Sessions',   href: '/dashboard/sessions',      color: '#374151' },
-    { icon: <NkisiShield size={28} />, label: 'Market Cry',    href: '/dashboard/ads',           color: '#c0392b' },
-    { icon: <span style={{ fontSize: 28 }}>🎟</span>, label: 'Create Event', href: '/dashboard/events/create', color: '#b45309' },
+    { icon: <DjembeIcon    size={28} />, label: 'New Post',      href: '/dashboard/feed',           color: '#1a7c3e' },
+    { icon: <KowrieIcon    size={28} />, label: 'UnionPay',      href: '/dashboard/banking',        color: '#d4a017' },
+    { icon: <AkomaHeart    size={28} />, label: 'Union Path',    href: '/dashboard/love',           color: '#D4AF37' },
+    { icon: <FireCircle    size={28} />, label: 'Kèréwà',        href: '/dashboard/kerawa',         color: '#FF3B30' },
+    { icon: <ToolSigil     size={28} />, label: 'Launch Tool',   href: '/dashboard/villages',       color: '#7c3aed' },
+    { icon: <CouncilHut    size={28} />, label: 'My Sessions',   href: '/dashboard/sessions',       color: '#374151' },
+    { icon: <NkisiShield   size={28} />, label: 'Market Cry',    href: '/dashboard/ads',            color: '#c0392b' },
+    { icon: <HarvestCalendar size={28} />, label: 'Create Event', href: '/dashboard/events/create', color: '#b45309' },
   ]
 
   const renderTab = (tab: Tab) => {

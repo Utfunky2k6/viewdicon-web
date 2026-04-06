@@ -3,6 +3,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { TopBar } from './TopBar'
 import { BottomNav } from './BottomNav'
 import { PinGate } from '@/components/ui/PinGate'
+import { GyeNyame } from '@/components/ui/afro-icons'
 
 interface MobileShellProps {
   children: React.ReactNode
@@ -67,8 +68,9 @@ export function MobileShell({ children, hideTopBar, hideBottomNav }: MobileShell
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', fontSize: 22,
               animation: 'zeusGlow 3s ease-in-out infinite',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-          >🌩️</button>
+          ><GyeNyame size={26} color="rgba(226,232,240,0.9)" /></button>
           <span style={{ fontSize: 8, color: 'rgba(226,232,240,0.5)', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, letterSpacing: '0.1em' }}>ZEUS</span>
         </div>
       )}

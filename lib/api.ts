@@ -284,6 +284,10 @@ export const aiGodsApi = {
     api.post('/api/ai/gods/power/invoke', { godId, powerId, params }),
   orchestrate: (message: string, context?: unknown)               =>
     api.post('/api/ai/gods/zeus/orchestrate', { message, context }),
+  chat:        (godId: string, limit?: number)                     =>
+    api.get(`/api/ai/gods/${godId}/chat${limit ? `?limit=${limit}` : ''}`),
+  memory:      (godId: string)                                     =>
+    api.get(`/api/ai/gods/${godId}/memory`),
 }
 
 // ── AI Advisors (Orisha) — now delegates to AI Gods ──────────

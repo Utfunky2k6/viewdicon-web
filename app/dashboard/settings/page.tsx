@@ -4,18 +4,19 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/lib/api'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 type Section = 'general' | 'ads' | 'privacy' | 'notifications' | 'wallet' | 'language' | 'village' | 'creator'
 
 const SECTIONS: { key: Section; emoji: string; label: string; desc: string }[] = [
-  { key: 'general',       emoji: '\u2699\uFE0F', label: 'General',         desc: 'Account, profile, display' },
-  { key: 'village',       emoji: '🏘',            label: 'Village',         desc: 'Village, role, transfer' },
-  { key: 'creator',       emoji: '🎬',            label: 'Creator',         desc: 'AfroFlix, music, revenue' },
-  { key: 'ads',           emoji: '🥁', label: 'Market Cries',    desc: 'Ad preferences + earnings' },
-  { key: 'privacy',       emoji: '🛡️', label: 'Privacy & Safety', desc: 'Skin locks, ghost mode' },
-  { key: 'notifications', emoji: '🔔', label: 'Notifications',    desc: 'Drums, mentions, alerts' },
-  { key: 'wallet',        emoji: '🐚', label: 'Cowrie Wallet',    desc: 'Balance, payouts, history' },
-  { key: 'language',      emoji: '🌍', label: 'Language & Voice', desc: 'Spirit Voice, translation' },
+  { key: 'general',       emoji: '✦',  label: 'General',         desc: 'Account, profile, display' },
+  { key: 'village',       emoji: '🏘',  label: 'Village',         desc: 'Village, role, transfer' },
+  { key: 'creator',       emoji: '🥁',  label: 'Creator',         desc: 'AfroFlix, music, revenue' },
+  { key: 'ads',           emoji: '📯',  label: 'Market Cries',    desc: 'Ad preferences + earnings' },
+  { key: 'privacy',       emoji: '🛡',  label: 'Privacy & Safety', desc: 'Skin locks, ghost mode' },
+  { key: 'notifications', emoji: '🥁',  label: 'Notifications',    desc: 'Drums, mentions, alerts' },
+  { key: 'wallet',        emoji: '🐚',  label: 'Cowrie Wallet',    desc: 'Balance, payouts, history' },
+  { key: 'language',      emoji: '🌍',  label: 'Language & Voice', desc: 'Spirit Voice, translation' },
 ]
 
 const AD_CATEGORIES = ['Commerce', 'Technology', 'Health', 'Education', 'Agriculture', 'Finance', 'Fashion', 'Arts', 'Spirituality', 'Food']
@@ -29,11 +30,15 @@ export default function SettingsPage() {
   const { user, setUser } = useAuthStore()
   const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
+  // Theme (dark/light) — wired to global ThemeProvider
+  const { theme, setTheme } = useTheme()
+
   // General settings — seeded from store
   const [displayName, setDisplayName] = React.useState(user?.displayName || '')
   const [handle, setHandle] = React.useState(user?.handle ? `@${user.handle.replace(/^@/, '')}` : '')
   const [autoplay, setAutoplay] = React.useState(true)
-  const [darkMode, setDarkMode] = React.useState(true)
+  const darkMode = theme === 'dark'
+  const setDarkMode = (on: boolean) => setTheme(on ? 'dark' : 'light')
 
   // Ad settings
   const [adsEnabled, setAdsEnabled] = React.useState(true)
@@ -110,7 +115,7 @@ export default function SettingsPage() {
       if (d.displayName && !user?.displayName) setDisplayName(d.displayName)
       if (d.handle && !user?.handle)           setHandle(d.handle)
       if (d.autoplay != null)   setAutoplay(d.autoplay)
-      if (d.darkMode != null)   setDarkMode(d.darkMode)
+      // darkMode is managed by ThemeProvider (reads afk-theme) — skip vd-settings.darkMode
       if (d.adsEnabled != null)      setAdsEnabled(d.adsEnabled)
       if (d.earnFromAds != null)     setEarnFromAds(d.earnFromAds)
       if (d.adFrequency)             setAdFrequency(d.adFrequency)
@@ -136,7 +141,7 @@ export default function SettingsPage() {
   React.useEffect(() => {
     try {
       localStorage.setItem('vd-settings', JSON.stringify({
-        displayName, handle, autoplay, darkMode,
+        displayName, handle, autoplay,
         adsEnabled, earnFromAds, adFrequency, blockedCategories,
         showBillboards, showTvAds, showNightMarket,
         ghostMode, showOnline, profileVisible,
@@ -144,7 +149,7 @@ export default function SettingsPage() {
         primaryLang, spiritVoice, autoTranslate,
       }))
     } catch {}
-  }, [displayName, handle, autoplay, darkMode, adsEnabled, earnFromAds, adFrequency, blockedCategories, showBillboards, showTvAds, showNightMarket, ghostMode, showOnline, profileVisible, drumNotifs, mentionNotifs, sprayNotifs, villageNotifs, primaryLang, spiritVoice, autoTranslate])
+  }, [displayName, handle, autoplay, adsEnabled, earnFromAds, adFrequency, blockedCategories, showBillboards, showTvAds, showNightMarket, ghostMode, showOnline, profileVisible, drumNotifs, mentionNotifs, sprayNotifs, villageNotifs, primaryLang, spiritVoice, autoTranslate])
 
   // ── Save general profile to backend ───────────────────────────────
   const handleSaveGeneral = async () => {

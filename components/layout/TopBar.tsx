@@ -6,6 +6,7 @@ import { ViewdiconIcon } from '@/components/ui/ViewdiconLogo'
 import { useNotifStore } from '@/stores/notifStore'
 import { useSkinStore, SKIN_META } from '@/stores/skinStore'
 import { useVillageStore } from '@/stores/villageStore'
+import { UbuntuRing, DrumAlert } from '@/components/ui/afro-icons'
 
 const ROUTE_TITLES: Record<string, { title: string; subtitle?: string }> = {
   '/dashboard':               { title: 'Compound',       subtitle: 'Your digital homestead' },
@@ -37,8 +38,8 @@ const ROUTE_TITLES: Record<string, { title: string; subtitle?: string }> = {
 
 const SKIN_HEADER: Record<string, { icon: string; iconBg: string; title: string; subtitle: string }> = {
   WORK:   { icon: '🧺', iconBg: '#1a7c3e', title: 'Market Vendor',       subtitle: 'Commerce · Ìlú Oníṣòwò' },
-  SOCIAL: { icon: '🎭', iconBg: 'linear-gradient(135deg,#d97706,#92400e)', title: '@LionHeart247', subtitle: 'Social Face · Public' },
-  CLAN:   { icon: '🏛', iconBg: 'linear-gradient(135deg,#7c3aed,#4c1d95)', title: 'Clan · Sacred Space', subtitle: 'Private · Family Circle only' },
+  SOCIAL: { icon: '🪬', iconBg: 'linear-gradient(135deg,#d97706,#92400e)', title: '@LionHeart247', subtitle: 'Social Face · Public' },
+  CLAN:   { icon: '🏺', iconBg: 'linear-gradient(135deg,#7c3aed,#4c1d95)', title: 'Clan · Sacred Space', subtitle: 'Private · Family Circle only' },
 }
 
 function getRouteInfo(pathname: string) {
@@ -163,11 +164,11 @@ export function TopBar() {
           </Link>
 
           <IconButton href="/dashboard/chat" label="AfriChat" badge={unreadChat}>
-            💬
+            <UbuntuRing size={18} color="var(--text-muted)" />
           </IconButton>
 
           <IconButton href="/dashboard/notifications" label="Notifications" badge={unreadCount}>
-            🥁
+            <DrumAlert size={18} color="var(--text-muted)" />
           </IconButton>
         </div>
       </div>

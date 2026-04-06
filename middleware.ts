@@ -81,16 +81,44 @@ export function middleware(req: NextRequest) {
     })
   }
 
-  const token = req.cookies.get('afk_token')?.value
+  const rawToken = req.cookies.get('afk_token')?.value
     || req.headers.get('authorization')?.replace('Bearer ', '')
+
+  // ── JWT expiry check (no secret needed — just decode payload) ──
+  function isTokenValid(t: string | undefined): boolean {
+    if (!t) return false
+    // Local/synthetic tokens (generated when backend is offline) are always valid
+    if (t.startsWith('local_')) return true
+    // Standard JWT: base64url-encoded header.payload.signature
+    const parts = t.split('.')
+    if (parts.length !== 3) return false
+    try {
+      // base64url → base64 → JSON
+      const pad = (s: string) => s + '='.repeat((4 - s.length % 4) % 4)
+      const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, '+').replace(/_/g, '/'))))
+      // If exp claim is present, check it against current time
+      if (typeof payload.exp === 'number') {
+        return payload.exp * 1000 > Date.now()
+      }
+      // No exp claim — treat as valid
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const token = rawToken
+  const tokenValid = isTokenValid(token)
 
   const isProtected  = PROTECTED.some((p) => pathname.startsWith(p))
   const isAuthRoute  = AUTH_ROUTES.some((p) => pathname.startsWith(p))
 
-  if (isProtected && !token) {
+  if (isProtected && !tokenValid) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'
-    url.searchParams.set('next', pathname)
+    // Preserve full path + search so login can redirect back
+    const nextPath = pathname + (req.nextUrl.search || '')
+    url.searchParams.set('next', nextPath)
     return NextResponse.redirect(url)
   }
 
@@ -100,21 +128,21 @@ export function middleware(req: NextRequest) {
   const isCeremony   = pathname.startsWith('/ceremony')
 
   // Case 1: Trying to access dashboard without ceremony
-  if (isProtected && token && !ceremonyDone) {
+  if (isProtected && tokenValid && !ceremonyDone) {
     const url = req.nextUrl.clone()
     url.pathname = '/ceremony'
     return NextResponse.redirect(url)
   }
 
   // Case 2: Trying to access ceremony when already done
-  if (isCeremony && token && ceremonyDone) {
+  if (isCeremony && tokenValid && ceremonyDone) {
     const url = req.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
   // Case 3: Logged in users trying to access login/register
-  if (isAuthRoute && token) {
+  if (isAuthRoute && tokenValid) {
     const url = req.nextUrl.clone()
     url.pathname = ceremonyDone ? '/dashboard' : '/ceremony'
     return NextResponse.redirect(url)
