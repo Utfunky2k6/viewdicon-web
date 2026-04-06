@@ -9,6 +9,7 @@ import { EgbeProfile } from './EgbeProfile'
 import { IdileProfile } from './IdileProfile'
 import { HonorRankScreen } from '@/components/profile/HonorRankScreen'
 import { RootPlantingScreen } from '@/components/profile/RootPlantingScreen'
+import { KumbukaTimeline } from '@/components/profile/KumbukaTimeline'
 import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { authApi } from '@/lib/api'
 import { ALL_VILLAGES } from '@/lib/villages-data'
@@ -70,8 +71,12 @@ function AfroIdCard() {
   const [revealed, setRevealed] = React.useState(false)
   const [copied, setCopied] = React.useState(false)
 
+  // user === null means still loading from store; user present but no afroId = truly missing
+  const isLoading = user === null
+  const hasAfroId = !!user?.afroId?.raw
+
   const raw     = user?.afroId?.raw     ?? ''
-  const masked  = user?.afroId?.masked  ?? '••••-••••-••••'
+  const masked  = isLoading ? '••••-••••-••••' : hasAfroId ? (user?.afroId?.masked ?? '••••-••••-••••') : '—'
   const country = user?.afroId?.country ?? ''
   const tribe   = user?.afroId?.tribe   ?? ''
   const numeric = user?.afroId?.numeric ?? ''
@@ -94,14 +99,15 @@ function AfroIdCard() {
       <div style={{ padding: '12px 14px' }}>
         <div style={{
           fontFamily: "'Courier New', monospace",
-          fontSize: 18, fontWeight: 800,
-          color: revealed ? '#4ade80' : 'rgba(74,222,128,.5)',
+          fontSize: isLoading ? 14 : 18, fontWeight: 800,
+          color: isLoading ? 'rgba(74,222,128,.25)' : revealed ? '#4ade80' : 'rgba(74,222,128,.5)',
           letterSpacing: '.12em', textAlign: 'center',
           background: 'rgba(0,0,0,.3)', borderRadius: 10,
           padding: '10px 0', marginBottom: 10,
           transition: 'color .3s',
+          animation: isLoading ? 'pulse 1.5s ease-in-out infinite' : undefined,
         }}>
-          {revealed ? raw : masked}
+          {isLoading ? 'Loading...' : revealed ? raw : masked}
         </div>
         {revealed && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
@@ -114,8 +120,12 @@ function AfroIdCard() {
           </div>
         )}
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setRevealed(r => !r)} style={{ flex: 1, padding: '8px 0', borderRadius: 9, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.05)', color: '#f0f7f0', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-            {revealed ? '🙈 Hide ID' : '👁 Reveal Full ID'}
+          <button
+            onClick={() => { if (!isLoading && hasAfroId) setRevealed(r => !r) }}
+            disabled={isLoading || !hasAfroId}
+            style={{ flex: 1, padding: '8px 0', borderRadius: 9, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.05)', color: isLoading || !hasAfroId ? 'rgba(255,255,255,.25)' : '#f0f7f0', fontSize: 11, fontWeight: 700, cursor: isLoading || !hasAfroId ? 'not-allowed' : 'pointer' }}
+          >
+            {isLoading ? 'Loading...' : !hasAfroId ? 'AfroID not assigned' : revealed ? '🙈 Hide ID' : '👁 Reveal Full ID'}
           </button>
           {revealed && (
             <button onClick={handleCopy} style={{ flex: 1, padding: '8px 0', borderRadius: 9, border: 'none', background: copied ? '#166534' : '#1a7c3e', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'background .2s' }}>
@@ -293,9 +303,14 @@ export default function ProfilePage() {
 
   return (
     <div className="animate-fade-in">
+      {/* ── Pan-African Kente top stripe ── */}
+      <div aria-hidden="true" style={{ height: 4, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)', flexShrink: 0 }} />
+
       {/* ── Adinkra Pattern Banner + Avatar ───────────────────────────────── */}
       <div style={{ position: 'relative', background: banner.gradient, overflow: 'hidden', paddingBottom: 8 }}>
-        {/* Adinkra pattern overlay */}
+        {/* Adinkra Gye Nyame overlay */}
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.045, backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%231a7c3e' stroke-linecap='round'%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3Cpath d='M22 22 Q14 14 14 22' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E")`, backgroundSize: '100px 100px', backgroundRepeat: 'repeat' }} />
+        {/* Diagonal stripe accent (skin-specific) */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: banner.pattern, backgroundSize: '18px 18px', pointerEvents: 'none', zIndex: 0 }} />
         {/* Decorative circle */}
         <div style={{ position: 'absolute', right: -30, top: '50%', transform: 'translateY(-50%)', width: 170, height: 170, borderRadius: '50%', background: `${meta.color}08`, border: `1px solid ${meta.color}18`, pointerEvents: 'none' }} />
@@ -330,7 +345,17 @@ export default function ProfilePage() {
             {isGhost && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(124,58,237,.2)', border: '1px solid rgba(124,58,237,.4)', borderRadius: 99, padding: '2px 8px', fontSize: 9, color: '#a78bfa', fontWeight: 700, marginBottom: 4, letterSpacing: '.04em' }}>🌫 Ghost Power Active</span>
             )}
-            <div style={{ fontSize: 19, fontWeight: 900, color: isGhost ? 'rgba(255,255,255,.4)' : '#f0f7f0', filter: isGhost ? 'blur(0.5px)' : undefined, lineHeight: 1.2, fontFamily: 'Sora,sans-serif', marginBottom: 2 }}>{displayName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+              <div style={{ fontSize: 19, fontWeight: 900, color: isGhost ? 'rgba(255,255,255,.4)' : '#f0f7f0', filter: isGhost ? 'blur(0.5px)' : undefined, lineHeight: 1.2, fontFamily: 'Sora, sans-serif' }}>{displayName}</div>
+              {!isGhost && (
+                <button
+                  onClick={() => setShowRank(true)}
+                  style={{ padding: '2px 9px', borderRadius: 99, background: `${rank.color}22`, border: `1px solid ${rank.color}55`, color: rank.color, fontSize: 10, fontWeight: 800, cursor: 'pointer', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 3, lineHeight: 1.6 }}
+                >
+                  {rank.emoji} {rank.name}
+                </button>
+              )}
+            </div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginBottom: 8 }}>{displayHandle}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
               {displayTags.map(tag => (
@@ -361,6 +386,8 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
+        {/* Kente divider — bottom of banner */}
+        <div aria-hidden="true" style={{ height: 3, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)', position: 'relative', zIndex: 1 }} />
       </div>
 
       {/* ── Honor Rank block ─────────────────────────────────────────────── */}
@@ -398,6 +425,9 @@ export default function ProfilePage() {
       {activeSkin === 'SOCIAL' && <EgbeProfile />}
       {activeSkin === 'CLAN'   && <IdileProfile />}
 
+      {/* ── Kumbuka Memory Timeline — visible across all skins ───────────── */}
+      <KumbukaTimeline userId={user?.id ?? ''} />
+
       {/* ── Account Section ──────────────────────────────────────────────── */}
       <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0 0' }}>
         <div style={{ padding: '10px 14px 5px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
@@ -405,6 +435,127 @@ export default function ProfilePage() {
         </div>
         <AfroIdCard />
         <CeremonyCard />
+
+        {/* ── Village Badge + Cowries ────────────────────────────────── */}
+        {(userVillage || true) && (() => {
+          const cowrieBalance: number = (() => {
+            try { return Number(localStorage.getItem('cowrie_balance') ?? 0) || 0 } catch { return 0 }
+          })()
+          return (
+            <div style={{ margin: '0 12px 16px', display: 'flex', gap: 8 }}>
+              {/* Village badge */}
+              <div style={{
+                flex: 1, background: userVillage ? `${userVillage.color}10` : 'rgba(255,255,255,.04)',
+                border: `1px solid ${userVillage ? userVillage.color + '35' : 'rgba(255,255,255,.12)'}`,
+                borderRadius: 14, padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 22 }}>{userVillage?.emoji || '🏘'}</span>
+                <div>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Village</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: userVillage?.color || '#f0f7f0', marginTop: 1, fontFamily: '"Cinzel","Palatino",serif' }}>
+                    {userVillage ? (userVillage.ancientName || userVillage.name) : 'No village yet'}
+                  </div>
+                  {userRoleLabel && (
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,.35)', marginTop: 1 }}>{userRoleLabel}</div>
+                  )}
+                </div>
+              </div>
+              {/* Cowries */}
+              <div style={{
+                flex: 1, background: 'rgba(212,160,23,.08)', border: '1px solid rgba(212,160,23,.25)',
+                borderRadius: 14, padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 22 }}>🐚</span>
+                <div>
+                  <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(212,160,23,.5)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Cowries</div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: '#fbbf24', fontFamily: 'DM Mono, monospace', marginTop: 1 }}>
+                    ₡{cowrieBalance.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ── Recent Tools Used ─────────────────────────────────────────── */}
+        {(() => {
+          const recentTools: { toolKey: string; toolName: string; icon: string; ts: number }[] = (() => {
+            try {
+              const raw = localStorage.getItem('tool_sessions_log')
+              if (!raw) return []
+              const arr = JSON.parse(raw)
+              return Array.isArray(arr) ? arr.slice(0, 5) : []
+            } catch { return [] }
+          })()
+          if (recentTools.length === 0) return null
+          return (
+            <div style={{ margin: '0 12px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>
+                🛠 Recent Tools
+              </div>
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+                {recentTools.map((t, i) => (
+                  <div key={`${t.toolKey}-${i}`} style={{
+                    flexShrink: 0, background: '#0a1a0e', border: '1px solid rgba(26,124,62,.25)',
+                    borderRadius: 12, padding: '8px 10px', textAlign: 'center', minWidth: 60,
+                  }}>
+                    <div style={{ fontSize: 18, marginBottom: 4 }}>{t.icon || '🛠'}</div>
+                    <div style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,.5)', lineHeight: 1.3, whiteSpace: 'nowrap', maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {t.toolName || t.toolKey}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* ── Village Transfer link ─────────────────────────────────────── */}
+        {userVillage && (
+          <div style={{ margin: '0 12px 12px', textAlign: 'center' }}>
+            <button
+              onClick={() => router.push('/dashboard/villages/transfer')}
+              style={{
+                background: 'none', border: '1px solid rgba(255,255,255,.08)',
+                borderRadius: 10, cursor: 'pointer', padding: '8px 20px',
+                color: 'rgba(255,255,255,.35)', fontSize: 11, fontWeight: 600,
+                transition: 'color .2s',
+              }}
+            >
+              🔄 Transfer Village
+            </button>
+          </div>
+        )}
+
+        {/* ── Odin · Wisdom Oracle ── */}
+        <div style={{ margin: '20px 16px', padding: '20px', borderRadius: 20, background: 'linear-gradient(135deg,rgba(167,139,250,0.12),rgba(76,29,149,0.08))', border: '1px solid rgba(167,139,250,0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <span style={{ fontSize: 32 }}>👁️</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#a78bfa', fontFamily: "'Space Grotesk',sans-serif" }}>Odin · All-Father</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontFamily: "'Inter',sans-serif" }}>Wisdom · Heritage · Career Oracle</div>
+            </div>
+            <a href="/dashboard/ai/odin" style={{ marginLeft: 'auto', fontSize: 10, color: '#a78bfa', textDecoration: 'none', fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700 }}>Full Oracle →</a>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+            {[
+              { icon: '🗺️', label: 'Career Path' },
+              { icon: '📿', label: 'Daily Proverb' },
+              { icon: '🧬', label: 'Heritage DNA' },
+              { icon: '🔍', label: 'Skill Gaps' },
+            ].map(p => (
+              <a key={p.label} href="/dashboard/ai" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 12, background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.15)', textDecoration: 'none', cursor: 'pointer' }}>
+                <span style={{ fontSize: 16 }}>{p.icon}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.7)', fontFamily: "'Space Grotesk',sans-serif" }}>{p.label}</span>
+              </a>
+            ))}
+          </div>
+          <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(167,139,250,0.06)', border: '1px solid rgba(167,139,250,0.1)', fontStyle: 'italic', fontSize: 11, color: 'rgba(255,255,255,0.55)', fontFamily: "'Inter',sans-serif", lineHeight: 1.6 }}>
+            "The one who tells the stories rules the world." — African Proverb · <span style={{ fontSize: 9, color: 'rgba(167,139,250,0.6)' }}>Odin's Wisdom of the Day</span>
+          </div>
+        </div>
 
         {/* Quick access rows */}
         <div style={{ margin: '0 12px 16px', background: '#0a1a0e', border: '1px solid rgba(26,124,62,.35)', borderRadius: 14, overflow: 'hidden' }}>
@@ -437,6 +588,23 @@ export default function ProfilePage() {
           }}>
             🚪 Log Out
           </button>
+        </div>
+
+        {/* Delete Account — subtle link */}
+        <div style={{ margin: '0 12px 32px', textAlign: 'center' }}>
+          <button
+            onClick={() => router.push('/dashboard/settings?section=account')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'rgba(239,68,68,.5)', fontSize: 11, fontWeight: 600,
+              padding: '8px 16px', transition: 'color .2s',
+            }}
+          >
+            Delete or Deactivate Account
+          </button>
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,.15)', marginTop: 4 }}>
+            Manage your account in Settings
+          </div>
         </div>
       </div>
 

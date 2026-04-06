@@ -241,7 +241,7 @@ export function MotionPostCard({ post, isActive, onInteract }: MotionPostCardPro
         </button>
       )}
 
-      {/* Action strip — right side, TikTok layout */}
+      {/* Action strip — right side, Motion Feed layout */}
       <MotionActionStrip post={post} onInteract={onInteract} />
 
       {/* Bottom overlay — author, caption, heat */}

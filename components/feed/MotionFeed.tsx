@@ -86,7 +86,7 @@ export function MotionFeed({ posts, onInteract }: MotionFeedProps) {
     return (
       <div style={{ height: '60dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <div style={{ fontSize: 56, marginBottom: 16 }}>📺</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,.6)', marginBottom: 8 }}>No Motion Posts Yet</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 800, color: 'rgba(255,255,255,.6)', marginBottom: 8 }}>No Motion Posts Yet</div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,.3)', textAlign: 'center', lineHeight: 1.6 }}>Video stories, image journals, and audio letters from your village will appear here in a full-screen feed.</div>
       </div>
     )

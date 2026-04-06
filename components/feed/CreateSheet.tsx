@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { sorosokeApi } from '@/lib/api'
 import type { Skin } from '@/components/feed/FeedPostCard'
 import { SKINS } from '@/components/feed/FeedPostCard'
@@ -10,12 +11,15 @@ export const CREATE_TYPE_MAP: Record<CreatePostT, string> = {
 }
 
 export function CreateSheet({ open, onClose, currentSkin }: { open:boolean; onClose:()=>void; currentSkin:Skin }) {
+  const createRouter = useRouter()
   const [postType, setPostType] = React.useState<CreatePostT>('text')
   const [text, setText] = React.useState('')
   const [scope, setScope] = React.useState<'village'|'region'|'nation'>('village')
   const [isRecording, setIsRecording] = React.useState(false)
   const [recSecs, setRecSecs] = React.useState(0)
   const [posting, setPosting] = React.useState(false)
+  const [streamTitle, setStreamTitle] = React.useState('')
+  const [streamMode, setStreamMode] = React.useState<'camera'|'audio'|'screen'>('camera')
   const recRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
 
   const heatPct = Math.min(90, 20 + text.length * 0.8)
@@ -44,6 +48,15 @@ export function CreateSheet({ open, onClose, currentSkin }: { open:boolean; onCl
 
   const handlePost = async () => {
     if (posting) return
+    if (postType === 'golive') {
+      // Navigate to Jollof TV stream creation with pre-filled params
+      const params = new URLSearchParams()
+      if (streamTitle.trim()) params.set('title', streamTitle.trim())
+      params.set('mode', streamMode)
+      createRouter.push(`/dashboard/jollof/live?${params}`)
+      onClose()
+      return
+    }
     setPosting(true)
     try {
       let villageId: string | null = null
@@ -71,7 +84,7 @@ export function CreateSheet({ open, onClose, currentSkin }: { open:boolean; onCl
       <div style={{ flex:1 }} />
       <div onClick={e => e.stopPropagation()} style={{ background:'#111a0d',borderRadius:'28px 28px 0 0',padding:'0 0 40px',transform:open ? 'translateY(0)' : 'translateY(100%)',transition:'transform .35s cubic-bezier(.4,0,.2,1)' }}>
         <div style={{ width:40,height:4,borderRadius:99,background:'rgba(255,255,255,.2)',margin:'12px auto 16px' }} />
-        <div style={{ padding:'0 16px 10px',fontFamily:'Sora,sans-serif',fontSize:20,fontWeight:900,color:'#f0f5ee',display:'flex',alignItems:'center',gap:10 }}>
+        <div style={{ padding:'0 16px 10px',fontFamily:'Sora, sans-serif',fontSize:20,fontWeight:900,color:'#f0f5ee',display:'flex',alignItems:'center',gap:10 }}>
           What do you want to say?
           <span style={{ fontSize:13,color:'rgba(255,255,255,.4)',fontWeight:400 }}>{SKINS[currentSkin].pill}</span>
         </div>
@@ -86,19 +99,19 @@ export function CreateSheet({ open, onClose, currentSkin }: { open:boolean; onCl
         {postType === 'voice' ? (
           <div style={{ padding:'20px 16px' }}>
             <div onClick={toggleRecord} style={{ width:80,height:80,borderRadius:'50%',background:isRecording ? 'rgba(178,34,34,.2)' : 'rgba(26,124,62,.2)',border:`2px solid ${isRecording ? 'rgba(178,34,34,.5)' : 'rgba(26,124,62,.4)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:36,cursor:'pointer',margin:'0 auto 12px',transition:'all .3s' }}>{isRecording ? '⏹' : '🎙'}</div>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:24,fontWeight:900,textAlign:'center',color:'#f0f5ee' }}>{fmtRec(recSecs)}</div>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:24,fontWeight:900,textAlign:'center',color:'#f0f5ee' }}>{fmtRec(recSecs)}</div>
             <div style={{ fontSize:12,color:'rgba(255,255,255,.4)',textAlign:'center',marginTop:6 }}>{isRecording ? 'Recording... tap to stop' : 'Tap to record (max 3:00)'}</div>
           </div>
         ) : postType === 'golive' ? (
           <div style={{ padding:'20px 16px',textAlign:'center' }}>
             <div style={{ width:88,height:88,borderRadius:'50%',background:'radial-gradient(circle,rgba(239,68,68,.25),rgba(239,68,68,.05))',border:'3px solid rgba(239,68,68,.5)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:40,margin:'0 auto 14px',boxShadow:'0 0 30px rgba(239,68,68,.2)' }}>🔴</div>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:18,fontWeight:900,color:'#f87171',marginBottom:6 }}>Light the Fire</div>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:18,fontWeight:900,color:'#f87171',marginBottom:6 }}>Light the Fire</div>
             <div style={{ fontSize:12,color:'rgba(255,255,255,.4)',marginBottom:14 }}>Go live to your village — your stream will appear in Jollof TV and the Village Drum feed</div>
-            <input placeholder="Stream title — e.g. Market Talk, Cooking Show..." style={{ width:'100%',background:'rgba(255,255,255,.05)',border:'1.5px solid rgba(255,255,255,.1)',borderRadius:12,padding:'12px 16px',fontSize:13,color:'#f0f5ee',outline:'none',marginBottom:10,boxSizing:'border-box' }} />
+            <input value={streamTitle} onChange={e => setStreamTitle(e.target.value)} placeholder="Stream title — e.g. Market Talk, Cooking Show..." style={{ width:'100%',background:'rgba(255,255,255,.05)',border:'1.5px solid rgba(255,255,255,.1)',borderRadius:12,padding:'12px 16px',fontSize:13,color:'#f0f5ee',outline:'none',marginBottom:10,boxSizing:'border-box' }} />
             <div style={{ display:'flex',gap:8 }}>
-              <button style={{ flex:1,padding:10,background:'rgba(239,68,68,.15)',border:'1.5px solid rgba(239,68,68,.3)',borderRadius:10,fontSize:11,fontWeight:700,color:'#f87171',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}>📹 Camera</button>
-              <button style={{ flex:1,padding:10,background:'rgba(74,222,128,.1)',border:'1.5px solid rgba(74,222,128,.3)',borderRadius:10,fontSize:11,fontWeight:700,color:'#4ade80',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}>🎙 Audio Only</button>
-              <button style={{ flex:1,padding:10,background:'rgba(96,165,250,.1)',border:'1.5px solid rgba(96,165,250,.3)',borderRadius:10,fontSize:11,fontWeight:700,color:'#60a5fa',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}>🖥 Screen</button>
+              <button onClick={() => setStreamMode('camera')} style={{ flex:1,padding:10,background:streamMode === 'camera' ? 'rgba(239,68,68,.2)' : 'rgba(239,68,68,.08)',border:`1.5px solid ${streamMode === 'camera' ? 'rgba(239,68,68,.5)' : 'rgba(239,68,68,.2)'}`,borderRadius:10,fontSize:11,fontWeight:700,color:'#f87171',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}>📹 Camera</button>
+              <button onClick={() => setStreamMode('audio')} style={{ flex:1,padding:10,background:streamMode === 'audio' ? 'rgba(74,222,128,.15)' : 'rgba(74,222,128,.06)',border:`1.5px solid ${streamMode === 'audio' ? 'rgba(74,222,128,.5)' : 'rgba(74,222,128,.2)'}`,borderRadius:10,fontSize:11,fontWeight:700,color:'#4ade80',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}>🎙 Audio Only</button>
+              <button onClick={() => setStreamMode('screen')} style={{ flex:1,padding:10,background:streamMode === 'screen' ? 'rgba(96,165,250,.15)' : 'rgba(96,165,250,.06)',border:`1.5px solid ${streamMode === 'screen' ? 'rgba(96,165,250,.5)' : 'rgba(96,165,250,.2)'}`,borderRadius:10,fontSize:11,fontWeight:700,color:'#60a5fa',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6 }}>🖥 Screen</button>
             </div>
           </div>
         ) : (
@@ -127,9 +140,9 @@ export function CreateSheet({ open, onClose, currentSkin }: { open:boolean; onCl
         <button
           disabled={posting || (postType !== 'voice' && postType !== 'golive' && text.trim().length < 3)}
           onClick={handlePost}
-          style={{ margin:'0 16px',width:'calc(100% - 32px)',padding:14,background:posting ? 'rgba(26,124,62,.4)' : '#1a7c3e',border:'none',borderRadius:14,fontSize:14,fontWeight:700,color:'#fff',cursor:posting ? 'wait' : 'pointer',fontFamily:'Sora,sans-serif',display:'flex',alignItems:'center',justifyContent:'center',gap:8 }}
+          style={{ margin:'0 16px',width:'calc(100% - 32px)',padding:14,background:posting ? 'rgba(26,124,62,.4)' : postType === 'golive' ? '#b91c1c' : '#1a7c3e',border:'none',borderRadius:14,fontSize:14,fontWeight:700,color:'#fff',cursor:posting ? 'wait' : 'pointer',fontFamily:'Sora, sans-serif',display:'flex',alignItems:'center',justifyContent:'center',gap:8 }}
         >
-          {posting ? '⏳ Drumming…' : '🥁 Drum This to Your Village'}
+          {posting ? '⏳ Drumming…' : postType === 'golive' ? '🔴 Go Live Now' : '🥁 Drum This to Your Village'}
         </button>
       </div>
     </div>

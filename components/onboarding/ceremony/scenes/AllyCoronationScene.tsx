@@ -33,7 +33,7 @@ export function AllyCoronationScene({ allyName, onDone, theme }: AllyCoronationS
       }}>
         🤝
       </div>
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 20, fontWeight: 900, color: '#f0f7f0', textAlign: 'center', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 20, fontWeight: 900, color: '#f0f7f0', textAlign: 'center', marginBottom: 4 }}>
         {allyName ? `Welcome, ${allyName}` : 'Welcome, Friend of the Motherland'}
       </div>
       <div style={{ fontSize: 13, color: '#93c5fd', textAlign: 'center', lineHeight: 1.65, marginBottom: 18, maxWidth: 300 }}>

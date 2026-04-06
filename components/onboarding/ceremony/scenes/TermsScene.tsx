@@ -14,7 +14,7 @@ export function TermsScene({ onNext, theme }: TermsSceneProps) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 24, background: theme.bg }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>📜</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 26, fontWeight: 900, color: theme.text, marginBottom: 10 }}>Oath of Entry</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 26, fontWeight: 900, color: theme.text, marginBottom: 10 }}>Oath of Entry</div>
         <p style={{ fontSize: 14, color: theme.subText, lineHeight: 1.6 }}>By entering the Motherland, you swear to uphold the principles of Ubuntu, sovereignty, and kinship.</p>
       </div>
 

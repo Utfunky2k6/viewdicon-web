@@ -62,7 +62,7 @@ function AddSheet({ onClose, onAdd }: { onClose: () => void; onAdd: (name: strin
     <div style={{ position:'fixed',inset:0,zIndex:60,background:'rgba(0,0,0,.72)',display:'flex',alignItems:'flex-end' }} onClick={onClose}>
       <div style={{ width:'100%',background:'#0a1a0e',borderRadius:'20px 20px 0 0',padding:'20px 20px 32px',maxHeight:'80vh',overflowY:'auto' }} onClick={e=>e.stopPropagation()}>
         <div style={{ width:36,height:4,borderRadius:2,background:'rgba(255,255,255,.2)',margin:'0 auto 20px' }} />
-        <div style={{ fontFamily:'Sora,sans-serif',fontSize:17,fontWeight:900,color:'#f0f7f0',marginBottom:16 }}>
+        <div style={{ fontFamily:'Sora, sans-serif',fontSize:17,fontWeight:900,color:'#f0f7f0',marginBottom:16 }}>
           {step==='cats'?'Add Family Member':step==='opts'?(cat?.label??''):(opt?.en??'')}
         </div>
         {step==='cats' && (
@@ -131,7 +131,7 @@ function EditSheet({ node, onClose, onSave }: { node: TreeNode; onClose: () => v
     <div style={{ position:'fixed',inset:0,zIndex:70,background:'rgba(0,0,0,.72)',display:'flex',alignItems:'flex-end' }} onClick={onClose}>
       <div style={{ width:'100%',background:'#0a1a0e',borderRadius:'20px 20px 0 0',padding:'20px 20px 36px' }} onClick={e=>e.stopPropagation()}>
         <div style={{ width:36,height:4,borderRadius:2,background:'rgba(255,255,255,.2)',margin:'0 auto 18px' }} />
-        <div style={{ fontFamily:'Sora,sans-serif',fontSize:16,fontWeight:900,color:'#f0f7f0',marginBottom:6 }}>✏️ Update Member Details</div>
+        <div style={{ fontFamily:'Sora, sans-serif',fontSize:16,fontWeight:900,color:'#f0f7f0',marginBottom:6 }}>✏️ Update Member Details</div>
         <div style={{ fontSize:11,color:'rgba(240,247,240,.4)',marginBottom:20 }}>{node.rel} · {node.af}</div>
         <div style={{ marginBottom:12 }}>
           <label style={{ fontSize:9,fontWeight:800,color:'rgba(255,255,255,.35)',textTransform:'uppercase',letterSpacing:'.1em',display:'block',marginBottom:5 }}>Full Name *</label>
@@ -246,7 +246,7 @@ export default function FamilyTreePage() {
       <div style={{ padding:'14px 16px 10px',borderBottom:'1px solid rgba(255,255,255,.07)' }}>
         <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6 }}>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:17,fontWeight:900,color:'#f0f7f0' }}>🌳 Ancestor Tree</div>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:17,fontWeight:900,color:'#f0f7f0' }}>🌳 Ancestor Tree</div>
             <div style={{ fontSize:10,color:'rgba(240,247,240,.45)',marginTop:1 }}>{totalMembers} members · {verified} verified</div>
           </div>
           <button onClick={()=>setShowAdd(true)} style={{ padding:'7px 14px',borderRadius:10,background:'linear-gradient(135deg,#1a7c3e,#145f30)',border:'none',color:'#fff',fontSize:12,fontWeight:800,cursor:'pointer' }}>+ Add</button>
@@ -259,7 +259,7 @@ export default function FamilyTreePage() {
             <div style={{ fontSize:12,fontWeight:800,color:growthStage.color }}>{growthStage.label.split(' ').slice(1).join(' ')}</div>
             <div style={{ fontSize:10,color:'rgba(255,255,255,.4)' }}>{growthStage.desc}</div>
           </div>
-          <div style={{ fontSize:16,fontWeight:900,color:growthStage.color,fontFamily:'Sora,sans-serif' }}>{totalMembers}</div>
+          <div style={{ fontSize:16,fontWeight:900,color:growthStage.color,fontFamily:'Sora, sans-serif' }}>{totalMembers}</div>
         </div>
 
         {/* Growth progress bar */}
@@ -356,7 +356,7 @@ export default function FamilyTreePage() {
                     <circle cx={node.x+r-2} cy={node.y+r-2} r={5} fill="#4ade80" />
                     <text x={node.x+r-2} y={node.y+r-1} textAnchor="middle" dominantBaseline="middle" fontSize="5" fill="#050a06" fontWeight="bold">V</text>
                   </>}
-                  <text x={node.x} y={node.y+r+10} textAnchor="middle" dominantBaseline="hanging" fontSize="7.5" fill={isDead?'#6b7280':'#f0f7f0'} fontWeight={isSel?'800':'600'} style={{ fontFamily:'Sora,sans-serif' }}>{node.firstName}</text>
+                  <text x={node.x} y={node.y+r+10} textAnchor="middle" dominantBaseline="hanging" fontSize="7.5" fill={isDead?'#6b7280':'#f0f7f0'} fontWeight={isSel?'800':'600'} style={{ fontFamily:'Sora, sans-serif' }}>{node.firstName}</text>
                 </g>
               )
             })}
@@ -378,7 +378,7 @@ export default function FamilyTreePage() {
                   {/* NEW badge */}
                   <rect x={node.x+r-10} y={node.y-r-8} width={18} height={10} rx={5} fill="#d4a017" />
                   <text x={node.x+r-1} y={node.y-r-3} textAnchor="middle" dominantBaseline="middle" fontSize="6" fill="#050a06" fontWeight="800">NEW</text>
-                  <text x={node.x} y={node.y+r+10} textAnchor="middle" dominantBaseline="hanging" fontSize="7.5" fill="#fbbf24" fontWeight="700" style={{ fontFamily:'Sora,sans-serif' }}>{node.firstName}</text>
+                  <text x={node.x} y={node.y+r+10} textAnchor="middle" dominantBaseline="hanging" fontSize="7.5" fill="#fbbf24" fontWeight="700" style={{ fontFamily:'Sora, sans-serif' }}>{node.firstName}</text>
                 </g>
               )
             })}
@@ -386,7 +386,7 @@ export default function FamilyTreePage() {
             <g onClick={()=>setShowAdd(true)} style={{ cursor:'pointer' }}>
               <circle cx={190} cy={svgHeight-40} r={22} fill="rgba(26,124,62,.06)" stroke="rgba(26,124,62,.3)" strokeWidth={1.5} strokeDasharray="5 4" />
               <text x={190} y={svgHeight-40} textAnchor="middle" dominantBaseline="middle" fontSize="18" opacity={0.5}>+</text>
-              <text x={190} y={svgHeight-14} textAnchor="middle" dominantBaseline="hanging" fontSize="7" fill="rgba(74,222,128,.5)" fontWeight="700" style={{ fontFamily:'Sora,sans-serif' }}>Add Member</text>
+              <text x={190} y={svgHeight-14} textAnchor="middle" dominantBaseline="hanging" fontSize="7" fill="rgba(74,222,128,.5)" fontWeight="700" style={{ fontFamily:'Sora, sans-serif' }}>Add Member</text>
             </g>
           </svg>
           {/* Legend */}
@@ -434,11 +434,11 @@ export default function FamilyTreePage() {
           {/* Current stage hero */}
           <div style={{ textAlign:'center',padding:'24px 0 20px',borderBottom:'1px solid rgba(255,255,255,.06)',marginBottom:20 }}>
             <div style={{ fontSize:56,marginBottom:8,lineHeight:1 }}>{growthStage.label.split(' ')[0]}</div>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:20,fontWeight:900,color:growthStage.color,marginBottom:4 }}>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:20,fontWeight:900,color:growthStage.color,marginBottom:4 }}>
               {growthStage.label.split(' ').slice(1).join(' ')}
             </div>
             <div style={{ fontSize:12,color:'rgba(255,255,255,.5)',marginBottom:12 }}>{growthStage.desc}</div>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:36,fontWeight:900,color:'#f0f7f0',lineHeight:1 }}>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:36,fontWeight:900,color:'#f0f7f0',lineHeight:1 }}>
               {totalMembers} <span style={{ fontSize:14,color:'rgba(255,255,255,.4)',fontWeight:500 }}>members</span>
             </div>
           </div>
@@ -523,7 +523,7 @@ export default function FamilyTreePage() {
             </div>
           </div>
 
-          <button onClick={()=>{setShowAdd(true);setTab('TREE')}} style={{ width:'100%',padding:'14px 0',borderRadius:14,background:'linear-gradient(135deg,#1a7c3e,#145f30)',border:'none',color:'#fff',fontFamily:'Sora,sans-serif',fontSize:14,fontWeight:800,cursor:'pointer',boxShadow:'0 8px 24px rgba(26,124,62,.25)' }}>
+          <button onClick={()=>{setShowAdd(true);setTab('TREE')}} style={{ width:'100%',padding:'14px 0',borderRadius:14,background:'linear-gradient(135deg,#1a7c3e,#145f30)',border:'none',color:'#fff',fontFamily:'Sora, sans-serif',fontSize:14,fontWeight:800,cursor:'pointer',boxShadow:'0 8px 24px rgba(26,124,62,.25)' }}>
             🌱 Grow Your Tree
           </button>
         </div>
@@ -543,13 +543,13 @@ export default function FamilyTreePage() {
                   style={{ transition:'stroke-dashoffset .6s' }} />
               </svg>
               <div style={{ position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center' }}>
-                <span style={{ fontFamily:'Sora,sans-serif',fontSize:28,fontWeight:900,color:t1Ver.length>=2?'#4ade80':'#fbbf24',lineHeight:1 }}>{t1Ver.length}</span>
+                <span style={{ fontFamily:'Sora, sans-serif',fontSize:28,fontWeight:900,color:t1Ver.length>=2?'#4ade80':'#fbbf24',lineHeight:1 }}>{t1Ver.length}</span>
                 <span style={{ fontSize:10,color:'rgba(255,255,255,.4)',fontWeight:700 }}>of {t1Nodes.length}</span>
               </div>
             </div>
           </div>
           <div style={{ textAlign:'center',marginBottom:20 }}>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:16,fontWeight:900,color:t1Ver.length>=2?'#4ade80':'#fbbf24' }}>{t1Ver.length>=2?'🛡 Recovery Quorum Active':'⚠ Quorum Not Ready'}</div>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:16,fontWeight:900,color:t1Ver.length>=2?'#4ade80':'#fbbf24' }}>{t1Ver.length>=2?'🛡 Recovery Quorum Active':'⚠ Quorum Not Ready'}</div>
             <div style={{ fontSize:11,color:'rgba(255,255,255,.45)',marginTop:4 }}>{t1Ver.length>=2?`${t1Ver.length} Blood Line members can restore your Afro-ID`:`Need ${2-t1Ver.length} more verified Blood Line member${t1Ver.length===1?'':'s'}`}</div>
           </div>
           <div style={{ marginBottom:20 }}>
@@ -571,7 +571,7 @@ export default function FamilyTreePage() {
             <div style={{ fontSize:10,fontWeight:800,color:'#d4a017',marginBottom:6 }}>🏛 Ancestral Vault Keys</div>
             <div style={{ fontSize:10,color:'rgba(255,255,255,.45)',lineHeight:1.7 }}>Vault key holders form a 2-of-5 Shamir quorum to unlock ancestral documents. Assign keys after family members verify their identity.</div>
           </div>
-          <button onClick={()=>setShowAdd(true)} style={{ width:'100%',padding:'14px 0',borderRadius:14,background:'linear-gradient(135deg,#1a7c3e,#145f30)',border:'none',color:'#fff',fontFamily:'Sora,sans-serif',fontSize:14,fontWeight:800,cursor:'pointer' }}>+ Add Blood Line Member</button>
+          <button onClick={()=>setShowAdd(true)} style={{ width:'100%',padding:'14px 0',borderRadius:14,background:'linear-gradient(135deg,#1a7c3e,#145f30)',border:'none',color:'#fff',fontFamily:'Sora, sans-serif',fontSize:14,fontWeight:800,cursor:'pointer' }}>+ Add Blood Line Member</button>
         </div>
       )}
 
@@ -579,13 +579,13 @@ export default function FamilyTreePage() {
       {selNode && (
         <div style={{ position:'fixed',right:0,top:0,bottom:0,width:272,background:'#0a1a0e',borderLeft:'1px solid rgba(26,124,62,.2)',zIndex:50,display:'flex',flexDirection:'column',overflowY:'auto',boxShadow:'-8px 0 32px rgba(0,0,0,.45)' }}>
           <div style={{ padding:'14px 14px 10px',borderBottom:'1px solid rgba(255,255,255,.07)',display:'flex',alignItems:'center',justifyContent:'space-between' }}>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:12,fontWeight:900,color:'#f0f7f0' }}>Family Member</div>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:12,fontWeight:900,color:'#f0f7f0' }}>Family Member</div>
             <button onClick={()=>setSelId(null)} style={{ width:28,height:28,borderRadius:8,background:'rgba(255,255,255,.06)',border:'none',color:'rgba(255,255,255,.6)',fontSize:16,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center' }}>×</button>
           </div>
           <div style={{ padding:'18px 14px',flex:1 }}>
             <div style={{ display:'flex',flexDirection:'column',alignItems:'center',marginBottom:18 }}>
               <div style={{ width:60,height:60,borderRadius:18,background:`${STATUS_CFG[selNode.status].color}18`,border:`2px solid ${STATUS_CFG[selNode.status].color}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,marginBottom:8,filter:selNode.status==='deceased'?'grayscale(1)':'none',opacity:selNode.status==='deceased'?0.7:1 }}>{selNode.emoji}</div>
-              <div style={{ fontFamily:'Sora,sans-serif',fontSize:15,fontWeight:900,color:'#f0f7f0',textAlign:'center' }}>{selNode.label}</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:15,fontWeight:900,color:'#f0f7f0',textAlign:'center' }}>{selNode.label}</div>
               <div style={{ fontSize:11,color:(selNode.tier===1||selNode.tier===2||selNode.tier===3)?TIER_COLORS[selNode.tier]:'#888',fontWeight:700,marginTop:2 }}>{selNode.rel}</div>
               <div style={{ fontSize:10,color:'rgba(255,255,255,.4)',fontStyle:'italic',marginTop:1 }}>{selNode.af}</div>
             </div>

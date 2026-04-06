@@ -14,6 +14,8 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { VOCAB } from '@/constants/vocabulary'
+import { honorApi } from '@/lib/api'
+import { useAuthStore } from '@/stores/authStore'
 
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
 type AccessLevel = 'village' | 'nation' | 'oracle' | 'paid'
@@ -48,12 +50,27 @@ type Stage = 'pick-type' | 'fill-details' | 'launching' | 'error'
 
 export function GoLiveSheet({ hostAfroId, villageSlug, villageEmoji, crestTier, onClose }: GoLiveSheetProps) {
   const router = useRouter()
+  const user = useAuthStore(s => s.user)
   const [stage, setStage]       = React.useState<Stage>('pick-type')
   const [streamType, setStreamType] = React.useState<StreamType>('market')
   const [access, setAccess]     = React.useState<AccessLevel>('village')
   const [title, setTitle]       = React.useState('')
   const [paidPrice, setPaidPrice] = React.useState(500)
   const [errorMsg, setErrorMsg] = React.useState('')
+
+  // Eligibility check
+  const [eligible, setEligible] = React.useState<boolean | null>(null)
+  const [eligError, setEligError] = React.useState('')
+
+  React.useEffect(() => {
+    if (!user?.afroId?.raw || !user?.villageId) { setEligible(true); return } // skip if no user data
+    honorApi.getStreamEligibility(user.afroId.raw, user.villageId, streamType || 'KNOWLEDGE_STREAM')
+      .then((res: any) => {
+        setEligible(res.eligible !== false)
+        if (!res.eligible) setEligError(res.reason || 'Requirements not met')
+      })
+      .catch(() => setEligible(true)) // fail open — allow if honor service is down
+  }, [user, streamType])
 
   const handleLaunch = async () => {
     if (!title.trim()) { setErrorMsg('Give your fire a title'); return }
@@ -106,6 +123,61 @@ export function GoLiveSheet({ hostAfroId, villageSlug, villageEmoji, crestTier, 
       >
         {/* Drag handle */}
         <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.15)', margin: '0 auto 20px' }} />
+
+        {/* ── Eligibility: loading ─────────────────────────────── */}
+        {eligible === null && (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid rgba(212,160,23,.3)', borderTopColor: '#d4a017', margin: '0 auto 14px', animation: 'spin 1s linear infinite' }} />
+            <div style={{ fontSize: 12, color: 'rgba(240,247,240,.4)' }}>Checking stream eligibility...</div>
+            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+          </div>
+        )}
+
+        {/* ── Eligibility: NOT eligible ────────────────────────── */}
+        {eligible === false && (
+          <div style={{ padding: '20px 0' }}>
+            <div style={{
+              padding: '16px', borderRadius: 16, marginBottom: 16,
+              background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.25)',
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#ef4444', marginBottom: 6, fontFamily: 'Sora, sans-serif' }}>
+                You haven't unlocked live streaming yet
+              </div>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.6 }}>
+                {eligError}
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)' }}>
+                <span style={{ fontSize: 16 }}>&#127942;</span>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#f0f7f0' }}>Minimum Tier: Crest I</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.35)' }}>Build your honor score to unlock streaming</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)' }}>
+                <span style={{ fontSize: 16 }}>&#127963;&#65039;</span>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#f0f7f0' }}>Village Life Score: 4/8</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.35)' }}>Participate in village activities to grow</div>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 14, border: 'none', cursor: 'pointer',
+                background: 'rgba(255,255,255,.06)', color: 'rgba(240,247,240,.5)',
+                fontWeight: 800, fontSize: 14, fontFamily: 'Sora, sans-serif',
+              }}
+            >
+              Keep Building
+            </button>
+          </div>
+        )}
+
+        {/* ── Eligible: render normal flow ──────────────────── */}
+        {eligible === true && (<>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -301,7 +373,7 @@ export function GoLiveSheet({ hostAfroId, villageSlug, villageEmoji, crestTier, 
         {/* ── Stage: error ─────────────────────────────────────── */}
         {stage === 'error' && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ fontSize: 32, marginBottom: 10 }}>⚠️</div>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>&#9888;&#65039;</div>
             <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 16 }}>{errorMsg}</div>
             <button
               onClick={() => { setStage('fill-details'); setErrorMsg('') }}
@@ -314,6 +386,8 @@ export function GoLiveSheet({ hostAfroId, villageSlug, villageEmoji, crestTier, 
             </button>
           </div>
         )}
+
+        </>)}
       </div>
     </div>
   )

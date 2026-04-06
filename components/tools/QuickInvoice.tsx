@@ -90,7 +90,7 @@ export default function QuickInvoice({ villageId, roleKey }: { villageId: string
           <div style={{ background: 'linear-gradient(135deg, #0f1e11, #091608)', border: `1px solid ${C.green}`, borderRadius: 14, padding: 20, marginBottom: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
-                <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 18, fontWeight: 900, color: '#4ade80' }}>INVOICE</div>
+                <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 18, fontWeight: 900, color: '#4ade80' }}>INVOICE</div>
                 <div style={{ fontSize: 10, color: C.sub }}>{invNum}</div>
               </div>
               <div style={{ textAlign: 'right' }}>

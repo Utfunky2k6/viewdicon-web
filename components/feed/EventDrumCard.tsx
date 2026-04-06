@@ -148,7 +148,7 @@ export function EventDrumCard({ post, onInteract }: EventDrumCardProps) {
           position: 'absolute', top: 10, left: 12,
           padding: '3px 10px', borderRadius: 99, fontSize: 9, fontWeight: 800,
           background: `${typeMeta.color}20`, color: typeMeta.color,
-          border: `1px solid ${typeMeta.color}40`, fontFamily: 'Sora,sans-serif',
+          border: `1px solid ${typeMeta.color}40`, fontFamily: 'Sora, sans-serif',
         }}>
           {typeMeta.label}
         </div>
@@ -159,7 +159,7 @@ export function EventDrumCard({ post, onInteract }: EventDrumCardProps) {
           padding: '3px 10px', borderRadius: 99, fontSize: 9, fontWeight: 800,
           background: 'rgba(239,68,68,.2)', color: '#ef4444',
           border: '1px solid rgba(239,68,68,.35)',
-          display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Sora,sans-serif',
+          display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Sora, sans-serif',
         }}>
           <span className="edc-live-blip" style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
           LIVE
@@ -181,7 +181,7 @@ export function EventDrumCard({ post, onInteract }: EventDrumCardProps) {
       <div style={{ padding: '12px 14px' }}>
         {/* Title */}
         <h3 style={{
-          fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 900,
+          fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 900,
           color: '#f0f7f0', margin: '0 0 4px',
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
@@ -236,7 +236,7 @@ export function EventDrumCard({ post, onInteract }: EventDrumCardProps) {
                 ? 'rgba(107,114,128,.15)'
                 : `linear-gradient(135deg, ${ev.villageColor}cc, ${ev.villageColor}88)`,
               color: isSoldOut ? '#6b7280' : '#fff',
-              fontSize: 12, fontWeight: 800, fontFamily: 'Sora,sans-serif',
+              fontSize: 12, fontWeight: 800, fontFamily: 'Sora, sans-serif',
             }}
           >
             {isSoldOut

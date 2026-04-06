@@ -43,6 +43,41 @@ function enrichRoleTools(villageId: string, staticKeys: string[]): ToolDefinitio
 }
 import { useVillageStore } from '@/stores/villageStore'
 import { VillageFlagBg } from '@/components/village/VillageFlagBg'
+import { VILLAGE_TOOL_MAP } from '@/lib/village-tool-map'
+
+/* ── All 20 village metadata for the Exchange tab ── */
+const ALL_VILLAGE_META: { id: string; name: string; emoji: string; color: string }[] = [
+  { id: 'commerce',     name: 'Wangara',    emoji: '💰', color: '#e07b00' },
+  { id: 'agriculture',  name: 'Kemet',      emoji: '🌾', color: '#1a7c3e' },
+  { id: 'health',       name: 'Wabet',      emoji: '🌿', color: '#0369a1' },
+  { id: 'education',    name: 'Sankore',    emoji: '📚', color: '#4f46e5' },
+  { id: 'arts',         name: 'Nok',        emoji: '🎭', color: '#7c3aed' },
+  { id: 'builders',     name: 'Meroe',      emoji: '🏗️', color: '#b45309' },
+  { id: 'energy',       name: 'Inga',       emoji: '⚡', color: '#b91c1c' },
+  { id: 'transport',    name: 'Kilwa',      emoji: '🚛', color: '#0891b2' },
+  { id: 'technology',   name: 'Alexandria', emoji: '💻', color: '#0f766e' },
+  { id: 'media',        name: 'Timbuktu',   emoji: '📰', color: '#6b21a8' },
+  { id: 'finance',      name: 'Sijilmasa',  emoji: '₵',  color: '#065f46' },
+  { id: 'justice',      name: 'Gacaca',     emoji: '⚖️', color: '#1e3a5f' },
+  { id: 'government',   name: 'Aksum',      emoji: '🏛️', color: '#1e40af' },
+  { id: 'security',     name: 'Agojie',     emoji: '🛡️', color: '#991b1b' },
+  { id: 'spirituality', name: 'Karnak',     emoji: '🙏', color: '#7c3aed' },
+  { id: 'sports',       name: 'Nandi',      emoji: '⚽', color: '#047857' },
+  { id: 'fashion',      name: 'Bida',       emoji: '👗', color: '#db2777' },
+  { id: 'family',       name: 'Ubuntu',     emoji: '🏠', color: '#4d7c0f' },
+  { id: 'hospitality',  name: 'Teranga',    emoji: '🍽️', color: '#c2410c' },
+  { id: 'holdings',     name: 'Adulis',     emoji: '🚪', color: '#d4a017' },
+]
+
+/* ── Featured cross-village tools shown in the Exchange tab ── */
+const FEATURED_CROSS_VILLAGE_TOOLS = [
+  { toolKey: 'afroflix',    villageId: 'media',       roleKey: 'broadcaster',   name: 'AfroFlix',     icon: '🎬', desc: 'Watch Pan-African films & content' },
+  { toolKey: 'night_market', villageId: 'hospitality', roleKey: 'hotel_manager', name: 'Night Market', icon: '🌙', desc: 'Buy & sell across villages at night' },
+  { toolKey: 'watch_party',  villageId: 'media',       roleKey: 'broadcaster',   name: 'Watch Party',  icon: '🍿', desc: 'Watch together with any village' },
+  { toolKey: 'talent_stage', villageId: 'arts',        roleKey: 'performer',     name: 'Talent Stage', icon: '🎤', desc: 'Perform for the whole community' },
+  { toolKey: 'ajo_circle',   villageId: 'finance',     roleKey: 'ajo_keeper',    name: 'Ajo Circle',   icon: '🔮', desc: 'Join a savings circle from any village' },
+  { toolKey: 'live_auction', villageId: 'commerce',    roleKey: 'auctioneer',    name: 'Live Auction', icon: '🔨', desc: 'Bid on goods across villages' },
+]
 
 type ApiRoleTool = {
   id: string; villageId: string; roleKey: string; toolKey: string
@@ -67,7 +102,176 @@ const CSS = `
 .vd-shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);background-size:200% 100%;animation:vdShimmer 2s linear infinite}
 .vd-tool-card:active{transform:scale(.96);opacity:.85}
 .vd-role-section{transition:all .2s ease}
+/* Ndebele stepped-rectangle section headers */
+.vd-ndebele-header{border-left:4px solid;border-image:linear-gradient(to bottom,#d4a017,#1a7c3e,#b22222) 1;padding-left:12px}
+/* Bogolan section divider */
+.vd-bogolan-divider{height:2px;background:repeating-linear-gradient(90deg,rgba(139,105,20,.4) 0,rgba(139,105,20,.4) 8px,transparent 8px,transparent 16px)}
 `
+
+/* ── Village Innovations — 6 unique ideas per village ── */
+interface Innovation { icon: string; title: string; desc: string; tag: string; cowrieTag?: string }
+const VILLAGE_INNOVATIONS: Record<string, Innovation[]> = {
+  commerce: [
+    { icon: '🌙', title: 'Night Flash Market', desc: 'Hourly flash sales 6pm–midnight. Prices drop 30–70% as the moon rises.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '📦', title: 'Group Buy Caravan', desc: 'Pool orders with 5+ villagers for wholesale prices without a middleman.', tag: 'SAVES ₡' },
+    { icon: '🤝', title: 'Trust Escrow', desc: 'Platform-verified escrow for large peer-to-peer trades. Funds released on confirmation.', tag: 'SECURE' },
+    { icon: '🔊', title: 'Market Crier AI', desc: 'Get alerted when demand surges for your product across all 20 villages.', tag: 'AI' },
+    { icon: '📊', title: 'Village Price Index', desc: 'Real-time crowdsourced prices for 500+ goods, updated every hour by members.', tag: 'LIVE' },
+    { icon: '🎯', title: 'Auction Thursday', desc: 'Weekly themed live auctions where any of the 20 villages can bid and win.', tag: 'WEEKLY' },
+  ],
+  agriculture: [
+    { icon: '🌧️', title: 'Rain Circle', desc: 'Community rainfall network. Get 48-hour planting windows based on village sensor data.', tag: 'LIVE' },
+    { icon: '🌱', title: 'Seed Library', desc: 'Borrow and share rare African heirloom seeds with verified village neighbors.', tag: 'FREE' },
+    { icon: '🚜', title: 'Equipment Share', desc: 'Rent farming equipment from neighbors by the hour. Reduce idle asset time.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '📱', title: 'Crop Doctor', desc: 'Photo your sick plant. AI identifies the disease and recommends a remedy within 60 seconds.', tag: 'AI' },
+    { icon: '🛒', title: 'Farm-to-Table Direct', desc: 'Connect directly with restaurants and families. Skip middlemen. Earn 40% more.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🌿', title: 'Harvest Feast', desc: 'Communal harvest celebration with automated profit-sharing among contributing members.', tag: 'COMMUNITY' },
+  ],
+  health: [
+    { icon: '🩸', title: 'Blood Circle', desc: 'Emergency blood type network. Verified donors respond within 15 minutes inside 5km.', tag: 'EMERGENCY' },
+    { icon: '🌿', title: 'Herb Map', desc: 'Community-sourced map of medicinal plants in your area, verified by herbalists.', tag: 'LIVE MAP' },
+    { icon: '👵', title: 'Elder Protocol', desc: 'Record and preserve traditional healing knowledge from village elders before it is lost.', tag: 'HERITAGE' },
+    { icon: '🦟', title: 'Disease Watch', desc: 'Real-time community disease tracking with protocol alerts and prevention guidance.', tag: 'LIVE' },
+    { icon: '📋', title: 'Health Passport', desc: 'Encrypted portable medical record living in your AfroID. Shareable with any provider.', tag: 'SECURE' },
+    { icon: '💊', title: 'Medicine Share', desc: 'Safely redistribute unexpired unused medications within the village health network.', tag: 'FREE' },
+  ],
+  education: [
+    { icon: '📚', title: 'Griot Library', desc: 'Community knowledge base in 40 African languages. Anyone can contribute and curate.', tag: 'OPEN' },
+    { icon: '🎓', title: 'Skills Exchange', desc: 'Barter skills peer-to-peer: I teach you Python, you teach me Yoruba weaving.', tag: 'FREE' },
+    { icon: '🏆', title: 'Knowledge Olympics', desc: 'Weekly cross-village quiz battles with cowrie prize pools and leaderboards.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '📜', title: 'Certificate NFT', desc: 'Village-verified skill certificates stored in your AfroID. Trusted across the platform.', tag: 'VERIFIED' },
+    { icon: '🌍', title: 'African Curriculum', desc: 'Pan-African history, science, mathematics, and culture taught from an African lens.', tag: 'FREE' },
+    { icon: '👨‍🏫', title: 'Village Tutor Market', desc: 'Any village member can offer tutoring sessions. Set your rate, earn in cowries.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+  ],
+  arts: [
+    { icon: '🎵', title: 'Spray Wall', desc: 'Live virtual tip jar while you perform. Audience members spray cowries in real-time.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🎬', title: 'Village Cinema', desc: 'Screen your film simultaneously across all 20 villages. Earn per second watched.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🎨', title: 'Art Auction Ring', desc: 'Monthly digital art auctions with AfroID-verified provenance and ownership transfer.', tag: 'MONTHLY' },
+    { icon: '🎤', title: 'Freestyle Friday', desc: 'Weekly cross-village rap and spoken-word battle with community voting and prizes.', tag: 'WEEKLY' },
+    { icon: '🌍', title: 'Cultural Archive', desc: 'AI-tagged repository of African artistic heritage. Searchable by civilisation and era.', tag: 'HERITAGE' },
+    { icon: '🤝', title: 'Collab Finder', desc: 'Match musicians with producers, writers with illustrators, directors with cinematographers.', tag: 'CONNECT' },
+  ],
+  builders: [
+    { icon: '🏗️', title: 'Site Safety AI', desc: 'Real-time construction site safety monitoring with hazard alerts and incident log.', tag: 'AI SAFETY' },
+    { icon: '🔧', title: 'Tool Library', desc: 'Borrow construction tools from verified village members by the day. Insured rentals.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '📐', title: 'Blueprint Vault', desc: 'Encrypted storage for architectural drawings with role-based access control.', tag: 'SECURE' },
+    { icon: '🌍', title: 'Build Together', desc: 'Pool village resources to fund community infrastructure projects with shared equity.', tag: 'COMMUNITY' },
+    { icon: '💧', title: 'Water Hive', desc: 'Collectively map, maintain, and protect village water sources. Alert on contamination.', tag: 'LIVE' },
+    { icon: '🏠', title: 'Housing Queue', desc: 'Priority housing allocation system for village members in need, governed transparently.', tag: 'CIVIC' },
+  ],
+  energy: [
+    { icon: '☀️', title: 'Solar Circle', desc: 'Community solar installation with shared electricity billing via cowrie micropayments.', tag: 'SHARED' },
+    { icon: '⚡', title: 'Power Hour', desc: 'Buy and sell excess solar energy with neighbours by the kilowatt-hour.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🔋', title: 'Battery Bank', desc: 'Village battery storage pooled for outage resilience. Priority access for elders.', tag: 'COMMUNITY' },
+    { icon: '🌿', title: 'Biogas Together', desc: 'Convert communal organic waste into cooking gas shared among participating households.', tag: 'GREEN' },
+    { icon: '💡', title: 'Light the Night', desc: 'Crowdfund street lighting for your village area. Track progress live on the community map.', tag: 'CROWDFUND' },
+    { icon: '📡', title: 'Grid Watch', desc: 'Real-time electricity availability map with outage predictions and duration estimates.', tag: 'LIVE' },
+  ],
+  transport: [
+    { icon: '🏍️', title: 'Okada Pool', desc: 'Share boda-boda trips with neighbours going the same route. Split cost automatically.', tag: 'SAVES ₡' },
+    { icon: '🚌', title: 'Village Shuttle', desc: 'Scheduled inter-village transport with real seat reservations and cowrie ticketing.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '📦', title: 'Caravan Route', desc: 'Group cargo shipments for lower freight rates. Organise and track across villages.', tag: 'SAVES ₡' },
+    { icon: '🗺️', title: 'Road Hazard Map', desc: 'Community-reported road conditions, potholes, and hazards updated every 15 minutes.', tag: 'LIVE' },
+    { icon: '🚗', title: 'Rent My Ride', desc: 'Peer-to-peer vehicle rental within your trusted village network. Insurance included.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '⛽', title: 'Fuel Collective', desc: 'Pool fuel purchases for bulk station pricing. Save up to 15% per litre as a group.', tag: 'SAVES ₡' },
+  ],
+  technology: [
+    { icon: '💻', title: 'Code Bazaar', desc: 'Sell and buy custom scripts, bots, and tools built specifically for African markets.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🤖', title: 'Village AI Co-Pilot', desc: 'A personal AI tuned to your role and village. Gets smarter as you use your tools.', tag: 'AI' },
+    { icon: '📱', title: 'App Store Africa', desc: 'Curated African-built apps with cowrie micropayment licensing. Devs earn per install.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🌐', title: 'Zero-Rating Hub', desc: 'Telecom-partnered data-free access to essential village tools. Work offline-first.', tag: 'FREE DATA' },
+    { icon: '🛠️', title: 'Fix-It Friday', desc: 'Weekly tech-support marketplace where village techies solve problems for cowries.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🔐', title: 'Village VPN', desc: 'Community-managed encrypted internet access with digital rights protection.', tag: 'SECURE' },
+  ],
+  media: [
+    { icon: '📻', title: 'Village Radio', desc: 'Live community radio stream from any member, any time. Earn from listener tips.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🎬', title: 'AfroFlix Studio', desc: 'Upload your film. Earn cowries for every second watched across all 20 villages.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🎵', title: 'Stream & Earn', desc: 'Upload music. Earn ₡1 per 30 seconds streamed. Spotify model, African-owned.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '📰', title: "People's Newspaper", desc: 'Community-edited daily newsletter in local languages. Top contributor earns monthly.', tag: 'COMMUNITY' },
+    { icon: '🎙️', title: 'Podcast Circle', desc: 'Group podcast recording with automatic multi-village distribution and sponsorship.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🏆', title: 'Griot Award', desc: 'Annual community vote for best content creators. Winners get platform-wide visibility.', tag: 'ANNUAL' },
+  ],
+  finance: [
+    { icon: '🔮', title: 'Prediction Market', desc: 'Stake cowries on village economic outcomes. Winners collect the entire pot.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🤝', title: 'Ajo 3.0', desc: 'Smart-contract savings circles with automatic scheduled payouts and transparency.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '💳', title: 'Village Credit', desc: 'Community-vouched micro-credit with rates 60% lower than traditional banks.', tag: 'COMMUNITY' },
+    { icon: '📊', title: 'Wealth Tracker', desc: 'Real-time net worth in cowries, local currency, and USD. Know where you stand.', tag: 'LIVE' },
+    { icon: '🌍', title: 'Diaspora Remittance', desc: 'Send value home instantly at 0.5% fee. Western Union charges 5–8%.', tag: 'SAVES ₡' },
+    { icon: '🏦', title: 'Village Treasury', desc: 'Community investment fund. Members vote on allocations. Returns shared quarterly.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+  ],
+  justice: [
+    { icon: '⚖️', title: 'Village Mediation', desc: 'Resolve disputes with community-appointed mediators in 48 hours. No lawyers required.', tag: 'FREE' },
+    { icon: '📜', title: 'Know Your Rights', desc: 'AI-powered legal information in 40 African languages. Free, private, accurate.', tag: 'AI' },
+    { icon: '🤝', title: 'Restorative Circle', desc: 'Gacaca-inspired community reconciliation process. Healing over punishment.', tag: 'HERITAGE' },
+    { icon: '🛡️', title: 'Legal Shield', desc: 'Pool resources for collective legal defence. Strength in numbers against injustice.', tag: 'COLLECTIVE' },
+    { icon: '📱', title: 'Law Phone', desc: 'Connect to a qualified lawyer for 15 minutes via video call at ₡50.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🗺️', title: 'Court Navigator', desc: 'AI-guided step-by-step support for navigating any court system across Africa.', tag: 'AI' },
+  ],
+  government: [
+    { icon: '🗳️', title: 'Community Poll', desc: 'Non-partisan village-wide votes on local issues. Every AfroID gets one vote.', tag: 'CIVIC' },
+    { icon: '📋', title: 'Project Watch', desc: 'Track government projects in your area with photo evidence and progress reports.', tag: 'ACCOUNTABILITY' },
+    { icon: '💰', title: 'Budget Tracker', desc: 'Community-sourced tracking of public spending. Know where your taxes go.', tag: 'LIVE' },
+    { icon: '🏛️', title: 'Council Seat', desc: 'Earn a village council seat through XP milestones and community vote.', tag: 'GOVERNANCE' },
+    { icon: '📄', title: 'Document Registry', desc: 'Store certified copies of all official documents in your AfroID. Verify in seconds.', tag: 'SECURE' },
+    { icon: '🌍', title: 'Village Diplomacy', desc: 'Formalise inter-village cooperation agreements. Share resources, knowledge, skills.', tag: 'CONNECT' },
+  ],
+  security: [
+    { icon: '🚨', title: 'Emergency Pulse', desc: 'One tap sends your GPS location + emergency alert to the entire village network.', tag: 'EMERGENCY' },
+    { icon: '👁️', title: 'Neighbourhood Watch', desc: 'Verified community security rotation with coverage tracking and incident log.', tag: 'COMMUNITY' },
+    { icon: '🔐', title: 'Digital Guard', desc: 'Personal cybersecurity health score with step-by-step hardening checklist.', tag: 'SECURE' },
+    { icon: '🗺️', title: 'Safety Map', desc: 'Real-time community safety ratings for village zones, updated by members.', tag: 'LIVE' },
+    { icon: '📹', title: 'Evidence Vault', desc: 'Tamper-proof encrypted storage for incident documentation with timestamp seal.', tag: 'LEGAL' },
+    { icon: '🤝', title: 'Elder Guard', desc: 'Dedicated verified security network protecting village elders. 24-hour coverage.', tag: 'PRIORITY' },
+  ],
+  spirituality: [
+    { icon: '🌙', title: 'Village Shrine', desc: 'Digital sacred space for daily affirmations and communal prayer across all 20 villages.', tag: 'DAILY' },
+    { icon: '🎵', title: 'Praise Circle', desc: 'Live worship sessions any member can join. Host earns cowrie tips from participants.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🌿', title: 'Healing Garden', desc: 'Community herb cultivation map for traditional spiritual and medicinal practices.', tag: 'COMMUNITY' },
+    { icon: '📜', title: 'Wisdom Library', desc: 'All 256 Ifá Odù and other African spiritual texts, translated and searchable.', tag: 'HERITAGE' },
+    { icon: '🤝', title: 'Covenant Circle', desc: 'Make binding spiritual agreements with community witnesses as signatories.', tag: 'SACRED' },
+    { icon: '🙏', title: 'Gratitude Chain', desc: 'Daily gratitude practice that grows into a visible community chain across villages.', tag: 'DAILY' },
+  ],
+  sports: [
+    { icon: '⚽', title: 'Village League', desc: 'Cross-village sports tournaments with cowrie prize pools and real trophies.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🏋️', title: 'Training Log AI', desc: 'AI-powered fitness tracking tuned for African athletes. Adapts to your environment.', tag: 'AI' },
+    { icon: '🏆', title: 'Talent Scout Portal', desc: 'Upload your performance video. Get discovered by verified coaches and scouts.', tag: 'CAREER' },
+    { icon: '🎮', title: 'Esports Arena', desc: 'Cross-village gaming tournaments with real cowrie prize pools and live spectating.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🏃', title: 'Run with the Village', desc: 'Group fitness challenges with accountability partners across all 20 villages.', tag: 'COMMUNITY' },
+    { icon: '📊', title: 'Performance DNA', desc: 'Track your athletic arc from beginner to elite. Export verified stats to scouts.', tag: 'CAREER' },
+  ],
+  fashion: [
+    { icon: '👗', title: 'Style Oracle', desc: 'AI fashion advisor that understands African aesthetics, body types, and traditions.', tag: 'AI' },
+    { icon: '🪡', title: 'Fabric Exchange', desc: 'Buy, sell, and trade African fabrics with verified fashion village members.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '👟', title: 'Village Runway', desc: 'Weekly digital fashion show with community voting. Winner gets platform-wide feature.', tag: 'WEEKLY' },
+    { icon: '📸', title: 'Lookbook Builder', desc: 'Create a professional lookbook and earn from brand partnerships and licensing.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🧵', title: 'Made-to-Order Circle', desc: 'Pool custom fabric orders for bulk artisan pricing. Minimum 10 pieces.', tag: 'SAVES ₡' },
+    { icon: '🌍', title: 'AfroStylist Match', desc: 'Get matched with a personal stylist from the Fashion village for your next event.', tag: 'CONNECT' },
+  ],
+  family: [
+    { icon: '🌳', title: 'Ubuntu Web', desc: 'Map your extended family across all 54 African nations. Connect lost branches.', tag: 'HERITAGE' },
+    { icon: '💌', title: 'Elder Voice', desc: 'Record and preserve life stories of family elders in video before they are lost forever.', tag: 'HERITAGE' },
+    { icon: '🏠', title: 'Family Bank', desc: 'Shared family savings pool with full transparency and member-voted withdrawals.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🧬', title: 'Heritage DNA', desc: 'Connect your ancestral origins to specific African civilisations and kingdoms.', tag: 'DISCOVERY' },
+    { icon: '🎊', title: 'Ceremony Planner', desc: 'Full planning suite for naming ceremonies, weddings, and funerals with vendor matching.', tag: 'CONNECT' },
+    { icon: '👶', title: 'Child Registry', desc: 'Register a new child into the village network from birth. AfroID assigned at naming.', tag: 'OFFICIAL' },
+  ],
+  hospitality: [
+    { icon: '🌍', title: 'Guest Circle', desc: 'Host verified travellers from other villages. Earn cowries for every night hosted.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🍽️', title: 'Village Table', desc: 'Communal dining events where hosts earn and guests discover authentic culture.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🎵', title: 'Live Table', desc: 'Dine with live performance — musicians earn sprays, restaurants earn bookings.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '🗺️', title: 'Culture Tour', desc: 'Village members guide visitors to authentic local experiences. Set your own rate.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+    { icon: '☕', title: 'Teranga Karma', desc: 'Earn points for exceptional hospitality. Unlock travel perks and village upgrades.', tag: 'LOYALTY' },
+    { icon: '🌙', title: 'Night Market Hub', desc: 'Coordinated evening marketplace 6pm–midnight. Host the market, earn a cut of sales.', tag: 'EARNS ₡', cowrieTag: 'earns' },
+  ],
+  holdings: [
+    { icon: '🧭', title: 'Village Compass', desc: 'AI-powered village recommendation based on your skills, personality, and ambitions.', tag: 'AI' },
+    { icon: '🌱', title: 'Green Path', desc: '30-day guided onboarding with a dedicated mentor from your recommended village.', tag: 'FREE' },
+    { icon: '🤝', title: 'Village Trial', desc: '7-day visitor pass to any village before you commit. Explore without obligation.', tag: 'FREE' },
+    { icon: '📊', title: 'Skills DNA Map', desc: 'Map your skills to the optimal village and role combination with precision.', tag: 'AI' },
+    { icon: '🎯', title: 'Purpose Finder', desc: 'Deep interview with the Griot AI to discover your true professional village alignment.', tag: 'AI' },
+    { icon: '🌍', title: 'Pan-African Navigator', desc: 'See which African nation\'s economy most closely aligns with your professional goals.', tag: 'DISCOVER' },
+  ],
+}
 
 /* ── palette ── */
 const C = {
@@ -200,14 +404,16 @@ export default function VillageDetailPage() {
   const { setActiveVillage, setActiveRole } = useVillageStore()
 
   const [selectedRole, setSelectedRole] = React.useState<string | null>(null)
-  const [tab, setTab] = React.useState<'tools' | 'ai' | 'activity'>('tools')
+  const [tab, setTab] = React.useState<'tools' | 'ai' | 'activity' | 'exchange'>('tools')
   const [toast, setToast] = React.useState<string | null>(null)
   const [toolSearch, setToolSearch] = React.useState('')
   const [aiChat, setAiChat] = React.useState<{ role: 'user' | 'ai'; text: string }[]>([])
   const [aiInput, setAiInput] = React.useState('')
   const [joined, setJoined] = React.useState(false)
+  const [currentVillage, setCurrentVillage] = React.useState<string | null>(null)
   // accordion: track which role sections are collapsed
   const [collapsedRoles, setCollapsedRoles] = React.useState<Set<string>>(new Set())
+  const [exchangeVillage, setExchangeVillage] = React.useState<string | null>(null)
   // live API data
   const [apiToolMap, setApiToolMap] = React.useState<Record<string, ApiRoleTool[]>>({})
   const [liveStats, setLiveStats] = React.useState<{ memberCount: number; toolCount: number; activeSessionCount: number } | null>(null)
@@ -228,7 +434,14 @@ export default function VillageDetailPage() {
 
   React.useEffect(() => {
     const j = localStorage.getItem('afk_joined_villages')
-    if (j) { try { setJoined(JSON.parse(j).includes(villageId)) } catch {} }
+    if (j) {
+      try {
+        const arr: string[] = JSON.parse(j)
+        setJoined(arr.includes(villageId))
+        // currentVillage = first village in the list (if any)
+        setCurrentVillage(arr.length > 0 ? arr[0] : null)
+      } catch {}
+    }
   }, [villageId])
 
   // Load tools + stats from village-registry
@@ -329,16 +542,39 @@ export default function VillageDetailPage() {
     const j = localStorage.getItem('afk_joined_villages')
     let arr: string[] = []
     try { arr = j ? JSON.parse(j) : [] } catch {}
-    if (joined) { arr = arr.filter(v => v !== villageId) }
-    else { arr.push(villageId) }
-    localStorage.setItem('afk_joined_villages', JSON.stringify(arr))
-    setJoined(!joined)
-    if (!joined) {
-      setActiveVillage(villageId, village.category)
-      flash(`Joined ${village.name}!`)
-    } else {
-      flash(`Left ${village.name}`)
+
+    // Already in this village — just show the member note
+    if (joined) return
+
+    // User is already in a different village → route to transfer page
+    if (currentVillage && currentVillage !== villageId) {
+      router.push(`/dashboard/villages/transfer?from=${currentVillage}&to=${villageId}`)
+      return
     }
+
+    // First join — no existing village, immediate join
+    arr.push(villageId)
+    localStorage.setItem('afk_joined_villages', JSON.stringify(arr))
+    setJoined(true)
+    setCurrentVillage(villageId)
+    setActiveVillage(villageId, village.category)
+    flash(`Joined ${village.name}!`)
+
+    // Persist to village-registry (fire-and-forget)
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
+    const parsed = stored ? (() => { try { return JSON.parse(stored) } catch { return null } })() : null
+    const token = parsed?.state?.accessToken ?? parsed?.state?.token ?? ''
+    if (token) {
+      fetch('/api/v1/village-memberships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ villageId, roleKey: 'citizen', isPrimary: true }),
+      }).catch(() => {})
+    }
+  }
+
+  const handleApplyTransfer = () => {
+    router.push(`/dashboard/villages/transfer?from=${currentVillage}&to=${villageId}`)
   }
 
   const handleSelectRole = (roleKey: string) => {
@@ -413,6 +649,12 @@ export default function VillageDetailPage() {
         <VillageFlagBg id={villageId} color={vc} style={{ height: 160 }} />
         {/* dark gradient overlay so text stays readable */}
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${C.earthD}99 0%, ${C.earthD} 72%)`, pointerEvents: 'none' }} />
+        {/* Adinkra Gye Nyame — sovereign pattern overlay at low opacity */}
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.05,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='${encodeURIComponent(vc)}' fill='none' stroke-linecap='round'%3E%3Cpath d='M40 6 L74 40 L40 74 L6 40 Z' stroke-width='1'/%3E%3Cpath d='M40 18 L62 40 L40 62 L18 40 Z' stroke-width='0.7'/%3E%3Cellipse cx='40' cy='40' rx='6' ry='9' stroke-width='0.8'/%3E%3Cellipse cx='40' cy='40' rx='6' ry='9' stroke-width='0.8' transform='rotate(90 40 40)'/%3E%3Ccircle cx='40' cy='40' r='2.5' fill='${encodeURIComponent(vc)}' stroke='none'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundSize: '80px 80px', backgroundRepeat: 'repeat',
+        }} />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'absolute', top: -40, right: -40, fontSize: 120, opacity: 0.04 }}>{village.emoji}</div>
@@ -509,15 +751,69 @@ export default function VillageDetailPage() {
           </p>
         </div>
 
-        <button onClick={handleJoin} style={{
-          width: '100%', marginTop: 16, padding: 12, borderRadius: 12,
-          background: joined ? 'rgba(255,255,255,0.05)' : vc,
-          border: joined ? '1px solid rgba(255,255,255,0.08)' : `1px solid ${vc}`,
-          color: joined ? C.text : '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer',
-          fontFamily: '"Cinzel","Palatino",serif',
-        }}>{joined ? '✓ Joined · Leave Village' : `🔥 Join ${village.name}`}</button>
+        {/* ── Village Join / Transfer Button ── */}
+        {joined ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{
+              width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
+              background: `${vc}12`, border: `1.5px solid ${vc}40`,
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>✅</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: vc, fontFamily: '"Cinzel","Palatino",serif' }}>
+                  You are a member of this village.
+                </div>
+                <div style={{ fontSize: 10, color: C.textDim, marginTop: 2, lineHeight: 1.4 }}>
+                  Village transfers require elder approval.
+                </div>
+              </div>
+            </div>
+            <button onClick={() => router.push('/dashboard/villages/applications')} style={{
+              width: '100%', marginTop: 8, padding: '10px 12px', borderRadius: 10, boxSizing: 'border-box',
+              background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.12)',
+              color: C.textDim, fontWeight: 700, fontSize: 11, cursor: 'pointer',
+              fontFamily: 'DM Sans, Inter, sans-serif',
+            }}>📋 View My Transfer Applications</button>
+          </div>
+        ) : currentVillage && currentVillage !== villageId ? (
+          <div style={{ marginTop: 16 }}>
+            <button onClick={handleApplyTransfer} style={{
+              width: '100%', padding: '12px 14px', borderRadius: 12, boxSizing: 'border-box',
+              background: `${vc}18`, border: `1.5px solid ${vc}50`,
+              color: vc, fontWeight: 800, fontSize: 13, cursor: 'pointer',
+              fontFamily: '"Cinzel","Palatino",serif',
+            }}>📋 Apply to Join {village.name}</button>
+            <div style={{
+              marginTop: 8, padding: '10px 12px', borderRadius: 10,
+              background: 'rgba(212,160,23,.06)', border: '1px solid rgba(212,160,23,.2)',
+              fontSize: 10, color: '#d4a017', fontWeight: 600, lineHeight: 1.5, textAlign: 'center',
+            }}>
+              Changing villages requires a 90–180 day review process.{' '}
+              <span
+                onClick={handleApplyTransfer}
+                style={{ textDecoration: 'underline', cursor: 'pointer' }}
+              >
+                Start your application →
+              </span>
+            </div>
+          </div>
+        ) : (
+          <button onClick={handleJoin} style={{
+            width: '100%', marginTop: 16, padding: 12, borderRadius: 12, boxSizing: 'border-box',
+            background: vc, border: `1px solid ${vc}`,
+            color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer',
+            fontFamily: '"Cinzel","Palatino",serif',
+          }}>🔥 Join {village.name}</button>
+        )}
         </div>{/* end zIndex wrapper */}
       </div>
+
+      {/* ── Kente Divider — Pan-African strip between hero and content ── */}
+      <div aria-hidden="true" style={{
+        height: 4, flexShrink: 0,
+        background: `linear-gradient(90deg, ${vc} 0%, ${vc} 25%, #d4a017 25%, #d4a017 50%, #b22222 50%, #b22222 75%, #1a1a1a 75%, #1a1a1a 100%)`,
+      }} />
 
       {/* ═══ ROLE CHIP STRIP ═══ */}
       <div style={{ padding: '14px 18px 0' }}>
@@ -550,9 +846,10 @@ export default function VillageDetailPage() {
         background: C.earthD,
       }}>
         {([
-          { key: 'tools' as const, label: `🛠 Tools (${totalToolCount})` },
-          { key: 'ai'   as const, label: `🧠 ${ai.name.split('(')[0].trim()}` },
+          { key: 'tools' as const,    label: `🛠 Tools (${totalToolCount})` },
+          { key: 'ai'   as const,    label: `🧠 ${ai.name.split('(')[0].trim()}` },
           { key: 'activity' as const, label: '📊 Activity' },
+          { key: 'exchange' as const, label: '🌍 Exchange' },
         ]).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{
             flex: 1, padding: '12px 0', cursor: 'pointer', background: 'none', border: 'none',
@@ -769,7 +1066,7 @@ export default function VillageDetailPage() {
                     <p style={{ fontSize: 12, color: C.textDim }}>Ask me about prices, demand, trends, or anything about {village.name}</p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 10 }}>
                       {['What are the prices?', 'Help me understand', 'Show demand trends'].map((q, i) => (
-                        <button key={i} onClick={() => { setAiInput(q) }} style={{
+                        <button key={i} onClick={() => { setAiInput(q); setTimeout(() => { setAiChat(prev => [...prev, { role: 'user', text: q }]); setTimeout(() => { const responses: Record<string, string> = { price: `Based on current market data in the ${village.name}, the average price trend is showing a 12% increase this quarter. The AI recommends reviewing your pricing strategy.`, help: `I am ${ai.name}, the AI spirit of ${village.name}. I can help with: ${ai.powers.join(', ')}. Ask me anything about your work!`, demand: `Demand analysis shows peak activity between 10am-2pm in your village. Consider scheduling sessions during these hours for maximum engagement.` }; const key = Object.keys(responses).find(k => q.toLowerCase().includes(k)); const reply = key ? responses[key] : `${ai.name} has analyzed your question. Based on village intelligence: I recommend consulting the relevant tool from your toolkit.`; setAiChat(prev2 => [...prev2, { role: 'ai', text: reply }]); setAiInput('') }, 800 + Math.random() * 700) }, 50) }} style={{
                           padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 600,
                           background: `${vc}10`, border: `1px solid ${vc}20`, color: vc, cursor: 'pointer',
                         }}>{q}</button>
@@ -898,7 +1195,193 @@ export default function VillageDetailPage() {
             ))}
           </div>
         )}
+
+        {/* ── EXCHANGE TAB ── */}
+        {tab === 'exchange' && (
+          <div className="vd-fade">
+            {/* Header with Kente stripe */}
+            <div style={{ marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
+              {/* Mini Kente stripe — green/gold/red */}
+              <div style={{ height: 3, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 33%,#d4a017 33%,#d4a017 66%,#b22222 66%,#b22222 100%)', marginBottom: 10, borderRadius: 2 }} />
+              <h2 className="vd-ndebele-header" style={{ borderLeftColor: vc, fontFamily: '"Cinzel","Palatino",serif', fontSize: 17, fontWeight: 900, color: C.text, margin: '0 0 6px', letterSpacing: '0.04em' }}>
+                🌍 Village Exchange — Tools from Other Villages
+              </h2>
+              <p style={{ fontSize: 11, color: C.textDim, margin: 0, lineHeight: 1.5, paddingLeft: 16 }}>
+                Your AfroID works everywhere. Access tools from any of the 20 villages.
+              </p>
+            </div>
+
+            {/* Featured cross-village tools */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                ⚡ Quick Access
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                {FEATURED_CROSS_VILLAGE_TOOLS.map((ft, i) => {
+                  const villageMeta = ALL_VILLAGE_META.find(v => v.id === ft.villageId)
+                  return (
+                    <div key={ft.toolKey} className="vd-fade" style={{
+                      animationDelay: `${i * 0.05}s`,
+                      padding: 14, borderRadius: 14,
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.07)',
+                    }}>
+                      <div style={{ fontSize: 26, marginBottom: 6 }}>{ft.icon}</div>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: C.text, marginBottom: 3 }}>{ft.name}</div>
+                      <div style={{ fontSize: 9.5, color: C.textDim, lineHeight: 1.4, marginBottom: 8 }}>{ft.desc}</div>
+                      {/* village badge */}
+                      {villageMeta && (
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          fontSize: 9, fontWeight: 700,
+                          padding: '3px 8px', borderRadius: 6, marginBottom: 8,
+                          background: `${villageMeta.color}18`,
+                          border: `1px solid ${villageMeta.color}35`,
+                          color: villageMeta.color,
+                        }}>
+                          {villageMeta.emoji} {villageMeta.name}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => router.push(`/dashboard/tools/${ft.toolKey}?village=${ft.villageId}&role=${ft.roleKey}`)}
+                        style={{
+                          display: 'block', width: '100%',
+                          padding: '6px 0', borderRadius: 8, textAlign: 'center',
+                          background: villageMeta ? `${villageMeta.color}18` : 'rgba(255,255,255,0.05)',
+                          border: `1px solid ${villageMeta ? `${villageMeta.color}35` : 'rgba(255,255,255,0.08)'}`,
+                          fontSize: 10, fontWeight: 700,
+                          color: villageMeta ? villageMeta.color : C.text,
+                          cursor: 'pointer',
+                        }}
+                      >🚀 Access</button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Village browse row */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                🏘 Browse Villages
+              </div>
+              <div className="vd-no-sb" style={{ display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 8 }}>
+                {ALL_VILLAGE_META.map(v => {
+                  const isSelected = exchangeVillage === v.id
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => setExchangeVillage(isSelected ? null : v.id)}
+                      style={{
+                        flexShrink: 0, padding: '6px 12px', borderRadius: 99,
+                        fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                        background: isSelected ? `${v.color}33` : 'rgba(255,255,255,0.03)',
+                        border: `1.5px solid ${isSelected ? v.color : 'rgba(255,255,255,0.06)'}`,
+                        color: isSelected ? v.color : C.text,
+                        transition: 'all .15s',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {v.emoji} {v.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Selected village tools */}
+            {exchangeVillage && (() => {
+              const selectedMeta = ALL_VILLAGE_META.find(v => v.id === exchangeVillage)
+              const villageRoles = VILLAGE_TOOL_MAP[exchangeVillage] ?? {}
+              const firstRoleKey = Object.keys(villageRoles)[0]
+              const firstRoleTools = firstRoleKey ? (villageRoles[firstRoleKey] ?? []) : []
+              if (!selectedMeta || firstRoleTools.length === 0) return null
+              return (
+                <div className="vd-fade">
+                  <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10, color: selectedMeta.color }}>
+                    {selectedMeta.emoji} {selectedMeta.name} — Tools
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 9 }}>
+                    {firstRoleTools.map((toolKey, i) => {
+                      const toolDef = TOOL_REGISTRY[toolKey]
+                      const displayName = toolDef?.name ?? toolKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                      const displayIcon = toolDef?.icon ?? '🛠'
+                      return (
+                        <div key={toolKey} className="vd-fade" style={{
+                          animationDelay: `${i * 0.04}s`,
+                          padding: 12, borderRadius: 12,
+                          background: 'rgba(255,255,255,0.025)',
+                          border: `1px solid rgba(255,255,255,0.07)`,
+                        }}>
+                          <div style={{ fontSize: 20, marginBottom: 5 }}>{displayIcon}</div>
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: C.text, marginBottom: 7, lineHeight: 1.3 }}>{displayName}</div>
+                          <button
+                            onClick={() => router.push(`/dashboard/tools/${toolKey}?village=${exchangeVillage}&role=${firstRoleKey}`)}
+                            style={{
+                              display: 'block', width: '100%',
+                              padding: '5px 0', borderRadius: 7, textAlign: 'center',
+                              background: `${selectedMeta.color}18`,
+                              border: `1px solid ${selectedMeta.color}35`,
+                              fontSize: 9.5, fontWeight: 700, color: selectedMeta.color,
+                              cursor: 'pointer',
+                            }}
+                          >Access</button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        )}
       </div>
+
+      {/* ═══ VILLAGE INNOVATIONS ═══ */}
+      {(() => {
+        const innovations = VILLAGE_INNOVATIONS[villageId] ?? []
+        if (!innovations.length) return null
+        return (
+          <div style={{ padding: '20px 18px 0' }}>
+            {/* Bogolan (Malian mudcloth) divider — earthy crosshatch */}
+            <div className="vd-bogolan-divider" style={{ marginBottom: 14 }} />
+            <div className="vd-ndebele-header" style={{ borderLeftColor: vc, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <span style={{ fontSize: 16 }}>💡</span>
+              <span style={{ fontFamily: 'Sora, sans-serif', fontSize: 13, fontWeight: 800, color: C.text }}>Village Innovations</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: 4 }}>· Unique to {village.ancientName}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {innovations.map((inn, i) => (
+                <div
+                  key={i}
+                  className="vd-tool-card"
+                  onClick={() => flash(`${inn.title} — coming soon in your village workspace`)}
+                  style={{
+                    padding: 14, borderRadius: 14, cursor: 'pointer',
+                    background: `${vc}08`,
+                    border: `1px solid ${vc}20`,
+                    position: 'relative', overflow: 'hidden',
+                    transition: 'all .15s',
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                    <span style={{
+                      fontSize: 8, fontWeight: 800, padding: '2px 6px', borderRadius: 4,
+                      background: inn.cowrieTag === 'earns' ? 'rgba(74,222,128,.12)' : `${vc}12`,
+                      color: inn.cowrieTag === 'earns' ? '#4ade80' : vc,
+                      border: `1px solid ${inn.cowrieTag === 'earns' ? 'rgba(74,222,128,.25)' : `${vc}25`}`,
+                      textTransform: 'uppercase', letterSpacing: '0.04em',
+                    }}>{inn.tag}</span>
+                  </div>
+                  <div style={{ fontSize: 24, marginBottom: 8 }}>{inn.icon}</div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: C.text, marginBottom: 4, lineHeight: 1.3, paddingRight: 8 }}>{inn.title}</div>
+                  <div style={{ fontSize: 9.5, color: C.textDim, lineHeight: 1.5 }}>{inn.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ═══ TOAST ═══ */}
       {toast && (

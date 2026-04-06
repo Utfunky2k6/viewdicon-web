@@ -54,7 +54,7 @@ export function OtpScene({ onNext, theme, phone, devOtp }: OtpSceneProps) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, background: theme.bg }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 48, marginBottom: 14 }}>⚡</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 24, fontWeight: 900, color: theme.text, marginBottom: 6 }}>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 24, fontWeight: 900, color: theme.text, marginBottom: 6 }}>
           {verified ? '✅ Drum Sealed!' : verifying ? '⏳ Sealing Drum…' : 'Seal the Drum'}
         </div>
         <div style={{ fontSize: 13, color: theme.subText, lineHeight: 1.5 }}>Enter the 6-digit code to seal your identity.</div>

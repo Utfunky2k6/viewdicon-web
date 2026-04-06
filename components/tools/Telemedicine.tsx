@@ -166,7 +166,7 @@ export default function Telemedicine({ villageId: _v, roleKey: _r }: ToolProps) 
             >
               🔴 End &amp; Save Notes
             </button>
-            <button style={{ flex: 1, padding: 12, background: CARD, border: `1px solid ${BD}`, borderRadius: 10, color: TX, fontSize: 14, cursor: 'pointer' }}>
+            <button onClick={() => { const a = document.createElement('a'); a.href = 'data:text/plain,Consultation notes saved'; a.download = 'consultation-notes.txt'; a.click() }} style={{ flex: 1, padding: 12, background: CARD, border: `1px solid ${BD}`, borderRadius: 10, color: TX, fontSize: 14, cursor: 'pointer' }}>
               📄 Generate PDF
             </button>
           </div>

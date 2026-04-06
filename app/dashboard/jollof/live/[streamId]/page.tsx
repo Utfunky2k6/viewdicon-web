@@ -14,6 +14,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { StreamerControlPanel } from '@/components/jollof/creator/StreamerControlPanel'
 import { MultiBoxLayout, type SpeakerSlot } from '@/components/jollof/stream-viewer/MultiBoxLayout'
 import { VOCAB } from '@/constants/vocabulary'
+import { jollofTvApi } from '@/lib/api'
 
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
 
@@ -28,8 +29,6 @@ interface LiveStreamData {
   kilaCount:       number
   pinnedProduct?:  { id: string; name: string; price: number; soldCount: number } | null
 }
-
-const JOLLOF_TV_URL = process.env.NEXT_PUBLIC_JOLLOF_TV_URL ?? 'http://localhost:3018'
 
 const CSS_ID = 'live-streamer-css'
 const CSS = `
@@ -87,16 +86,15 @@ export default function LiveStreamerPage() {
     }
   }, [])
 
-  // Fetch stream data
+  // Fetch stream data via jollofTvApi (proxied through Next.js rewrites → port 3046)
   React.useEffect(() => {
     const fetchStream = async () => {
       try {
-        const res = await fetch(`${JOLLOF_TV_URL}/streams/${streamId}`)
-        if (!res.ok) throw new Error('Stream not found')
-        const data = await res.json() as LiveStreamData
-        setStreamData(data)
-        setViewerCount(data.viewerCount)
-        setSprayTotal(data.sprayTotal)
+        const res = await jollofTvApi.get(streamId)
+        const data = (res as any)?.data ?? res
+        setStreamData(data as LiveStreamData)
+        setViewerCount((data as any).viewerCount ?? 0)
+        setSprayTotal((data as any).sprayTotal ?? 0)
       } catch {
         // Stream not in DB yet (just created) — use URL-based defaults
         setStreamData({
@@ -120,11 +118,10 @@ export default function LiveStreamerPage() {
   React.useEffect(() => {
     const t = setInterval(async () => {
       try {
-        const res = await fetch(`${JOLLOF_TV_URL}/streams/${streamId}`)
-        if (!res.ok) return
-        const data = await res.json() as LiveStreamData
-        setViewerCount(data.viewerCount)
-        setSprayTotal(data.sprayTotal)
+        const res = await jollofTvApi.get(streamId)
+        const data = (res as any)?.data ?? res
+        setViewerCount((data as any).viewerCount ?? 0)
+        setSprayTotal((data as any).sprayTotal ?? 0)
       } catch { /* non-fatal */ }
     }, 15_000)
     return () => clearInterval(t)
@@ -133,10 +130,7 @@ export default function LiveStreamerPage() {
   const handleEndStream = async () => {
     setIsEnding(true)
     try {
-      await fetch(`${JOLLOF_TV_URL}/streams/${streamId}`, {
-        method: 'DELETE',
-        headers: { 'x-afro-id': streamData?.hostId ?? 'me' },
-      })
+      await jollofTvApi.endStream(streamId)
     } catch { /* non-fatal */ }
     setEnded(true)
     setTimeout(() => router.push('/dashboard/jollof'), 2500)
@@ -145,7 +139,7 @@ export default function LiveStreamerPage() {
   const handlePassStick = async (toAfroId: string) => {
     setStickHolder(toAfroId)
     try {
-      await fetch(`${JOLLOF_TV_URL}/streams/${streamId}/oracle/pass-stick`, {
+      await fetch(`/api/jollof/streams/${streamId}/oracle/pass-stick`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: streamData?.hostId ?? 'me', to: toAfroId }),
@@ -288,7 +282,7 @@ export default function LiveStreamerPage() {
             </div>
           </div>
 
-          {/* Kíla count */}
+          {/* Kila count */}
           <div style={{
             padding: '4px 10px', borderRadius: 8, background: 'rgba(212,160,23,.12)',
             fontSize: 11, fontWeight: 700, color: '#d4a017',

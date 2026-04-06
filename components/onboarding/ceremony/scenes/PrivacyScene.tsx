@@ -12,7 +12,7 @@ export function PrivacyScene({ onNext, theme }: PrivacySceneProps) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 24, background: theme.bg }}>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🛡️</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 26, fontWeight: 900, color: theme.text, marginBottom: 10 }}>Privacy Consent</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 26, fontWeight: 900, color: theme.text, marginBottom: 10 }}>Privacy Consent</div>
         <p style={{ fontSize: 14, color: theme.subText, lineHeight: 1.6 }}>Your data is encrypted using the Nkisi Shield protocols.</p>
       </div>
 

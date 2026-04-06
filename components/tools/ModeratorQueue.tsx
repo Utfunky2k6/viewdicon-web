@@ -21,7 +21,7 @@ const INIT_QUEUE: ContentItem[] = [
   { id: 'mod3', preview: 'URGENT: Viewdicon is storing your Cowrie wallet without consent. They are...', author: '@whistleblower99', type: 'POST', reason: 'MISINFORMATION', reports: 7, village: 'Technology Village', status: 'PENDING' },
   { id: 'mod4', preview: 'Anyone who buys from Mama Ngozi is a thief. She is the biggest fraudster in...', author: '@bitter_ex_client', type: 'COMMENT', reason: 'HARASSMENT', reports: 5, village: 'Market Village', status: 'PENDING' },
   { id: 'mod5', preview: '[Voice Story] — Content flagged for explicit language. Auto-detected by...', author: '@dj_explicit', type: 'VOICE_STORY', reason: 'INAPPROPRIATE', reports: 3, village: 'Arts Village', status: 'PENDING' },
-  { id: 'mod6', preview: 'Buy cheap data now! 10GB for ₡500 only! WhatsApp 080XXXXXXXX for activation...', author: '@data_promo', type: 'POST', reason: 'SPAM', reports: 8, village: 'Technology Village', status: 'PENDING' },
+  { id: 'mod6', preview: 'Buy cheap data now! 10GB for ₡500 only! Message @data_promo on Seso Chat to activate...', author: '@data_promo', type: 'POST', reason: 'SPAM', reports: 8, village: 'Technology Village', status: 'PENDING' },
 ]
 
 const HISTORY = [

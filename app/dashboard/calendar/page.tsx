@@ -942,7 +942,7 @@ export default function CalendarPage() {
               <div key={i} className="ai-suggest">
                 <div style={{ fontSize: 22 }}>{p.icon}</div>
                 <div className="ai-suggest-text">{p.insight}</div>
-                <button className="ai-suggest-add" style={{ fontSize: 10, padding: '4px 8px' }}>{p.action} →</button>
+                <button onClick={() => router.push('/dashboard/sessions/new')} className="ai-suggest-add" style={{ fontSize: 10, padding: '4px 8px' }}>{p.action} →</button>
               </div>
             ))}
           </div>

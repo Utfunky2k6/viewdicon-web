@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { useSkinStore } from '@/stores/skinStore'
 import { useAuthStore } from '@/stores/authStore'
 import { ringsApi } from '@/lib/api'
@@ -12,6 +13,7 @@ type RingBond = { id: string; name?: string; status?: string; ringType?: string;
 export function IdileProfile() {
   const { activeSkin, pinConfirmed, requestSkin } = useSkinStore()
   const user = useAuthStore(s => s.user)
+  const router = useRouter()
   const [tab, setTab] = React.useState<IdileTab>('Profile')
   const [bonds, setBonds] = React.useState<RingBond[]>([])
 
@@ -37,6 +39,7 @@ export function IdileProfile() {
   if (activeSkin !== 'CLAN' || !pinConfirmed) return null
 
   const activeBonds  = bonds.filter(b => b.status === 'ACTIVE' || b.status === 'ACCEPTED')
+  const hasMinimumBonds = activeBonds.length >= 3
   const familyCircle = bonds.length || 7
   const quorumActive = activeBonds.length || 3
 
@@ -63,7 +66,7 @@ export function IdileProfile() {
 
       {tab === 'Profile' && <IdileProfileTab familyCircle={familyCircle} quorumActive={quorumActive} total={familyCircle} />}
       {tab === 'Ancestor Tree' && <IdileTreeTab bonds={bonds} quorumActive={quorumActive} total={familyCircle} />}
-      {tab === 'Vault' && <IdileVaultTab />}
+      {tab === 'Vault' && (hasMinimumBonds ? <IdileVaultTab /> : <FamilyGateBanner count={activeBonds.length} onAdd={() => router.push('/dashboard/profile/idile/family-tree')} />)}
     </>
   )
 }
@@ -96,7 +99,7 @@ function IdileProfileTab({ familyCircle, quorumActive, total }: { familyCircle:n
 
       {/* What others see */}
       <div style={{ margin: '8px 12px', background: '#12062a', border: '1px solid #7c3aed', borderRadius: 12, padding: 12 }}>
-        <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginBottom: 6 }}>🏛 What Others See in IDILE Mode</div>
+        <div style={{ fontSize: 11, color: '#a78bfa', fontWeight: 700, marginBottom: 6 }}>🏛 What Others See in UKOO Mode</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>Nothing. You are invisible to the world. Only your pre-approved Family Circle members can see you or reach you here. Your name is hidden. Your voice is shifted. This is sacred space.</div>
       </div>
       <div style={{ height: 16 }} />
@@ -176,6 +179,56 @@ function IdileTreeTab({ bonds, quorumActive, total }: { bonds: RingBond[]; quoru
       </div>
       <div style={{ height: 16 }} />
     </>
+  )
+}
+
+function FamilyGateBanner({ count, onAdd }: { count: number; onAdd: () => void }) {
+  return (
+    <div style={{ padding: '20px 14px' }}>
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(124,58,237,.08), rgba(124,58,237,.03))',
+        border: '1.5px solid rgba(124,58,237,.25)',
+        borderRadius: 16, padding: '24px 18px', textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>🌳</div>
+        <div style={{ fontSize: 15, fontWeight: 900, color: '#a78bfa', marginBottom: 6, fontFamily: 'Sora, sans-serif' }}>
+          Plant Your Family Tree First
+        </div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.6, marginBottom: 16, maxWidth: 280, margin: '0 auto 16px' }}>
+          Your Ancestral Vault requires at least <span style={{ color: '#a78bfa', fontWeight: 700 }}>3 verified family members</span> to unlock. This is your sacred safety net — your clan protects your legacy.
+        </div>
+        {/* Progress */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
+          {[0, 1, 2].map(i => (
+            <div key={i} style={{
+              width: 36, height: 36, borderRadius: '50%',
+              background: i < count ? 'rgba(124,58,237,.2)' : 'rgba(255,255,255,.04)',
+              border: `2px solid ${i < count ? '#7c3aed' : 'rgba(255,255,255,.1)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: i < count ? '#a78bfa' : 'rgba(255,255,255,.15)',
+              transition: 'all .3s',
+            }}>
+              {i < count ? '✓' : '?'}
+            </div>
+          ))}
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.35)', fontWeight: 700 }}>
+            {count} / 3
+          </div>
+        </div>
+        <button onClick={onAdd} style={{
+          padding: '13px 28px', borderRadius: 14, border: 'none', cursor: 'pointer',
+          background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
+          color: '#fff', fontSize: 13, fontWeight: 800,
+          fontFamily: 'Sora, sans-serif',
+          boxShadow: '0 4px 16px rgba(124,58,237,.3)',
+        }}>
+          🌳 Add Family Members →
+        </button>
+        <div style={{ fontSize: 9, color: 'rgba(255,255,255,.2)', marginTop: 12, lineHeight: 1.5 }}>
+          Add blood relatives to unlock: Vault · Blood Call · Voice Recording Sharing
+        </div>
+      </div>
+    </div>
   )
 }
 

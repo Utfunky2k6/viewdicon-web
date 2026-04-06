@@ -6,6 +6,8 @@ import {
   getRankFromXP, getXPProgress, getTiersByGroup,
   type RankGroup,
 } from '@/constants/ranks'
+import { honorApi } from '@/lib/api'
+import { useAuthStore } from '@/stores/authStore'
 
 const GROUPS: RankGroup[] = ['Seed', 'Sprout', 'Trader', 'Warrior', 'Elder', 'Chief', 'Oba', 'Orisha', 'Legend', 'Ancestor', 'Eternal']
 
@@ -30,7 +32,19 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
   const [floaters, setFloaters] = React.useState<{ id: number; x: number; emoji: string }[]>([])
   const floaterRef = React.useRef(0)
 
-  const { current, next, progress, xpNeeded } = getXPProgress(xp)
+  // ── Live API state ──────────────────────────────────────────────
+  const [liveXp, setLiveXp] = React.useState<number | null>(null)
+  const [weeklyXp, setWeeklyXp] = React.useState<number | null>(null)
+  const [liveVillageLife, setLiveVillageLife] = React.useState<any[] | null>(null)
+  const [liveUnlocks, setLiveUnlocks] = React.useState<any[] | null>(null)
+
+  const afroId = useAuthStore(s => s.user?.afroId?.raw)
+  const villageId = useAuthStore(s => s.user?.villageId)
+
+  // Use live XP if available, otherwise fall back to prop
+  const effectiveXp = liveXp !== null ? liveXp : xp
+
+  const { current, next, progress, xpNeeded } = getXPProgress(effectiveXp)
   const activePerks = RANK_TIERS.filter(r => r.level <= current.level && r.perk).slice(-5)
   const unlockedFeatures = FEATURE_UNLOCKS.filter(f => f.level <= current.level)
   const lockedFeatures = FEATURE_UNLOCKS.filter(f => f.level > current.level).slice(0, 5)
@@ -40,6 +54,55 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
       const s = document.createElement('style'); s.id = 'hra-css'; s.textContent = CSS; document.head.appendChild(s)
     }
   }, [])
+
+  // ── Fetch live data from honor-service ──────────────────────────
+  React.useEffect(() => {
+    if (!afroId) return
+    let cancelled = false
+
+    // 1. Honor profile — totalXp + weeklyXp
+    ;(async () => {
+      try {
+        const res = await honorApi.getProfile(afroId)
+        if (cancelled) return
+        const data = res?.data ?? res
+        if (typeof data?.totalXp === 'number') setLiveXp(data.totalXp)
+        if (typeof data?.weeklyXp === 'number') setWeeklyXp(data.weeklyXp)
+      } catch {
+        // Fall back to xp prop — no-op
+      }
+    })()
+
+    // 2. Village life conditions
+    if (villageId) {
+      ;(async () => {
+        try {
+          const res = await honorApi.getVillageLife(afroId, villageId)
+          if (cancelled) return
+          const data = res?.data ?? res
+          if (Array.isArray(data?.conditions)) setLiveVillageLife(data.conditions)
+          else if (Array.isArray(data)) setLiveVillageLife(data)
+        } catch {
+          // Fall back to mock conditions — no-op
+        }
+      })()
+    }
+
+    // 3. Feature unlocks
+    ;(async () => {
+      try {
+        const res = await honorApi.getUnlocks()
+        if (cancelled) return
+        const data = res?.data ?? res
+        if (Array.isArray(data?.unlocks)) setLiveUnlocks(data.unlocks)
+        else if (Array.isArray(data)) setLiveUnlocks(data)
+      } catch {
+        // Fall back to level-based calculation — no-op
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [afroId, villageId])
 
   const spawnFloat = (e: React.MouseEvent, emoji: string) => {
     const id = ++floaterRef.current
@@ -109,9 +172,15 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
               <div style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${current.color}, ${current.color}bb)`, width: `${progress * 100}%`, transition: 'width .6s ease', animation: 'xpPulse 3s ease-in-out infinite' }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-              <span style={{ fontSize: 9, color: current.color, fontWeight: 700 }}>{xp.toLocaleString()} XP</span>
+              <span style={{ fontSize: 9, color: current.color, fontWeight: 700 }}>{effectiveXp.toLocaleString()} XP</span>
               {next && <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{next.xpRequired.toLocaleString()} XP</span>}
             </div>
+            {/* Weekly XP from live API */}
+            {weeklyXp !== null && (
+              <div style={{ marginTop: 6, fontSize: 9, fontWeight: 700, color: 'rgba(251,191,36,0.85)' }}>
+                This week: {weeklyXp.toLocaleString()} XP
+              </div>
+            )}
           </div>
 
           {/* Naming milestone check */}
@@ -246,13 +315,24 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
         )}
 
         {/* ── SECTION: Feature Unlocks ──────────────────────────────────────── */}
-        {section === 'unlocks' && (
+        {section === 'unlocks' && (() => {
+          // If live unlocks are available, use them; otherwise fall back to level-based
+          const isFeatureUnlocked = (f: typeof FEATURE_UNLOCKS[number]) => {
+            if (liveUnlocks) {
+              return liveUnlocks.some((u: any) => u.name === f.name || u.feature === f.name || u.level === f.level)
+            }
+            return f.level <= current.level
+          }
+          const liveUnlockedFeatures = FEATURE_UNLOCKS.filter(isFeatureUnlocked)
+          const liveLockedFeatures = FEATURE_UNLOCKS.filter(f => !isFeatureUnlocked(f)).slice(0, 5)
+
+          return (
           <div style={{ padding: '0 14px' }}>
             {/* Unlocked features */}
             <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,.35)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 10 }}>
-              Unlocked ({unlockedFeatures.length} / {FEATURE_UNLOCKS.length})
+              Unlocked ({liveUnlockedFeatures.length} / {FEATURE_UNLOCKS.length})
             </div>
-            {unlockedFeatures.slice().reverse().map(f => (
+            {liveUnlockedFeatures.slice().reverse().map(f => (
               <div key={`${f.level}-${f.name}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, marginBottom: 4, background: 'rgba(74,222,128,.04)', border: '1px solid rgba(74,222,128,.12)' }}>
                 <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, background: 'rgba(74,222,128,.12)', flexShrink: 0 }}>{f.emoji}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -267,10 +347,10 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
             ))}
 
             {/* Next unlocks */}
-            {lockedFeatures.length > 0 && (
+            {liveLockedFeatures.length > 0 && (
               <>
                 <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,.35)', letterSpacing: '.1em', textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Coming Next</div>
-                {lockedFeatures.map(f => (
+                {liveLockedFeatures.map(f => (
                   <div key={`${f.level}-${f.name}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, marginBottom: 4, opacity: 0.4 }}>
                     <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', flexShrink: 0 }}>{f.emoji}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -320,7 +400,8 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
 
             <div style={{ height: 16 }} />
           </div>
-        )}
+          )
+        })()}
 
         {/* ── SECTION: Earn XP ──────────────────────────────────────────────── */}
         {section === 'xp' && (
@@ -366,12 +447,21 @@ export function HonorRankScreen({ xp = 0, onClose }: HonorRankScreenProps) {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {VILLAGE_LIFE_CONDITIONS.map((c, i) => {
-                const meetsLevel = !('minLevel' in c) || current.level >= (c as any).minLevel
+                // If live village life data is available, use real completion status
+                const liveCondition = liveVillageLife?.find((lc: any) => lc.condition === c.condition || lc.index === i)
+                const meetsLevel = liveCondition
+                  ? (liveCondition.met === true || liveCondition.status === 'met' || liveCondition.completed === true)
+                  : (!('minLevel' in c) || current.level >= (c as any).minLevel)
                 return (
                   <div key={i} style={{ padding: '10px 12px', borderRadius: 12, background: meetsLevel ? 'rgba(255,255,255,.03)' : 'rgba(255,255,255,.01)', border: `1px solid ${meetsLevel ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.04)'}`, opacity: meetsLevel ? 1 : 0.4 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 16 }}>{c.emoji}</span>
                       <div style={{ flex: 1, fontSize: 11, fontWeight: 700, color: '#f0f7f0' }}>{c.condition}</div>
+                      {liveCondition && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: meetsLevel ? '#4ade80' : 'rgba(255,255,255,.3)' }}>
+                          {meetsLevel ? '✓' : '—'}
+                        </span>
+                      )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 24 }}>
                       <span style={{ fontSize: 9, color: '#f87171', fontWeight: 700 }}>Penalty: {c.violationPenalty}</span>

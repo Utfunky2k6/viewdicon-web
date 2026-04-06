@@ -57,10 +57,10 @@ export const VILLAGE_TOOL_MAP: Record<string, Record<string, string[]>> = {
   // ── NOK · Arts Village ─────────────────────────────────────────
   arts: {
     musician:        ['portfolio_vault', 'content_calendar', 'payment_link', 'analytics_report', 'social_shop', 'review_tracker', 'document_vault', 'community_board'],
-    visual_artist:   ['portfolio_vault', 'social_shop', 'design_brief', 'client_tracker', 'content_calendar', 'review_tracker', 'payment_link', 'analytics_report'],
+    visual_artist:   ['co_creation_studio', 'portfolio_vault', 'social_shop', 'design_brief', 'client_tracker', 'content_calendar', 'review_tracker', 'payment_link'],
     writer:          ['article_vault', 'publication_vault', 'content_calendar', 'community_board', 'review_tracker', 'payment_link', 'analytics_report', 'grant_tracker'],
     filmmaker:       ['project_tracker', 'portfolio_vault', 'billing_dashboard', 'document_vault', 'daily_target_tracker', 'content_calendar', 'analytics_report', 'community_board'],
-    performer:       ['appointment_book', 'payment_link', 'review_tracker', 'content_calendar', 'portfolio_vault', 'community_board', 'social_shop', 'analytics_report'],
+    performer:       ['talent_stage', 'appointment_book', 'payment_link', 'review_tracker', 'content_calendar', 'portfolio_vault', 'community_board', 'social_shop'],
     craftsman:       ['inventory_tracker', 'social_shop', 'delivery_tracker', 'portfolio_vault', 'client_tracker', 'quick_invoice', 'review_tracker', 'product_listing'],
     fashion_designer:['design_brief', 'product_listing', 'client_tracker', 'portfolio_vault', 'social_shop', 'review_tracker', 'payment_link', 'content_calendar'],
     cultural:        ['community_board', 'grant_tracker', 'impact_tracker', 'content_calendar', 'attendance_tracker', 'outreach_planner', 'report_generator', 'publication_vault'],
@@ -110,14 +110,14 @@ export const VILLAGE_TOOL_MAP: Record<string, Record<string, string[]>> = {
     network_eng:     ['infrastructure_log', 'ticket_system', 'maintenance_log', 'technical_docs', 'alert_system', 'compliance_checker', 'analytics_report', 'report_generator'],
     mobile_dev:      ['code_project', 'app_deploy_tracker', 'api_tester', 'document_vault', 'review_tracker', 'analytics_report', 'community_board', 'portfolio_vault'],
     cloud_eng:       ['hosting_tracker', 'backup_monitor', 'infrastructure_log', 'billing_dashboard', 'alert_system', 'technical_docs', 'analytics_report', 'compliance_checker'],
-    ux_designer:     ['design_brief', 'portfolio_vault', 'client_tracker', 'review_tracker', 'content_calendar', 'social_shop', 'analytics_report', 'community_board'],
+    ux_designer:     ['co_creation_studio', 'design_brief', 'portfolio_vault', 'client_tracker', 'review_tracker', 'content_calendar', 'social_shop', 'analytics_report'],
     tech_support:    ['ticket_system', 'remote_access_tool', 'repair_queue', 'document_vault', 'alert_system', 'client_tracker', 'daily_target_tracker', 'report_generator'],
   },
 
   // ── TIMBUKTU · Media Village ───────────────────────────────────
   media: {
     journalist:    ['article_vault', 'content_calendar', 'publication_vault', 'document_vault', 'analytics_report', 'community_board', 'campaign_manager', 'outreach_planner'],
-    broadcaster:   ['analytics_report', 'moderation_queue', 'portfolio_vault', 'content_calendar', 'community_board', 'booking_calendar', 'social_shop', 'review_tracker'],
+    broadcaster:   ['afroflix', 'watch_party', 'moderation_queue', 'portfolio_vault', 'content_calendar', 'community_board', 'booking_calendar', 'social_shop'],
     photographer:  ['portfolio_vault', 'social_shop', 'product_listing', 'client_tracker', 'quick_invoice', 'review_tracker', 'content_calendar', 'analytics_report'],
     social_media:  ['content_calendar', 'analytics_report', 'payment_link', 'portfolio_vault', 'review_tracker', 'social_shop', 'community_board', 'daily_target_tracker'],
     pr_officer:    ['campaign_manager', 'client_tracker', 'outreach_planner', 'portfolio_vault', 'analytics_report', 'document_vault', 'content_calendar', 'report_generator'],
@@ -129,8 +129,8 @@ export const VILLAGE_TOOL_MAP: Record<string, Record<string, string[]>> = {
   // ── SIJILMASA · Finance Village ────────────────────────────────
   finance: {
     banker:        ['transaction_log', 'daily_settlement', 'compliance_checker', 'audit_report', 'client_tracker', 'billing_dashboard', 'risk_calculator', 'document_vault'],
-    investment:    ['analytics_report', 'risk_calculator', 'portfolio_vault', 'document_vault', 'publication_vault', 'report_generator', 'community_board', 'grant_tracker'],
-    microfinance:  ['ajo_circle', 'credit_book', 'community_connect', 'impact_tracker', 'attendance_tracker', 'daily_settlement', 'report_generator', 'alert_system'],
+    investment:    ['prediction_pot', 'analytics_report', 'risk_calculator', 'portfolio_vault', 'document_vault', 'publication_vault', 'report_generator', 'community_board'],
+    microfinance:  ['finance_ledger', 'ajo_circle', 'credit_book', 'community_connect', 'impact_tracker', 'attendance_tracker', 'daily_settlement', 'report_generator'],
     fintech:       ['api_tester', 'analytics_report', 'project_tracker', 'code_project', 'client_tracker', 'community_board', 'risk_calculator', 'compliance_checker'],
     accountant:    ['billing_dashboard', 'audit_report', 'compliance_checker', 'transaction_log', 'analytics_report', 'document_vault', 'report_generator', 'daily_settlement'],
     insurance:     ['risk_calculator', 'client_tracker', 'compliance_checker', 'document_vault', 'report_generator', 'billing_dashboard', 'analytics_report', 'alert_system'],
@@ -212,7 +212,7 @@ export const VILLAGE_TOOL_MAP: Record<string, Record<string, string[]>> = {
 
   // ── TERANGA · Hospitality Village ─────────────────────────────
   hospitality: {
-    hotel_manager: ['booking_calendar', 'staff_manager', 'daily_settlement', 'quality_log', 'review_tracker', 'analytics_report', 'alert_system', 'community_board'],
+    hotel_manager: ['night_market', 'watch_party', 'booking_calendar', 'staff_manager', 'daily_settlement', 'quality_log', 'review_tracker', 'analytics_report'],
     chef:          ['daily_menu_board', 'quality_log', 'staff_manager', 'inventory_tracker', 'quick_invoice', 'pos_dashboard', 'review_tracker', 'daily_target_tracker'],
     tour_guide:    ['appointment_book', 'route_planner', 'review_tracker', 'quick_invoice', 'content_calendar', 'portfolio_vault', 'community_board', 'analytics_report'],
     event_planner: ['project_tracker', 'booking_calendar', 'client_tracker', 'staff_manager', 'billing_dashboard', 'supplier_connect', 'analytics_report', 'community_board'],
@@ -227,10 +227,10 @@ export const VILLAGE_TOOL_MAP: Record<string, Record<string, string[]>> = {
     athlete:      ['content_calendar', 'portfolio_vault', 'payment_link', 'analytics_report', 'community_board', 'social_shop', 'booking_calendar', 'review_tracker'],
     coach:        ['attendance_tracker', 'client_tracker', 'report_generator', 'daily_target_tracker', 'analytics_report', 'community_board', 'appointment_book', 'billing_dashboard'],
     referee:      ['attendance_tracker', 'compliance_checker', 'alert_system', 'report_generator', 'daily_target_tracker', 'community_board', 'analytics_report', 'document_vault'],
-    gym_owner:    ['booking_calendar', 'staff_manager', 'pos_dashboard', 'maintenance_log', 'analytics_report', 'review_tracker', 'community_board', 'daily_settlement'],
+    gym_owner:    ['compound_league', 'booking_calendar', 'staff_manager', 'pos_dashboard', 'maintenance_log', 'analytics_report', 'review_tracker', 'community_board'],
     scout:        ['client_tracker', 'portfolio_vault', 'analytics_report', 'report_generator', 'community_board', 'outreach_planner', 'booking_calendar', 'payment_link'],
     physio:       ['appointment_book', 'client_tracker', 'report_generator', 'daily_target_tracker', 'analytics_report', 'community_board', 'document_vault', 'billing_dashboard'],
-    esports:      ['tournament_manager', 'analytics_report', 'community_board', 'payment_link', 'content_calendar', 'portfolio_vault', 'social_shop', 'review_tracker'],
+    esports:      ['gaming_stream', 'compound_league', 'tournament_manager', 'analytics_report', 'community_board', 'payment_link', 'content_calendar', 'portfolio_vault'],
     sports_media: ['content_calendar', 'article_vault', 'analytics_report', 'publication_vault', 'community_board', 'document_vault', 'outreach_planner', 'report_generator'],
   },
 

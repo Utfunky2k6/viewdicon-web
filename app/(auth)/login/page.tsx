@@ -320,7 +320,7 @@ function LoginPageContent() {
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:32 }}>
                   <ViLogo size={88} />
                   <div style={{ marginTop:20, textAlign:'center' }}>
-                    <div style={{ fontFamily:'Sora,sans-serif', fontSize:28, fontWeight:900, color:'#f0f7f0', lineHeight:1.2, marginBottom:8 }}>
+                    <div style={{ fontFamily:'Sora, sans-serif', fontSize:28, fontWeight:900, color:'#f0f7f0', lineHeight:1.2, marginBottom:8 }}>
                       Welcome back,<br />
                       <span style={{ background:'linear-gradient(135deg,#4ade80,#d4a017)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Traveller.</span>
                     </div>
@@ -456,7 +456,7 @@ function LoginPageContent() {
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:24 }}>
                   <ViLogo size={64} />
                   <div style={{ marginTop:14, textAlign:'center' }}>
-                    <div style={{ fontFamily:'Sora,sans-serif', fontSize:20, fontWeight:900, color:'#f0f7f0', marginBottom:4 }}>
+                    <div style={{ fontFamily:'Sora, sans-serif', fontSize:20, fontWeight:900, color:'#f0f7f0', marginBottom:4 }}>
                       {verified ? '✅ Verified!' : verifying ? '⏳ Verifying…' : 'Enter the Drum Code'}
                     </div>
                     <div style={{ fontSize:12, color:'rgba(255,255,255,.4)', lineHeight:1.5 }}>

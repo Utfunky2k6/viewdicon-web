@@ -79,7 +79,7 @@ export function DeviceScene({ onNext, theme, onVoicePrint }: DeviceSceneProps) {
           ))}
           <div style={{ position: 'absolute', inset: 12, borderRadius: '50%', background: `linear-gradient(135deg,${theme.accent},#0a1f0f)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, boxShadow: `0 0 30px ${theme.accent}33` }}>🖐</div>
         </div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>This device is your Drum.</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>This device is your Drum.</div>
         <div style={{ fontSize: 12, color: theme.subText, lineHeight: 1.65, maxWidth: 280, margin: '0 auto' }}>
           In the old kingdoms, a king&apos;s drum was bound to his spirit.<br />Your phone is now bound to your Afro-ID.
         </div>
@@ -100,7 +100,7 @@ export function DeviceScene({ onNext, theme, onVoicePrint }: DeviceSceneProps) {
           <div style={{ fontSize: 10, fontWeight: 800, color: '#7da882', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
             🎙 Step 2 of 2 · Speak Your Voice Oath
           </div>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 15, fontWeight: 700, color: '#4ade80', marginBottom: 12, lineHeight: 1.4 }}>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 15, fontWeight: 700, color: '#4ade80', marginBottom: 12, lineHeight: 1.4 }}>
             &ldquo;I am proud of my African heritage&rdquo;
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 34, marginBottom: 12 }}>
@@ -130,7 +130,7 @@ export function DeviceScene({ onNext, theme, onVoicePrint }: DeviceSceneProps) {
       {oathDone && (
         <div style={{ background: 'rgba(26,124,62,.1)', border: '1.5px solid rgba(26,124,62,.35)', borderRadius: 14, padding: 14, marginBottom: 16, textAlign: 'center' }}>
           <div style={{ fontSize: 28, marginBottom: 4 }}>🥁</div>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 15, fontWeight: 800, color: '#4ade80' }}>Your Drum is Bound.</div>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 15, fontWeight: 800, color: '#4ade80' }}>Your Drum is Bound.</div>
           <div style={{ fontSize: 11, color: 'rgba(74,222,128,.6)', marginTop: 4 }}>Voice oath sealed · Voice commands now active 🎙</div>
         </div>
       )}

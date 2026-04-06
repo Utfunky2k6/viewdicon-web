@@ -145,7 +145,7 @@ export default function AllyDashboard() {
       <div style={{ position: 'fixed', bottom: '15%', right: '5%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(26,124,62,.1) 0%, transparent 70%)', filter: 'blur(50px)', pointerEvents: 'none', zIndex: 0 }} />
 
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 480, margin: '0 auto', padding: '0 16px 60px' }}>
-        
+
         {/* Top bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0 10px' }}>
           <div>
@@ -254,7 +254,7 @@ export default function AllyDashboard() {
           <div style={{ fontSize: 28, marginBottom: 10 }}>🌍</div>
           <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 800, color: '#f0f7f0', marginBottom: 6 }}>Make an Impact</div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,.55)', lineHeight: 1.6, marginBottom: 14 }}>Friends of the Motherland can sponsor village projects, fund clean water initiatives, and support African entrepreneurs through the platform.</div>
-          <button style={{ width: '100%', padding: 14, borderRadius: 14, background: 'linear-gradient(135deg,#1a7c3e,#0f5028)', color: '#fff', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => router.push('/dashboard/villages')} style={{ width: '100%', padding: 14, borderRadius: 14, background: 'linear-gradient(135deg,#1a7c3e,#0f5028)', color: '#fff', fontWeight: 800, fontSize: 14, border: 'none', cursor: 'pointer' }}>
             Explore Sponsorship Opportunities →
           </button>
         </div>

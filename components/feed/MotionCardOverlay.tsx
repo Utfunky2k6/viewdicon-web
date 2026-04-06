@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import type { Post } from './feedTypes'
 
 const SKINS: Record<string, { emoji: string; color: string }> = {
@@ -21,6 +22,7 @@ interface MotionCardOverlayProps {
 }
 
 export function MotionCardOverlay({ post }: MotionCardOverlayProps) {
+  const router = useRouter()
   const skin = SKINS[post.skinContext] || SKINS.ise
   const heat = heatLabel(post.heatScore)
   const [expanded, setExpanded] = React.useState(false)
@@ -38,7 +40,10 @@ export function MotionCardOverlay({ post }: MotionCardOverlayProps) {
     }}>
       {/* Author row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontWeight: 800, fontSize: 14, color: '#fff' }}>
+        <span
+          onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/profile?user=${post.author}`) }}
+          style={{ fontWeight: 800, fontSize: 14, color: '#fff', cursor: 'pointer' }}
+        >
           {post.author}
         </span>
         {post.crestTier > 0 && (
@@ -57,10 +62,13 @@ export function MotionCardOverlay({ post }: MotionCardOverlayProps) {
 
       {/* Village · Skin · Role */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-        <span style={{
+        <span
+          onClick={(e) => { e.stopPropagation(); if (post.village) router.push(`/dashboard/villages/${post.village}`) }}
+          style={{
           fontSize: 10, fontWeight: 700, padding: '3px 8px',
           borderRadius: 8, background: 'rgba(255,255,255,.08)',
           color: 'rgba(255,255,255,.6)', border: '1px solid rgba(255,255,255,.1)',
+          cursor: post.village ? 'pointer' : 'default',
         }}>
           {post.villageEmoji} {post.village}
         </span>
@@ -106,7 +114,11 @@ export function MotionCardOverlay({ post }: MotionCardOverlayProps) {
       {post.tags && post.tags.length > 0 && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
           {post.tags.slice(0, 4).map(tag => (
-            <span key={tag} style={{ fontSize: 10, color: '#4ade80', fontWeight: 700 }}>
+            <span
+              key={tag}
+              onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/feed?tag=${encodeURIComponent(tag)}`) }}
+              style={{ fontSize: 10, color: '#4ade80', fontWeight: 700, cursor: 'pointer' }}
+            >
               #{tag}
             </span>
           ))}

@@ -6,7 +6,7 @@ import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { HonorRankScreen } from '@/components/profile/HonorRankScreen'
 import { sessionsApi } from '@/lib/api'
 
-const ISE_TABS = ['Work', 'Tools', 'Villages'] as const
+const ISE_TABS = ['Work', 'Trade Proof', 'Tools', 'Villages'] as const
 type IseTab = typeof ISE_TABS[number]
 
 // Mock tools — in production, fetched from GET /api/v1/villages/:villageId/tools
@@ -66,9 +66,10 @@ export function IseProfile() {
         ))}
       </div>
 
-      {tab === 'Work'     && <IseWorkTab xp={USER_XP} onShowRank={() => setShowRank(true)} />}
-      {tab === 'Tools'    && <IseToolsTab />}
-      {tab === 'Villages' && <IseVillagesTab />}
+      {tab === 'Work'        && <IseWorkTab xp={USER_XP} onShowRank={() => setShowRank(true)} />}
+      {tab === 'Trade Proof' && <IseTradeProofTab />}
+      {tab === 'Tools'       && <IseToolsTab />}
+      {tab === 'Villages'    && <IseVillagesTab />}
 
       {showRank && <HonorRankScreen xp={USER_XP} onClose={() => setShowRank(false)} />}
     </>
@@ -123,7 +124,7 @@ function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) 
       {/* What others see */}
       <div style={{ padding: '10px 14px 5px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Your Work Identity</div>
       <div style={{ margin: '0 12px 8px', background: '#0d1f12', border: '1px solid #1a7c3e', borderRadius: 12, padding: 12 }}>
-        <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, marginBottom: 6 }}>👁 What Others See in ISE Mode</div>
+        <div style={{ fontSize: 11, color: '#4ade80', fontWeight: 700, marginBottom: 6 }}>👁 What Others See in KAZI Mode</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>Your real name, village role, crest tier, job history, and Honour Score. Your social life and clan matters are completely hidden. This is your professional passport.</div>
       </div>
 
@@ -205,6 +206,41 @@ const TOOL_ROUTES: Record<string, string> = {
   '3': '/dashboard/sessions',
   '4': '/dashboard/chat',
   '5': '/dashboard/chat',
+}
+
+// ── Trade Proof tab ───────────────────────────────────────────────────────────
+function IseTradeProofTab() {
+  const PROOFS = [
+    { id:'1', title:'Bulk rice order confirmed', village:'Commerce', date:'Mar 2026', cowrie:'₡850', verified: true, emoji:'🌾' },
+    { id:'2', title:'12 fabric rolls delivered', village:'Fashion', date:'Mar 2026', cowrie:'₡1,200', verified: true, emoji:'🧵' },
+    { id:'3', title:'Equipment repair — workshop', village:'Builders', date:'Feb 2026', cowrie:'₡400', verified: false, emoji:'🔧' },
+    { id:'4', title:'Market price consultation', village:'Commerce', date:'Feb 2026', cowrie:'₡150', verified: true, emoji:'💰' },
+  ]
+  return (
+    <div style={{ padding: '12px 14px' }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.3)', marginBottom: 12 }}>
+        Verified Trade History
+      </div>
+      {PROOFS.map(p => (
+        <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
+          <div style={{ width:34,height:34,borderRadius:9,background:'rgba(255,255,255,.06)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0 }}>{p.emoji}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#f0f5ee', marginBottom:2 }}>{p.title}</div>
+            <div style={{ fontSize:9, color:'rgba(255,255,255,.3)' }}>📍 {p.village} · {p.date}</div>
+          </div>
+          <div style={{ display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3,flexShrink:0 }}>
+            <span style={{ fontSize:11, fontWeight:800, color:'#4ade80' }}>{p.cowrie}</span>
+            <span style={{ fontSize:8, padding:'1px 6px', borderRadius:5, background: p.verified ? 'rgba(74,222,128,.1)': 'rgba(251,191,36,.1)', color: p.verified ? '#4ade80':'#fbbf24', fontWeight:700 }}>
+              {p.verified ? '✓ Verified' : '⏳ Pending'}
+            </span>
+          </div>
+        </div>
+      ))}
+      <div style={{ textAlign:'center', padding:'16px 0 4px', fontSize:10, color:'rgba(255,255,255,.2)' }}>
+        Trade proofs are sealed on-chain · Cannot be altered
+      </div>
+    </div>
+  )
 }
 
 function IseToolsTab() {

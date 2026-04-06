@@ -1,7 +1,7 @@
 'use client'
 // ═══════════════════════════════════════════════════════════════════
 // SESO VOICE ROOM — Talking Drum Audio Space
-// Inspired by Twitter Spaces + Clubhouse but Africa-first
+// Africa-first live audio room — built on the Seso ecosystem
 // Features: Speakers stage, listeners, raise hand, Spirit Voice,
 // village-gated, elder moderation, proverb of the hour
 // ═══════════════════════════════════════════════════════════════════
@@ -183,7 +183,7 @@ export default function VoiceRoomPage() {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <div className="vr-live" style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />
-              <span style={{ fontFamily: 'Sora,sans-serif', fontSize: 15, fontWeight: 900, color: C.text }}>🥁 Talking Drum</span>
+              <span style={{ fontFamily: 'Sora, sans-serif', fontSize: 15, fontWeight: 900, color: C.text }}>🥁 Talking Drum</span>
               <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: 'rgba(220,38,38,.12)', border: '1px solid rgba(220,38,38,.2)', color: '#ef4444' }}>LIVE</span>
             </div>
             <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>Commerce Village · {participants.length} in room · {fmt(duration)}</div>
@@ -247,7 +247,7 @@ export default function VoiceRoomPage() {
                   <button onClick={() => { setParticipants(prev => prev.map(x => x.id === p.id ? { ...x, role: 'speaker', handRaised: false } : x)); flash(`${p.name.split(' ')[0]} moved to stage`) }} style={{ padding: '6px 12px', borderRadius: 9, background: C.green, border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                     Invite Up
                   </button>
-                  <button onClick={() => flash('Hand acknowledged')} style={{ padding: '6px 10px', borderRadius: 9, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Dismiss</button>
+                  <button onClick={() => { setParticipants(prev => prev.map(x => x.id === p.id ? { ...x, handRaised: false } : x)); flash(`${p.name.split(' ')[0]}'s hand lowered`) }} style={{ padding: '6px 10px', borderRadius: 9, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Dismiss</button>
                 </div>
               ))}
             </div>
@@ -316,7 +316,15 @@ export default function VoiceRoomPage() {
           </button>
 
           {/* Share */}
-          <button onClick={() => flash('🔗 Room link copied')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => {
+            const url = typeof window !== 'undefined' ? window.location.href : ''
+            if (navigator.share) {
+              navigator.share({ title: '🥁 Talking Drum — Commerce Village', url }).catch(() => {})
+            } else {
+              navigator.clipboard?.writeText(url).catch(() => {})
+              flash('🔗 Room link copied')
+            }
+          }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer' }}>
             <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(255,255,255,.05)', border: `1.5px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔗</div>
             <span style={{ fontSize: 10, color: C.textDim, fontWeight: 700 }}>Share</span>
           </button>
@@ -340,14 +348,28 @@ export default function VoiceRoomPage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'flex-end', zIndex: 60 }} onClick={() => setShowInvite(false)}>
           <div className="vr-slide-up" style={{ width: '100%', background: C.bgCard, borderRadius: '20px 20px 0 0', padding: '20px 20px 40px', maxWidth: 480, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.2)', margin: '0 auto 18px' }} />
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 17, fontWeight: 900, color: C.text, marginBottom: 16 }}>Invite to Room</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: C.text, marginBottom: 16 }}>Invite to Room</div>
             {[
               { icon: '🔗', label: 'Copy room link', sub: 'Share anywhere' },
               { icon: '💬', label: 'Invite via Seso Chat', sub: 'Send to contacts' },
               { icon: '🏘', label: 'Post to Village Feed', sub: 'Announce in Commerce Village' },
-              { icon: '📱', label: 'Share to phone', sub: 'WhatsApp, SMS, any app' },
+              { icon: '🥁', label: 'Post to Soro Soke Feed', sub: 'Share with your village circle' },
             ].map((item, i) => (
-              <button key={i} onClick={() => { flash(`${item.label} done`); setShowInvite(false) }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,.03)', border: `1px solid ${C.border}`, marginBottom: 8, cursor: 'pointer', textAlign: 'left' }}>
+              <button key={i} onClick={() => {
+                if (i === 0) {
+                  const url = typeof window !== 'undefined' ? window.location.href : ''
+                  navigator.clipboard?.writeText(url).catch(() => {})
+                  flash('Room link copied to clipboard')
+                } else if (i === 1) {
+                  router.push('/dashboard/chat')
+                  flash('Opening Seso Chat...')
+                } else {
+                  const url = typeof window !== 'undefined' ? window.location.href : ''
+                  navigator.share?.({ title: '🥁 Talking Drum — Commerce Village', url }).catch(() => {})
+                  flash(`${item.label} done`)
+                }
+                setShowInvite(false)
+              }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,.03)', border: `1px solid ${C.border}`, marginBottom: 8, cursor: 'pointer', textAlign: 'left' }}>
                 <span style={{ fontSize: 22 }}>{item.icon}</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{item.label}</div>
@@ -364,7 +386,7 @@ export default function VoiceRoomPage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 24 }}>
           <div style={{ background: C.bgCard, borderRadius: 20, padding: 24, maxWidth: 320, width: '100%', border: `1px solid ${C.border}` }}>
             <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 10 }}>🚪</div>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 900, color: C.text, textAlign: 'center', marginBottom: 6 }}>Leave the Room?</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 900, color: C.text, textAlign: 'center', marginBottom: 6 }}>Leave the Room?</div>
             <div style={{ fontSize: 12, color: C.textDim, textAlign: 'center', marginBottom: 20, lineHeight: 1.6 }}>The Talking Drum will continue without you. You can rejoin anytime.</div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowLeave(false)} style={{ flex: 1, padding: '12px 0', borderRadius: 12, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Stay</button>

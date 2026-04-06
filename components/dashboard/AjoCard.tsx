@@ -1,5 +1,6 @@
 'use client'
 import { ThemeMode, t, SectionLabel } from './shared'
+import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 interface AjoMember { id: string; initial: string; color: string }
@@ -19,6 +20,7 @@ interface AjoCircleData {
 
 export default function AjoCard({ mode }: { mode: ThemeMode }) {
   const isDark = mode === 'dark'
+  const router = useRouter()
   const [circle, setCircle] = React.useState<AjoCircleData | null>(null)
   const [isOffline, setIsOffline] = React.useState(false)
 
@@ -31,11 +33,11 @@ export default function AjoCard({ mode }: { mode: ThemeMode }) {
         }
         return res.ok ? res.json() : null
       })
-      .then(data => { 
+      .then(data => {
         if (data?.error?.code === 'STABILIZED_OFFLINE_MODE') {
           setIsOffline(true)
         } else if (data?.circleId) {
-          setCircle(data) 
+          setCircle(data)
         }
       })
       .catch(() => setIsOffline(true))
@@ -108,7 +110,7 @@ export default function AjoCard({ mode }: { mode: ThemeMode }) {
           </div>
         </div>
 
-        <button style={{ width: '100%', padding: 10, border: 'none', borderRadius: 99, background: 'linear-gradient(to right,#7c3aed,#5b21b6)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+        <button onClick={() => router.push('/dashboard/banking')} style={{ width: '100%', padding: 10, border: 'none', borderRadius: 99, background: 'linear-gradient(to right,#7c3aed,#5b21b6)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
           View Circle & Send Reminder
         </button>
       </div>

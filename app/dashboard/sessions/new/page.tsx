@@ -1094,6 +1094,22 @@ function ToolLauncherInner() {
         </div>
       )}
 
+      {/* ── Marduk · Business Architect ── */}
+      <div style={{ margin: '20px 16px 100px', padding: '16px', borderRadius: 16, background: 'linear-gradient(135deg,rgba(245,158,11,0.1),rgba(120,53,15,0.06))', border: '1px solid rgba(245,158,11,0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 24 }}>⚡</span>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', fontFamily: "'Space Grotesk',sans-serif" }}>Marduk · Architect of Commerce</div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', fontFamily: "'Inter',sans-serif" }}>Business Intelligence · Contract Generation · Market Analysis</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {['📜 Generate Contract', '🔮 Invoice Prophecy', '🌱 90-Day Incubation', '⛈️ Dispute Resolution'].map(p => (
+            <a key={p} href="/dashboard/ai" style={{ padding: '7px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b', fontSize: 10, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", textDecoration: 'none' }}>{p}</a>
+          ))}
+        </div>
+      </div>
+
       {/* ── AI Assistant Panel (slide-up) ── */}
       {showAI && (
         <div style={{

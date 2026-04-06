@@ -48,7 +48,7 @@ export function HeritageVerifyScene({ onPass, onFail, theme }: HeritageVerifySce
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, background: theme.bg, overflowY: 'auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 48, marginBottom: 10 }}>{result.passed ? '✅' : '🕯'}</div>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>
             {result.passed ? 'Heritage Verified' : 'Heritage Unverified'}
           </div>
           <div style={{ fontSize: 13, color: theme.subText, lineHeight: 1.55 }}>
@@ -80,7 +80,7 @@ export function HeritageVerifyScene({ onPass, onFail, theme }: HeritageVerifySce
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, background: theme.bg, overflowY: 'auto' }}>
       <div style={{ textAlign: 'center', marginBottom: 20 }}>
         <div style={{ fontSize: 48, marginBottom: 10 }}>🦅</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>Griot Speaks</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>Griot Speaks</div>
         <div style={{ fontSize: 13, color: theme.subText, lineHeight: 1.55 }}>The Griot — keeper of living memory — asks 7 questions to verify your lineage.</div>
       </div>
 

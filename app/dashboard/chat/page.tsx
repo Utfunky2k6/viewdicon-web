@@ -7,7 +7,9 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import FamilyTreeBuilder from '@/components/onboarding/FamilyTreeBuilder'
 import { VOCAB } from '@/constants/vocabulary'
-import { sesoChatApi } from '@/lib/api'
+import { sesoChatApi, identityApi, connectionApi } from '@/lib/api'
+import { SKINS } from '@/components/feed/FeedPostCard'
+import { FamilyCircle } from '@/components/chat/FamilyCircle'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'seso-chat-styles'
@@ -44,7 +46,7 @@ const C = {
 }
 
 /* ── types ── */
-type Tab = 'all' | 'requests' | 'trusted' | 'business'
+type Tab = 'all' | 'requests' | 'trusted' | 'business' | 'family'
 type TrustTier = 'inner_fire' | 'village_circle' | 'kingdom'
 type Lang = 'EN' | 'YO' | 'IG' | 'HA' | 'SW' | 'ZU' | 'AR'
 
@@ -109,14 +111,19 @@ const ALL_CHATS: ChatItem[] = [
 
 const REQUESTS: RequestCard[] = [
   {
-    handle: '@KofiBrong_Farms', emoji: '🌾', village: 'Agriculture',
+    handle: 'Agriculture Villager · Crest II', emoji: '🌾', village: 'Agriculture',
     crest: 'Crest II', nkisi: 'GREEN', ago: '2h ago',
-    message: 'I saw your ankara listing...',
+    message: 'I saw your ankara listing in the Commerce feed. I grow the raw cotton — could we discuss bulk supply?',
   },
   {
-    handle: '@HealthKonsult_Abuja', emoji: '⚕', village: 'Health',
+    handle: 'Health Practitioner · Crest III', emoji: '⚕', village: 'Health',
     crest: 'Crest III', nkisi: 'GREEN', ago: '5h ago',
-    message: 'Introduction via Mama Ngozi...',
+    message: 'Referred by a mutual contact in Commerce Village. I offer telemedicine consultations.',
+  },
+  {
+    handle: 'Technology Builder · Crest I', emoji: '💻', village: 'Technology',
+    crest: 'Crest I', nkisi: 'GREEN', ago: '1d ago',
+    message: 'Saw your market tools session — I can build a POS integration for your shop.',
   },
 ]
 
@@ -206,6 +213,11 @@ export default function ChatInboxPage() {
   const [requests, setRequests] = React.useState<any[]>([])
   const [onlineUsers, setOnlineUsers] = React.useState<any[]>([])
   const [chatLoading, setChatLoading] = React.useState(true)
+  const [showWhisper, setShowWhisper] = React.useState(false)
+  const [showHandshake, setShowHandshake] = React.useState(false)
+  const [handshakeId, setHandshakeId] = React.useState('')
+  const [handshakeStep, setHandshakeStep] = React.useState<'enter' | 'sending' | 'sent' | 'error'>('enter')
+  const [handshakeError, setHandshakeError] = React.useState('')
 
   /* inject CSS once */
   React.useEffect(() => {
@@ -258,6 +270,22 @@ export default function ChatInboxPage() {
     setTimeout(() => { setToastOut(true) }, 1800)
     setTimeout(() => { setToast(null); setToastOut(false) }, 2200)
   }, [])
+
+  /* handshake handler */
+  const handleHandshake = async () => {
+    if (!handshakeId.trim()) return
+    setHandshakeStep('sending')
+    setHandshakeError('')
+    try {
+      await identityApi.initiateHandshake(handshakeId.trim())
+      setHandshakeStep('sent')
+      flash('Trust Handshake sent!')
+      setTimeout(() => { setShowHandshake(false); setHandshakeStep('enter'); setHandshakeId('') }, 2000)
+    } catch (err: unknown) {
+      setHandshakeStep('error')
+      setHandshakeError((err as Error)?.message || 'Could not reach this AfroID')
+    }
+  }
 
   /* ── render guards ── */
   if (!isLoaded) return null
@@ -363,6 +391,7 @@ export default function ChatInboxPage() {
     { key: 'requests', label: 'Requests', count: (requests.length > 0 ? requests : REQUESTS).length,       countColor: '#ef4444' },
     { key: 'trusted',  label: 'Trusted',  countColor: C.greenL },
     { key: 'business', label: 'Business', count: BIZ_ACTIVE.length,                                        countColor: C.goldL },
+    { key: 'family',   label: '🌳 Family',                                                                  countColor: C.purpleL },
   ]
 
   const displayChats = (chats.length > 0 ? chats : ALL_CHATS).filter((c: any) =>
@@ -393,10 +422,16 @@ export default function ChatInboxPage() {
       overflowX: 'hidden',
     }}>
 
+      {/* ── Adinkra Gye Nyame overlay ── */}
+      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.02, backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%231a7c3e' stroke-linecap='round'%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3C/g%3E%3C/svg%3E")`, backgroundSize: '100px 100px', backgroundRepeat: 'repeat' }} />
+      {/* ── Pan-African Kente top stripe ── */}
+      <div aria-hidden="true" style={{ height: 3, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)', flexShrink: 0, position: 'relative', zIndex: 1 }} />
+
       {/* ── HEADER ── */}
       <div style={{
         padding: '18px 18px 0 18px',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        position: 'relative', zIndex: 1,
       }}>
         <div>
           <h1 style={{
@@ -408,6 +443,12 @@ export default function ChatInboxPage() {
           }}>Spirit Voice active \u00b7 7 languages</p>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
+          <button onClick={() => setShowHandshake(true)} style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'rgba(26,124,62,0.12)', border: '1px solid rgba(26,124,62,0.25)',
+            color: C.greenL, fontSize: 15, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', cursor: 'pointer',
+          }} title="Connect by AfroID">🤝</button>
           {[
             { icon: '🎙', label: 'Voice Room', href: '/dashboard/chat/voice-room' },
             { icon: '✏', label: 'New Group', href: '/dashboard/chat/new-group' },
@@ -465,7 +506,7 @@ export default function ChatInboxPage() {
         </div>
 
         {/* mic icon */}
-        <span style={{ fontSize: 18, flexShrink: 0, cursor: 'pointer' }}>🎙</span>
+        <span onClick={() => flash('Spirit Voice activated — tap a language to switch')} style={{ fontSize: 18, flexShrink: 0, cursor: 'pointer' }}>🎙</span>
       </div>
 
       {/* ── SEARCH BAR ── */}
@@ -496,16 +537,18 @@ export default function ChatInboxPage() {
       }}>
         {TABS.map(t => {
           const active = tab === t.key
+          const isFamily = t.key === 'family'
+          const tabAccent = isFamily ? C.purpleL : C.greenL
           return (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
               flex: 1, padding: '12px 0 10px 0', cursor: 'pointer',
               background: 'none', border: 'none',
-              borderBottom: active ? `2px solid ${C.greenL}` : '2px solid transparent',
+              borderBottom: active ? `2px solid ${tabAccent}` : '2px solid transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               transition: 'all .2s',
             }}>
               <span style={{
-                fontSize: 12, fontWeight: 700, color: active ? C.greenL : C.textDim,
+                fontSize: 12, fontWeight: 700, color: active ? tabAccent : C.textDim,
                 fontFamily: 'Sora, sans-serif',
               }}>{t.label}</span>
               {t.count != null && (
@@ -522,6 +565,25 @@ export default function ChatInboxPage() {
         })}
       </div>
 
+      {/* ── QUICK CONTACTS ONLINE STRIP ── */}
+      <div style={{ overflowX:'auto', display:'flex', gap:10, padding:'8px 14px', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
+        {[{n:'Adaeze',av:'👩🏾',c:'#4ade80'},{n:'Kofi',av:'👨🏿',c:'#fb923c'},{n:'Fatima',av:'👩🏾‍🦱',c:'#c084fc'},{n:'Emeka',av:'👨🏾',c:'#4ade80'},{n:'Zara',av:'👩🏾',c:'#fb923c'},{n:'Kwame',av:'👨🏿‍🦱',c:'#a3e635'}].map(p=>(
+          <div key={p.n} onClick={() => router.push('/dashboard/chat/p-' + p.n.toLowerCase())} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,flexShrink:0,cursor:'pointer'}}>
+            <div style={{position:'relative',width:44,height:44}}>
+              <div style={{width:44,height:44,borderRadius:'50%',background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{p.av}</div>
+              <div style={{position:'absolute',bottom:1,right:1,width:10,height:10,borderRadius:'50%',background:p.c,border:'2px solid #0c1009'}}/>
+            </div>
+            <span style={{fontSize:8,color:'rgba(255,255,255,.4)',maxWidth:44,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.n}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── COMPACT SEARCH (below tabs) ── */}
+      <div style={{padding:'8px 14px 0'}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search messages..."
+          style={{width:'100%',background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:12,padding:'8px 12px',color:'#f0f5ee',fontSize:12,outline:'none',boxSizing:'border-box'}} />
+      </div>
+
       {/* ── TAB CONTENT ── */}
       <div className="seso-no-scroll" style={{
         flex: 1, overflowY: 'auto', paddingBottom: 100,
@@ -536,7 +598,7 @@ export default function ChatInboxPage() {
               overflowX: 'auto',
             }}>
               {(onlineUsers.length > 0 ? onlineUsers : ONLINE).map((c, i) => (
-                <div key={i} style={{
+                <div key={i} onClick={() => router.push('/dashboard/chat/' + ((c as any).id ?? 'p-' + ((c as any).name ?? '').toLowerCase().replace(/\s+/g, '-')))} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                   flexShrink: 0, cursor: 'pointer',
                 }}>
@@ -685,38 +747,55 @@ export default function ChatInboxPage() {
             </div>
 
             {/* Request cards */}
-            {displayRequests.map((r, i) => (
+            {displayRequests.map((r, i) => {
+              const trustScore = Math.floor(60 + Math.random() * 35) // compatibility score
+              const mutualVillagers = Math.floor(1 + Math.random() * 5)
+              return (
               <div key={i} className="seso-slide" style={{
                 padding: 16, borderRadius: 14, marginBottom: 12,
                 background: 'rgba(255,255,255,0.025)',
                 border: '1px solid rgba(255,255,255,0.05)',
                 animationDelay: `${i * 0.1}s`,
               }}>
-                {/* top row */}
+                {/* Anonymous identity header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                   <div style={{
-                    width: 42, height: 42, borderRadius: '50%',
-                    background: 'rgba(26,124,62,0.1)', border: '1px solid rgba(26,124,62,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-                  }}>{r.emoji}</div>
+                    width: 48, height: 48, borderRadius: '50%',
+                    background: 'rgba(26,124,62,0.08)', border: '1.5px solid rgba(26,124,62,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+                    position: 'relative',
+                  }}>
+                    {r.emoji}
+                    {/* Nkisi shield dot */}
+                    <div style={{ position: 'absolute', bottom: -1, right: -1, width: 14, height: 14, borderRadius: '50%', background: r.nkisi === 'GREEN' ? '#166534' : '#92400e', border: '2px solid #0a0f08', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 7 }}>🛡</div>
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{r.handle}</div>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 6, marginTop: 3,
-                    }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
-                        background: 'rgba(26,124,62,0.1)', border: '1px solid rgba(26,124,62,0.2)',
-                        color: C.greenL,
-                      }}>{r.village} {r.crest}</span>
-                      <span style={{
-                        fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 99,
-                        background: 'rgba(74,222,128,0.1)', color: C.greenL,
-                        border: '1px solid rgba(74,222,128,0.2)',
-                      }}>🛡 {r.nkisi}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: 'rgba(26,124,62,0.1)', border: '1px solid rgba(26,124,62,0.2)', color: C.greenL }}>{r.emoji} {r.village}</span>
+                      <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 6px', borderRadius: 99, background: r.nkisi === 'GREEN' ? 'rgba(74,222,128,0.1)' : 'rgba(245,158,11,.1)', color: r.nkisi === 'GREEN' ? C.greenL : '#f59e0b', border: `1px solid ${r.nkisi === 'GREEN' ? 'rgba(74,222,128,0.2)' : 'rgba(245,158,11,.2)'}` }}>🛡 {r.nkisi}</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: 'rgba(212,160,23,0.08)', color: '#fbbf24' }}>✦ {r.crest}</span>
                     </div>
                   </div>
                   <span style={{ fontSize: 10, color: C.textDim2, fontWeight: 600 }}>{r.ago}</span>
+                </div>
+
+                {/* Trust compatibility bar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(26,124,62,0.04)', border: '1px solid rgba(26,124,62,0.1)' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 3 }}>Trust Compatibility</div>
+                    <div style={{ height: 4, borderRadius: 99, background: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 99, background: trustScore > 80 ? C.greenL : trustScore > 60 ? '#eab308' : C.amber, width: `${trustScore}%`, transition: 'width .4s' }} />
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: trustScore > 80 ? C.greenL : '#eab308' }}>{trustScore}%</span>
+                </div>
+
+                {/* Context clues — who is this person? */}
+                <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>👥 {mutualVillagers} mutual villager{mutualVillagers > 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>📅 Joined {Math.floor(3 + Math.random() * 18)} months ago</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>🔥 {Math.floor(5 + Math.random() * 40)} sessions completed</span>
                 </div>
 
                 {/* message */}
@@ -732,13 +811,13 @@ export default function ChatInboxPage() {
                     sesoChatApi.respondToWhisper(r.id, 'accept')
                       .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
                       .catch(() => {})
-                    flash('Whisper accepted')
+                    flash('Whisper accepted — identity revealed')
                   }} style={{
                     flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer',
                     background: C.green, border: `1px solid ${C.greenL}`,
                     color: '#fff', fontSize: 12, fontWeight: 700,
                     fontFamily: 'Sora, sans-serif',
-                  }}>✓ Accept</button>
+                  }}>✓ Accept Whisper</button>
                   <button onClick={() => {
                     sesoChatApi.respondToWhisper(r.id, 'decline')
                       .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
@@ -750,7 +829,12 @@ export default function ChatInboxPage() {
                     color: C.textDim, fontSize: 12, fontWeight: 700,
                     fontFamily: 'Sora, sans-serif',
                   }}>Decline</button>
-                  <button onClick={() => flash('User blocked')} style={{
+                  <button onClick={() => {
+                    sesoChatApi.blockUser(r.id)
+                      .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
+                      .catch(() => {})
+                    flash('User blocked and reported to Nkisi Shield')
+                  }} style={{
                     padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
                     background: 'rgba(178,34,34,0.1)', border: '1px solid rgba(178,34,34,0.25)',
                     color: '#ef4444', fontSize: 12, fontWeight: 700,
@@ -758,7 +842,8 @@ export default function ChatInboxPage() {
                   }}>🚫</button>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -963,6 +1048,13 @@ export default function ChatInboxPage() {
           </div>
         )}
 
+        {/* ════════════════════════════ TAB 4: FAMILY ════════════════════════════ */}
+        {tab === 'family' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <FamilyCircle />
+          </div>
+        )}
+
       </div>
 
       {/* ── TOAST ── */}
@@ -975,6 +1067,106 @@ export default function ChatInboxPage() {
           fontFamily: 'Sora, sans-serif', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           whiteSpace: 'nowrap',
         }}>{toast}</div>
+      )}
+
+      {/* ── AFROID TRUST HANDSHAKE SHEET ── */}
+      {showHandshake && (
+        <div onClick={() => { setShowHandshake(false); setHandshakeStep('enter'); setHandshakeId(''); setHandshakeError('') }} style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'flex-end',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '100%', background: '#0a1a0e', borderRadius: '24px 24px 0 0',
+            padding: '20px 20px 36px', border: '1px solid rgba(26,124,62,.2)',
+          }}>
+            <div style={{ width: 38, height: 4, borderRadius: 2, margin: '0 auto 16px', background: 'rgba(255,255,255,.15)' }} />
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(26,124,62,.15)', border: '1px solid rgba(26,124,62,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤝</div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: C.greenL, fontFamily: 'Sora, sans-serif' }}>Trust Handshake</div>
+                <div style={{ fontSize: 10, color: C.textDim, marginTop: 1 }}>Connect using their AfroID — like BBM PIN</div>
+              </div>
+            </div>
+
+            {/* Info banner */}
+            <div style={{ margin: '14px 0', padding: '10px 14px', borderRadius: 12, background: 'rgba(26,124,62,.06)', border: '1px solid rgba(26,124,62,.15)' }}>
+              <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6 }}>
+                Enter someone&apos;s <span style={{ color: C.greenL, fontWeight: 700 }}>AfroID</span> to send a Trust Handshake request. Once accepted, you can chat directly — no phone number needed.
+              </div>
+            </div>
+
+            {/* Input */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.1em', display: 'block', marginBottom: 6 }}>THEIR AFRO-ID</label>
+              <input
+                value={handshakeId}
+                onChange={e => setHandshakeId(e.target.value.toUpperCase())}
+                placeholder="AFR-NGA-COM-001234"
+                disabled={handshakeStep === 'sending' || handshakeStep === 'sent'}
+                style={{
+                  width: '100%', padding: '13px 14px', borderRadius: 12,
+                  background: 'rgba(255,255,255,.05)', border: '1.5px solid rgba(26,124,62,.25)',
+                  color: '#f0f7f0', fontSize: 16, fontFamily: "'Courier New', monospace",
+                  fontWeight: 700, letterSpacing: '.08em', outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            {/* Error */}
+            {handshakeError && (
+              <div style={{ fontSize: 11, color: '#ef4444', marginBottom: 12, textAlign: 'center' }}>{handshakeError}</div>
+            )}
+
+            {/* Success */}
+            {handshakeStep === 'sent' && (
+              <div style={{ textAlign: 'center', padding: '12px 0', marginBottom: 12 }}>
+                <div style={{ fontSize: 36, marginBottom: 6 }}>✅</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.greenL }}>Handshake Sent!</div>
+                <div style={{ fontSize: 10, color: C.textDim, marginTop: 4 }}>They will see your request in their inbox</div>
+              </div>
+            )}
+
+            {/* Send button */}
+            {handshakeStep !== 'sent' && (
+              <button
+                onClick={handleHandshake}
+                disabled={!handshakeId.trim() || handshakeStep === 'sending'}
+                style={{
+                  width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
+                  fontSize: 14, fontWeight: 800, cursor: handshakeId.trim() ? 'pointer' : 'not-allowed',
+                  fontFamily: 'Sora, sans-serif', transition: 'all .3s',
+                  background: handshakeStep === 'sending'
+                    ? 'rgba(26,124,62,.3)'
+                    : handshakeId.trim()
+                      ? 'linear-gradient(135deg, #1a7c3e, #145f30)'
+                      : 'rgba(255,255,255,.06)',
+                  color: handshakeId.trim() ? '#fff' : 'rgba(255,255,255,.25)',
+                  boxShadow: handshakeId.trim() ? '0 4px 20px rgba(26,124,62,.3)' : 'none',
+                }}
+              >
+                {handshakeStep === 'sending' ? '🔄 Sending...' : '🤝 Send Trust Handshake'}
+              </button>
+            )}
+
+            {/* How it works */}
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,.25)', letterSpacing: '.1em', marginBottom: 8 }}>HOW IT WORKS</div>
+              {[
+                { step: '1', text: 'You enter their AfroID (they share it with you in person or by voice)' },
+                { step: '2', text: 'They receive your Trust Handshake request in their inbox' },
+                { step: '3', text: 'Once accepted, a direct Seso Chat channel opens between you' },
+              ].map(s => (
+                <div key={s.step} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(26,124,62,.15)', border: '1px solid rgba(26,124,62,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: C.greenL, flexShrink: 0 }}>{s.step}</div>
+                  <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5 }}>{s.text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

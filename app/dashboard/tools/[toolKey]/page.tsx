@@ -85,6 +85,18 @@ const ConservationLog     = dynamic(() => import('@/components/tools/Conservatio
 const ForecastShare       = dynamic(() => import('@/components/tools/ForecastShare'))
 const ModeratorQueue      = dynamic(() => import('@/components/tools/ModeratorQueue'))
 
+// ── Batch 5: Media, Creative, Sports, Commerce, Finance ──────────────────────
+const AfroFlix           = dynamic(() => import('@/components/tools/AfroFlix'))
+const WatchParty         = dynamic(() => import('@/components/tools/WatchParty'))
+const TalentStage        = dynamic(() => import('@/components/tools/TalentStage'))
+const VoiceRoom          = dynamic(() => import('@/components/tools/VoiceRoom'))
+const CoCreationStudio   = dynamic(() => import('@/components/tools/CoCreationStudio'))
+const CompoundLeague     = dynamic(() => import('@/components/tools/CompoundLeague'))
+const GamingStream       = dynamic(() => import('@/components/tools/GamingStream'))
+const NightMarket        = dynamic(() => import('@/components/tools/NightMarket'))
+const PredictionPot      = dynamic(() => import('@/components/tools/PredictionPot'))
+const FinanceLedger      = dynamic(() => import('@/components/tools/FinanceLedger'))
+
 // ── Batch 4: Missing 15 tools (all villages coverage) ──────────────────────────
 const CommunityConnect    = dynamic(() => import('@/components/tools/CommunityConnect'))
 const AttendanceTracker   = dynamic(() => import('@/components/tools/AttendanceTracker'))
@@ -254,6 +266,18 @@ function ToolContent({ toolKey, villageId, roleKey }: { toolKey: string; village
     case 'app_deploy_tracker':      return <AppDeployTracker {...p} />
     case 'audit_report':            return <AuditReport {...p} />
     case 'barter_match':            return <BarterMatch {...p} />
+
+    // ── Batch 5: Media, Creative, Sports, Commerce, Finance ──────────────────
+    case 'afroflix':           return <AfroFlix {...p} />
+    case 'watch_party':        return <WatchParty {...p} />
+    case 'talent_stage':       return <TalentStage {...p} />
+    case 'voice_room':         return <VoiceRoom {...p} />
+    case 'co_creation_studio': return <CoCreationStudio {...p} />
+    case 'compound_league':    return <CompoundLeague {...p} />
+    case 'gaming_stream':      return <GamingStream {...p} />
+    case 'night_market':       return <NightMarket {...p} />
+    case 'prediction_pot':     return <PredictionPot {...p} />
+    case 'finance_ledger':     return <FinanceLedger {...p} />
 
     // ── Fallback for any remaining tools ──────────────────────────────────────
     default: {

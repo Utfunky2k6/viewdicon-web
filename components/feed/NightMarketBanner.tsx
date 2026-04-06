@@ -3,6 +3,7 @@
 // NightMarketBanner — 18:00–00:00 sticky deal booster banner
 // ============================================================
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 
 interface NightMarketBannerProps {
   onDismiss?: () => void
@@ -29,7 +30,9 @@ function getMidnightCountdown(): string {
 }
 
 export function NightMarketBanner({ onDismiss }: NightMarketBannerProps) {
+  const router = useRouter()
   const [countdown, setCountdown] = React.useState(getMidnightCountdown())
+  const [dismissed, setDismissed] = React.useState(false)
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -45,6 +48,17 @@ export function NightMarketBanner({ onDismiss }: NightMarketBannerProps) {
     const timer = setInterval(() => setCountdown(getMidnightCountdown()), 1000)
     return () => clearInterval(timer)
   }, [])
+
+  if (dismissed) return null
+
+  const handleDismiss = () => {
+    setDismissed(true)
+    onDismiss?.()
+  }
+
+  const handleBrowse = () => {
+    router.push('/dashboard/villages/marketplace')
+  }
 
   return (
     <div style={{
@@ -66,8 +80,11 @@ export function NightMarketBanner({ onDismiss }: NightMarketBannerProps) {
         🏮
       </span>
 
-      {/* Text content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Text content — clickable to browse market */}
+      <div
+        onClick={handleBrowse}
+        style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
+      >
         <div style={{
           fontSize: 12, fontWeight: 800, fontFamily: "'Sora', sans-serif",
           color: '#e07b00', letterSpacing: '.04em',
@@ -82,6 +99,20 @@ export function NightMarketBanner({ onDismiss }: NightMarketBannerProps) {
           Hot deals boosted · Market listings get +15 heat
         </div>
       </div>
+
+      {/* Browse button */}
+      <button
+        onClick={handleBrowse}
+        style={{
+          padding: '5px 12px', borderRadius: 99,
+          background: 'rgba(224,123,0,.15)', border: '1px solid rgba(224,123,0,.3)',
+          color: '#e07b00', fontSize: 10, fontWeight: 700,
+          cursor: 'pointer', flexShrink: 0,
+          fontFamily: "'Sora', sans-serif",
+        }}
+      >
+        Browse
+      </button>
 
       {/* Countdown */}
       <div style={{
@@ -101,7 +132,7 @@ export function NightMarketBanner({ onDismiss }: NightMarketBannerProps) {
 
       {/* Dismiss button */}
       <button
-        onClick={onDismiss}
+        onClick={handleDismiss}
         style={{
           marginLeft: 8, padding: '3px 6px', borderRadius: 4,
           background: 'transparent', border: 'none', cursor: 'pointer',

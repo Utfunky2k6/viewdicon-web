@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050a06" />
+  <title>Afrikonnect — Offline</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #050a06;
+      color: #fff;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px 16px;
+    }
+
+    /* Kente stripe — top */
+    .kente {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: repeating-linear-gradient(
+        90deg,
+        #4ade80  0px  20px,
+        #fbbf24 20px  40px,
+        #ef4444 40px  60px,
+        #1e40af 60px  80px,
+        #4ade80 80px 100px
+      );
+      z-index: 100;
+    }
+
+    /* Main card */
+    .card {
+      background: #0d1f10;
+      border: 1px solid #1a4025;
+      border-radius: 20px;
+      padding: 48px 36px 40px;
+      max-width: 460px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(74, 222, 128, 0.08);
+    }
+
+    /* Gye Nyame icon wrapper */
+    .icon-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 12px rgba(74, 222, 128, 0.35));
+    }
+
+    /* Title */
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 60%, #16a34a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+
+    /* Subtitle */
+    .subtitle {
+      color: #fbbf24;
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 20px;
+      letter-spacing: 0.01em;
+    }
+
+    /* Body text */
+    p {
+      color: #9ca3af;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: 32px;
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Action buttons */
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 11px 28px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+      letter-spacing: 0.02em;
+    }
+
+    button:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: #1a7c3e;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(26, 124, 62, 0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #4ade80;
+      border: 1.5px solid #4ade80;
+    }
+
+    /* Decorative pulse ring around icon */
+    @keyframes pulse-ring {
+      0%   { transform: scale(0.95); opacity: 0.6; }
+      70%  { transform: scale(1.05); opacity: 0; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+
+    .icon-pulse {
+      position: relative;
+      display: inline-block;
+    }
+
+    .icon-pulse::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(74, 222, 128, 0.4);
+      animation: pulse-ring 2.5s ease-out infinite;
+    }
+
+    /* Status dot */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      flex-shrink: 0;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .dot { animation: blink 1.8s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <div class="kente" aria-hidden="true"></div>
+
+  <main class="card" role="main">
+    <!-- Gye Nyame — "Except God" Adinkra symbol -->
+    <div class="icon-wrap">
+      <div class="icon-pulse">
+        <svg
+          width="80"
+          height="80"
+          viewBox="0 0 100 100"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-label="Gye Nyame — Except God"
+          role="img"
+        >
+          <!-- Outer decorative circle -->
+          <circle cx="50" cy="50" r="46" stroke="#4ade80" stroke-width="2.5" stroke-dasharray="6 3"/>
+
+          <!-- Main body of the symbol -->
+          <path
+            d="M50 18
+               C34 18 22 28 22 42
+               C22 50 27 56 34 60
+               C40 63 46 64 50 64
+               C54 64 60 63 66 60
+               C73 56 78 50 78 42
+               C78 28 66 18 50 18 Z"
+            stroke="#4ade80"
+            stroke-width="2.5"
+            fill="none"
+          />
+
+          <!-- Left foot -->
+          <path
+            d="M36 64 C33 70 28 76 24 80"
+            stroke="#4ade80"
+            stroke-width="2.5"
+            fill="none"
+            stroke-linecap="round"
+          />
+
+          <!-- Right foot -->
+          <path
+            d="M64 64 C67 70 72 76 76 80"
+            stroke="#4ade80"
+            stroke-width="2.5"
+            fill="none"
+            stroke-linecap="round"
+          />
+
+          <!-- Left eye -->
+          <circle cx="36" cy="38" r="5.5" stroke="#4ade80" stroke-width="2" fill="none"/>
+          <circle cx="36" cy="38" r="2"   fill="#4ade80"/>
+
+          <!-- Right eye -->
+          <circle cx="64" cy="38" r="5.5" stroke="#4ade80" stroke-width="2" fill="none"/>
+          <circle cx="64" cy="38" r="2"   fill="#4ade80"/>
+
+          <!-- Smile arc -->
+          <path
+            d="M30 50 Q50 62 70 50"
+            stroke="#4ade80"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+          />
+
+          <!-- Top staff -->
+          <line x1="50" y1="18" x2="50" y2="9"  stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="50" cy="6.5" r="3" fill="#fbbf24"/>
+
+          <!-- Left arm -->
+          <line x1="22" y1="42" x2="13" y2="38" stroke="#fbbf24" stroke-width="2"   stroke-linecap="round"/>
+          <circle cx="11" cy="37" r="2.5" fill="#fbbf24"/>
+
+          <!-- Right arm -->
+          <line x1="78" y1="42" x2="87" y2="38" stroke="#fbbf24" stroke-width="2"   stroke-linecap="round"/>
+          <circle cx="89" cy="37" r="2.5" fill="#fbbf24"/>
+        </svg>
+      </div>
+    </div>
+
+    <h1>Afrikonnect</h1>
+    <p class="subtitle">The drum is silent — last known data shown below</p>
+
+    <p>
+      You are offline. The last known state of the village is preserved below.
+      Reconnect to sync your actions.
+    </p>
+
+    <div class="actions">
+      <button class="btn-primary" onclick="window.location.reload()" type="button">
+        Try Again
+      </button>
+      <button class="btn-secondary" onclick="window.location.href='/dashboard'" type="button">
+        Go Home
+      </button>
+    </div>
+
+    <div class="status-row" aria-live="polite">
+      <span class="dot" aria-hidden="true"></span>
+      <span>No network connection detected</span>
+    </div>
+  </main>
+</body>
+</html>

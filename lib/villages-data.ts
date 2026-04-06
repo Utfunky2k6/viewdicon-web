@@ -53,7 +53,7 @@ export const ALL_VILLAGES: Village[] = [
       { key:'import_export',  name:'Import / Export Agent',                  desc:'Cross-border trade, customs clearing, freight forwarding, container logistics' },
       { key:'mobile_money',   name:'Mobile Money & POS Agent',               desc:'M-Pesa agent, POS operator, airtime vendor, cash transfer service, mobile wallet agent' },
       { key:'wholesale',      name:'Wholesaler / Bulk Distributor',          desc:'Bulk commodity trading, warehouse operations, supply to retailers across regions' },
-      { key:'ecommerce',      name:'E-Commerce & Social Seller',             desc:'Jumia/Konga seller, TikTok shop, Instagram commerce, WhatsApp business trader' },
+      { key:'ecommerce',      name:'E-Commerce & Social Seller',             desc:'Jumia/Konga seller, Soro Soke shop, Jollof TV commerce, Seso Chat business trader' },
       { key:'forex',          name:'Bureau de Change / Forex Trader',        desc:'Currency exchange, international remittance, forex trading, hawala operations' },
       { key:'second_hand',    name:'Second-Hand Goods Dealer',               desc:'Bend-down boutique, Gikomba trader, mitumba clothing, refurbished electronics reseller' },
       { key:'auctioneer',     name:'Auctioneer / Commodity Broker',          desc:'Livestock auctioneer, grain broker, commodity exchange trader, real estate auction' },
@@ -111,7 +111,7 @@ export const ALL_VILLAGES: Village[] = [
     roles: [
       { key:'teacher',         name:'Classroom Teacher',                    desc:'Primary, secondary, and vocational school teacher across all 54 African nations including madrasas, mission schools, public and private' },
       { key:'lecturer',        name:'University Lecturer / Researcher',     desc:'Professor, associate lecturer, research fellow, PhD candidate, academic journal publisher, curriculum developer' },
-      { key:'edtech',          name:'EdTech Developer / Digital Educator',  desc:'Learning app builder, online tutor, YouTube teacher, USSD learning system operator, radio school presenter' },
+      { key:'edtech',          name:'EdTech Developer / Digital Educator',  desc:'Learning app builder, online tutor, Jollof TV educator, USSD learning system operator, radio school presenter' },
       { key:'librarian',       name:'Language Keeper / Linguist',           desc:'Mother tongue teacher, indigenous language preservationist, Swahili/Hausa/Amharic/Arabic language instructor, translator' },
       { key:'vocational',      name:'Vocational & Skills Trainer',          desc:'Artisan master, apprenticeship supervisor, TVET instructor, trade skills facilitator, entrepreneurship coach' },
       { key:'tutor',           name:'Community Tutor / Literacy Worker',    desc:'Adult literacy teacher, after-school programme operator, non-formal education facilitator, refugee camp educator' },
@@ -131,7 +131,7 @@ export const ALL_VILLAGES: Village[] = [
     roles: [
       { key:'musician',        name:'Musician / Griot / Oral Poet',         desc:'Afrobeats, highlife, makossa, bongo flava, soukous, ndombolo, mbalax, jùjú music, gnawa, kora player, mbira player, griot storyteller' },
       { key:'visual_artist',   name:'Visual Artist / Sculptor',             desc:'Painter, muralist, Oshogbo artist, Tingatinga artist, digital artist, traditional bronze caster, wood carver, stone sculptor' },
-      { key:'filmmaker',       name:'Filmmaker / Animator',                 desc:'Nollywood director, Ghallywood producer, African animation creator, documentary filmmaker, short film director, TikTok filmmaker' },
+      { key:'filmmaker',       name:'Filmmaker / Animator',                 desc:'Nollywood director, Ghallywood producer, African animation creator, documentary filmmaker, short film director, Soro Soke Motion creator' },
       { key:'performer',       name:'Dancer / Choreographer',               desc:'Kpanlogo dancer, Adumu jumper (Maasai), Agbadza dancer, pantsula, gwara gwara, azonto, sabar, traditional court dancer' },
       { key:'writer',          name:'Author / Poet / Playwright',           desc:"Novelist, short story writer, spoken word artist, playwright, screenwriter, comic book creator, children's book author in African languages" },
       { key:'craftsman',       name:'Master Artisan / Craft Maker',         desc:'Kente weaver, adinkra stamper, beadwork artist, calabash carver, bogolan (mudcloth) maker, Moroccan zellige craftsman, Maasai bead worker' },
@@ -231,11 +231,11 @@ export const ALL_VILLAGES: Village[] = [
     roles: [
       { key:'journalist',      name:'Print / Digital Journalist',           desc:'Newspaper reporter, online journalist, investigative journalist, data journalist, solutions journalist, press freedom advocate' },
       { key:'broadcaster',     name:'Radio / TV Broadcaster',               desc:'FM radio host, community radio presenter, television news anchor, talk show host, sports commentator, weather presenter' },
-      { key:'photographer',    name:'Video Content Creator / Photographer', desc:'YouTube creator, TikTok creator, Instagram Reels producer, Jollof TV original creator, documentary photographer, photojournalist' },
-      { key:'social_media',    name:'Podcaster / Social Media Specialist',  desc:'Podcast host, audio documentary maker, social media manager, Instagram/TikTok content strategist, Spotify Africa creator' },
+      { key:'photographer',    name:'Video Content Creator / Photographer', desc:'Jollof TV original creator, Soro Soke Motion creator, Motion Feed producer, documentary photographer, photojournalist' },
+      { key:'social_media',    name:'Podcaster / Social Media Specialist',  desc:'Podcast host, audio documentary maker, social media manager, Soro Soke content strategist, Jollof TV Audio creator' },
       { key:'pr_officer',      name:'PR Officer / Visual Storyteller',      desc:'Public relations consultant, news photographer, documentary photographer, conflict zone visual journalist, brand communications director' },
       { key:'radio_host',      name:'Editor / Radio Host / Publisher',      desc:'News editor, sub-editor, fact-checker, media house publisher, digital news curator, newsletter publisher' },
-      { key:'video_editor',    name:'Citizen Reporter / Video Editor',      desc:'Witness streamer, community blogger, WhatsApp broadcast journalist, video editor, post-production specialist, local news gatherer' },
+      { key:'video_editor',    name:'Citizen Reporter / Video Editor',      desc:'Witness streamer, community blogger, Seso Chat broadcast journalist, video editor, post-production specialist, local news gatherer' },
       { key:'ad_creative',     name:'Advertising / Creative Director',      desc:'Brand manager, advertising creative, digital marketing specialist, media buyer, campaign manager, ad film director' },
     ]
   },

@@ -7,6 +7,9 @@
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { VOCAB } from '@/constants/vocabulary'
+import { sesoChatApi, orishaApi, sorosokeApi, escrowApi } from '@/lib/api'
+import { useSkinStore, SKIN_META } from '@/stores/skinStore'
+import { getRankFromXP } from '@/constants/ranks'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'seso-thread-styles'
@@ -73,7 +76,7 @@ type FamilyTab = 'chat' | 'tree' | 'vault' | 'cowrie'
 
 interface Msg {
   id: string
-  type: 'text' | 'voice' | 'cowrie' | 'trade_card' | 'griot' | 'system' | 'poll' | 'blood_call' | 'vault_request' | 'recovery' | 'photo'
+  type: 'text' | 'voice' | 'cowrie' | 'trade_card' | 'griot' | 'system' | 'poll' | 'blood_call' | 'vault_request' | 'recovery' | 'photo' | 'code_block' | 'cowrie_transfer' | 'location_pin' | 'feed_share' | 'griot_insight'
   sender: string
   senderRole?: 'BUYER' | 'SELLER' | 'RUNNER' | 'ELDER' | 'MEMBER'
   isMe: boolean
@@ -93,6 +96,15 @@ interface Msg {
   keeperCount?: number
   approvers?: number
   reason?: string
+  /* new fields for enhanced features */
+  codeLanguage?: string
+  lat?: number
+  lng?: number
+  feedAuthor?: string
+  feedPreview?: string
+  feedHeat?: number
+  translatedText?: string
+  senderXp?: number
 }
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -183,6 +195,7 @@ export default function ChatThreadPage() {
   const [callState, setCallState] = React.useState<'idle'|'ringing-out'|'ringing-in'|'video'|'audio'>('idle')
   const [callMuted, setCallMuted] = React.useState(false)
   const [callCamOff, setCallCamOff] = React.useState(false)
+  const [callCamFacing, setCallCamFacing] = React.useState<'user'|'environment'>('user')
   const [callSpeaker, setCallSpeaker] = React.useState(false)
   const [callTimer, setCallTimer] = React.useState(0)
   const callIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
@@ -197,6 +210,28 @@ export default function ChatThreadPage() {
   const [forwardMsg, setForwardMsg] = React.useState<Msg | null>(null)
   const lpRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  /* ── new feature state ── */
+  const { activeSkin } = useSkinStore()
+  const skinMeta = SKIN_META[activeSkin]
+  const [showHeaderMenu, setShowHeaderMenu] = React.useState(false)
+  const [showCowrieInput, setShowCowrieInput] = React.useState(false)
+  const [cowrieAmount, setCowrieAmount] = React.useState('')
+  const [showPollCreator, setShowPollCreator] = React.useState(false)
+  const [pollQuestion, setPollQuestion] = React.useState('')
+  const [pollOpts, setPollOpts] = React.useState(['', '', '', ''])
+  const [griotLoading, setGriotLoading] = React.useState(false)
+  const [showTrustBanner, setShowTrustBanner] = React.useState(false)
+  const [translatingId, setTranslatingId] = React.useState<string | null>(null)
+  const [drumToVillageMsg, setDrumToVillageMsg] = React.useState<Msg | null>(null)
+
+  /* ── business escrow state machine ── */
+  type EscrowStatus = 'OPEN' | 'LOCKED' | 'IN_TRANSIT' | 'DELIVERED' | 'COMPLETE' | 'SEALED' | 'DISPUTED'
+  const [escrowStatus, setEscrowStatus] = React.useState<EscrowStatus>(
+    chatType === 'business' ? 'IN_TRANSIT' : 'OPEN'
+  )
+  const [escrowAmount] = React.useState(42000)
+  const [escrowLoading, setEscrowLoading] = React.useState(false)
+
   /* inject CSS once */
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -206,6 +241,55 @@ export default function ChatThreadPage() {
     s.textContent = STYLES
     document.head.appendChild(s)
   }, [])
+
+  /* ── wire API: fetch messages from backend on mount ── */
+  React.useEffect(() => {
+    sesoChatApi.listMessages(threadId).then((res: any) => {
+      const apiMsgs = res?.data
+      if (Array.isArray(apiMsgs) && apiMsgs.length > 0) {
+        const mapped: Msg[] = apiMsgs.map((m: any) => ({
+          id: m.id || `api-${Date.now()}-${Math.random()}`,
+          type: (m.type || 'text').toLowerCase().replace(/-/g, '_') as Msg['type'],
+          sender: m.senderName || m.sender || 'Unknown',
+          senderRole: m.senderRole,
+          isMe: m.isMe ?? m.senderId === 'me',
+          content: m.body || m.content || '',
+          localName: m.localName,
+          voiceSec: m.voiceSec || m.audioDuration,
+          cowrieAmt: m.cowrieAmt || m.amount,
+          cowrieStatus: m.cowrieStatus,
+          tradeProduct: m.tradeProduct,
+          tradeAmount: m.tradeAmount,
+          tradeStatus: m.tradeStatus,
+          pollOptions: m.pollOptions,
+          translations: m.translations,
+          time: m.time || new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          location: m.location,
+          device: m.device,
+          keeperCount: m.keeperCount,
+          approvers: m.approvers,
+          reason: m.reason,
+          codeLanguage: m.codeLanguage,
+          lat: m.lat,
+          lng: m.lng,
+          feedAuthor: m.feedAuthor,
+          feedPreview: m.feedPreview,
+          feedHeat: m.feedHeat,
+        }))
+        setMessages(mapped)
+      }
+      // If API returns empty/fails, keep mock messages (already set as initial state)
+    }).catch(() => {
+      // Keep mock messages as fallback — no-op
+    })
+  }, [threadId])
+
+  /* ── trust tier upgrade: show banner after 20+ messages ── */
+  React.useEffect(() => {
+    if (chatType === 'personal' && messages.length >= 20) {
+      setShowTrustBanner(true)
+    }
+  }, [messages.length, chatType])
 
   /* auto-scroll */
   React.useEffect(() => {
@@ -281,15 +365,21 @@ export default function ChatThreadPage() {
   /* send handler */
   const handleSend = () => {
     if (!input.trim()) return
+    const body = replyTo ? `\u21a9 ${replyTo.sender}: "${replyTo.content?.slice(0, 40)}${(replyTo.content?.length ?? 0) > 40 ? '\u2026' : ''}"\n${input.trim()}` : input.trim()
     const newMsg: Msg = {
       id: `m-${Date.now()}`, type: 'text', sender: 'Me', isMe: true,
-      content: replyTo ? `↩ ${replyTo.sender}: "${replyTo.content?.slice(0, 40)}${(replyTo.content?.length ?? 0) > 40 ? '…' : ''}"\n${input.trim()}` : input.trim(),
+      content: body,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       ...(chatType === 'business' ? { senderRole: 'BUYER' as const } : {}),
     }
     setMessages(prev => [...prev, newMsg])
     setInput('')
     setReplyTo(null)
+
+    /* wire API: send message to backend (fire-and-forget with fallback) */
+    sesoChatApi.sendMessage(threadId, { body, type: 'text' }).catch(() => {
+      // API failed — message already added locally, no-op
+    })
 
     /* mock reply */
     setTyping(true)
@@ -553,7 +643,7 @@ export default function ChatThreadPage() {
       )
     }
 
-    /* voice note */
+    /* voice note — FEATURE 6: Voice Proverb Cards with kente-pattern border */
     if (msg.type === 'voice') {
       return (
         <div key={msg.id} className="st-bubble" style={{ animationDelay: delay, display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start', padding: '4px 18px' }}>
@@ -571,6 +661,10 @@ export default function ChatThreadPage() {
               borderTopLeftRadius: msg.isMe ? 18 : 4, borderTopRightRadius: msg.isMe ? 4 : 18,
               background: msg.isMe ? theme.bubbleMe : theme.bubbleThem,
               border: `1px solid ${msg.isMe ? 'transparent' : 'rgba(255,255,255,0.06)'}`,
+              /* Kente-pattern decorative border */
+              borderImage: !msg.isMe ? 'repeating-linear-gradient(90deg, #d4a017 0px, #d4a017 4px, #1a7c3e 4px, #1a7c3e 8px, #b22222 8px, #b22222 12px, #fbbf24 12px, #fbbf24 16px) 2' : 'none',
+              borderWidth: !msg.isMe ? '0 0 3px 0' : undefined,
+              borderStyle: !msg.isMe ? 'solid' : undefined,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <button onClick={() => flash('Playing voice...')} style={{
@@ -588,6 +682,12 @@ export default function ChatThreadPage() {
                 </div>
               </div>
             </div>
+            {/* auto-transcript area placeholder */}
+            {!msg.isMe && (
+              <div style={{ marginTop: 4, marginLeft: 4, padding: '6px 10px', borderRadius: 8, background: 'rgba(212,160,23,0.04)', border: '1px solid rgba(212,160,23,0.1)', fontSize: 10, color: C.textDim, fontStyle: 'italic' }}>
+                🎙 Tap to auto-transcribe with Spirit Voice
+              </div>
+            )}
             {/* translation toggle */}
             {!msg.isMe && msg.translations && (
               <div style={{ marginTop: 4, marginLeft: 4 }}>
@@ -630,6 +730,186 @@ export default function ChatThreadPage() {
       )
     }
 
+    /* ── FEATURE 1: Developer Drum Circle (CODE_BLOCK) ── */
+    if (msg.type === 'code_block') {
+      return (
+        <div key={msg.id} className="st-bubble" style={{ animationDelay: delay, padding: '4px 18px', display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start' }}>
+          <div style={{ maxWidth: '90%' }}>
+            {!msg.isMe && <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 3, marginLeft: 4 }}>{msg.sender}</div>}
+            <div style={{
+              padding: '4px 0', borderRadius: 14, overflow: 'hidden',
+              background: '#1e1e2e', border: '1px solid rgba(139,233,253,0.15)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            }}>
+              <div style={{
+                padding: '6px 14px', background: 'rgba(255,255,255,0.03)',
+                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <span style={{ fontSize: 10 }}>💻</span>
+                <span style={{ fontSize: 9, fontWeight: 800, color: '#8be9fd', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif' }}>
+                  {msg.codeLanguage || 'Code'} Drum Circle
+                </span>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => { navigator.clipboard?.writeText(msg.content || ''); flash('📋 Code copied') }} style={{
+                  background: 'none', border: 'none', fontSize: 10, color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '2px 6px',
+                }}>Copy</button>
+              </div>
+              <pre style={{
+                margin: 0, padding: '12px 14px', fontSize: 12, lineHeight: 1.6,
+                fontFamily: "'Fira Code', 'SF Mono', Monaco, monospace",
+                color: '#f8f8f2', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
+              }}>
+                {(msg.content || '').split('\n').map((line, li) => (
+                  <div key={li}>
+                    <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: 10, marginRight: 12, userSelect: 'none' }}>{li + 1}</span>
+                    {line.replace(/(\/\/.*$|#.*$)/gm, '\u001b[comment]$1').split(/(\b(?:const|let|var|function|return|if|else|import|export|from|async|await)\b)/g).map((part, pi) => (
+                      <span key={pi} style={{
+                        color: /^(const|let|var|function|return|if|else|import|export|from|async|await)$/.test(part) ? '#ff79c6'
+                          : /^(\/\/|#)/.test(part) ? '#6272a4'
+                          : /^['"`]/.test(part) ? '#f1fa8c'
+                          : /^\d+$/.test(part) ? '#bd93f9'
+                          : '#f8f8f2',
+                      }}>{part}</span>
+                    ))}
+                  </div>
+                ))}
+              </pre>
+            </div>
+            <div style={{ fontSize: 9, color: C.textDim2, fontWeight: 600, marginTop: 4, textAlign: msg.isMe ? 'right' : 'left', marginLeft: msg.isMe ? 0 : 4 }}>{msg.time}</div>
+          </div>
+        </div>
+      )
+    }
+
+    /* ── FEATURE 5: Cowrie Transfer message bubble ── */
+    if (msg.type === 'cowrie_transfer') {
+      return (
+        <div key={msg.id} className="st-bubble" style={{ animationDelay: delay, display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start', padding: '4px 18px' }}>
+          <div style={{
+            padding: '14px 18px', borderRadius: 16, maxWidth: '75%',
+            background: 'linear-gradient(135deg, rgba(212,160,23,0.15), rgba(251,191,36,0.08))',
+            border: '2px solid rgba(212,160,23,0.35)',
+            boxShadow: '0 4px 20px rgba(212,160,23,0.15)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: '50%',
+                background: 'rgba(212,160,23,0.2)', border: '1px solid rgba(212,160,23,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+              }}>🐚</div>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif' }}>Cowrie Transfer</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#fbbf24', fontFamily: 'Sora, sans-serif', marginTop: 2 }}>₡{msg.cowrieAmt?.toLocaleString()}</div>
+              </div>
+            </div>
+            {msg.content && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 8, fontStyle: 'italic' }}>{msg.content}</div>}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+              <span style={{ fontSize: 9, color: C.textDim2, fontWeight: 600 }}>{msg.sender} · {msg.time}</span>
+              <span style={{ fontSize: 9, fontWeight: 800, color: C.greenL, padding: '2px 8px', borderRadius: 99, background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.2)' }}>SENT</span>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    /* ── FEATURE 8: Location Pin message bubble ── */
+    if (msg.type === 'location_pin') {
+      return (
+        <div key={msg.id} className="st-bubble" style={{ animationDelay: delay, display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start', padding: '4px 18px' }}>
+          <div style={{
+            padding: '12px 16px', borderRadius: 14, maxWidth: '75%',
+            background: msg.isMe ? 'rgba(26,124,62,0.15)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${msg.isMe ? 'rgba(74,222,128,0.25)' : 'rgba(255,255,255,0.06)'}`,
+          }}>
+            {!msg.isMe && <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 4 }}>{msg.sender}</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+              }}>📍</div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Location Shared</div>
+                <div style={{ fontSize: 10, color: C.textDim, fontWeight: 500, marginTop: 2 }}>
+                  {msg.lat ? `${msg.lat.toFixed(4)}, ${msg.lng?.toFixed(4)}` : msg.location || 'Position sent'}
+                </div>
+              </div>
+            </div>
+            {/* Map placeholder */}
+            <div style={{
+              marginTop: 8, height: 80, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(26,124,62,0.08), rgba(59,130,246,0.08))',
+              border: '1px solid rgba(255,255,255,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, color: C.textDim, fontWeight: 600,
+            }}>Tap to open in Maps</div>
+            <div style={{ fontSize: 9, color: C.textDim2, fontWeight: 600, marginTop: 4, textAlign: msg.isMe ? 'right' : 'left' }}>{msg.time}</div>
+          </div>
+        </div>
+      )
+    }
+
+    /* ── FEATURE 9: Feed Post Sharing preview card ── */
+    if (msg.type === 'feed_share') {
+      const heat = msg.feedHeat ?? 50
+      return (
+        <div key={msg.id} className="st-bubble" style={{ animationDelay: delay, display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start', padding: '4px 18px' }}>
+          <div style={{
+            padding: '14px 16px', borderRadius: 14, maxWidth: '80%',
+            background: 'rgba(26,124,62,0.06)', border: '1px solid rgba(26,124,62,0.2)',
+          }}>
+            {!msg.isMe && <div style={{ fontSize: 10, color: C.textDim, fontWeight: 600, marginBottom: 6 }}>{msg.sender} shared a post</div>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'rgba(26,124,62,0.15)', border: '1px solid rgba(26,124,62,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+              }}>🥁</div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{msg.feedAuthor || 'Village Member'}</div>
+                <div style={{ fontSize: 9, color: C.textDim2, fontWeight: 600 }}>Soro Soke Feed</div>
+              </div>
+            </div>
+            <div style={{
+              padding: '10px 12px', borderRadius: 10,
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+              fontSize: 12, color: C.textDim, fontWeight: 500, lineHeight: 1.5,
+              overflow: 'hidden', maxHeight: 60,
+            }}>{msg.feedPreview || msg.content || 'Shared post'}</div>
+            {/* Heat bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <div style={{ flex: 1, height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(heat, 100)}%`, height: '100%', background: heat > 75 ? '#ef4444' : heat > 40 ? C.goldL : C.greenL, borderRadius: 99, transition: 'width .5s' }} />
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 800, color: heat > 75 ? '#ef4444' : heat > 40 ? C.goldL : C.greenL }}>🔥 {heat}</span>
+            </div>
+            <div style={{ fontSize: 9, color: C.textDim2, fontWeight: 600, marginTop: 4, textAlign: msg.isMe ? 'right' : 'left' }}>{msg.time}</div>
+          </div>
+        </div>
+      )
+    }
+
+    /* ── FEATURE 7: Griot AI Wisdom message bubble ── */
+    if (msg.type === 'griot_insight') {
+      return (
+        <div key={msg.id} className="st-bubble" style={{
+          animationDelay: delay, alignSelf: 'center', maxWidth: '90%', margin: '8px 18px',
+          padding: '14px 18px', borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(124,58,237,0.1), rgba(212,160,23,0.06))',
+          border: '1px solid rgba(124,58,237,0.25)',
+          boxShadow: '0 4px 20px rgba(124,58,237,0.08)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 18 }}>🧙</span>
+            <span style={{ fontSize: 9, fontWeight: 800, color: C.purpleL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif' }}>Griot AI Wisdom</span>
+          </div>
+          <p style={{ fontSize: 13, color: '#e9d5ff', fontStyle: 'italic', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>{msg.content}</p>
+          <div style={{ fontSize: 9, color: C.textDim2, fontWeight: 600, marginTop: 6, textAlign: 'right' }}>{msg.time}</div>
+        </div>
+      )
+    }
+
     /* ── regular text bubble ── */
     const msgReactions = reactions[msg.id] || []
     const isStarred = starred.has(msg.id)
@@ -652,6 +932,11 @@ export default function ChatThreadPage() {
                 }}>{msg.senderRole}</span>
               )}
               <span style={{ color: chatType === 'family' ? C.purpleL : C.textDim }}>{msg.sender}</span>
+              {/* Tiny rank badge — emoji only (space is tight) */}
+              {msg.senderXp != null
+                ? <span title={getRankFromXP(msg.senderXp).name} style={{ fontSize: 11, lineHeight: 1 }}>{getRankFromXP(msg.senderXp).emoji}</span>
+                : <span title="Rank unknown" style={{ fontSize: 9, color: 'rgba(255,255,255,0.18)', lineHeight: 1 }}>⬡</span>
+              }
               {chatType === 'family' && msg.localName && (
                 <span style={{ color: C.goldL, fontSize: 10 }}>· {msg.localName}</span>
               )}
@@ -693,17 +978,43 @@ export default function ChatThreadPage() {
             </div>
           )}
 
-          {/* translation */}
-          {!msg.isMe && msg.translations && (
+          {/* translation — FEATURE 14: Spirit Voice Translation wired to API */}
+          {!msg.isMe && (
             <div style={{ marginTop: 4, marginLeft: 4 }}>
-              <button onClick={() => setShowTranslation(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))} style={{
-                background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-                fontSize: 9, fontWeight: 800, color: theme.accentL, textTransform: 'uppercase', letterSpacing: '0.05em',
-              }}>{showTranslation[msg.id] ? 'Hide Original' : 'Translate with Spirit Voice'} 🎙</button>
-              {showTranslation[msg.id] && (
-                <p className="st-slide" style={{ fontSize: 12, color: theme.accentL, fontStyle: 'italic', margin: '4px 0 0 0', lineHeight: 1.5 }}>
-                  &ldquo;{Object.values(msg.translations)[0]}&rdquo;
-                </p>
+              {msg.translations ? (
+                <>
+                  <button onClick={() => setShowTranslation(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))} style={{
+                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    fontSize: 9, fontWeight: 800, color: theme.accentL, textTransform: 'uppercase', letterSpacing: '0.05em',
+                  }}>{showTranslation[msg.id] ? 'Hide Original' : 'Translate with Spirit Voice'} 🎙</button>
+                  {showTranslation[msg.id] && (
+                    <p className="st-slide" style={{ fontSize: 12, color: theme.accentL, fontStyle: 'italic', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                      &ldquo;{Object.values(msg.translations)[0]}&rdquo;
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <button onClick={() => {
+                    if (translatingId === msg.id) return
+                    setTranslatingId(msg.id)
+                    sesoChatApi.translate(msg.id, 'en').then((res: any) => {
+                      const translated = res?.translatedText || res?.data?.translatedText || 'Translation unavailable'
+                      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, translatedText: translated } : m))
+                    }).catch(() => {
+                      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, translatedText: '(Translation failed)' } : m))
+                    }).finally(() => setTranslatingId(null))
+                  }} style={{
+                    background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                    fontSize: 9, fontWeight: 800, color: theme.accentL, textTransform: 'uppercase', letterSpacing: '0.05em',
+                    opacity: translatingId === msg.id ? 0.5 : 1,
+                  }}>{translatingId === msg.id ? 'Translating...' : '🌍 Translate'}</button>
+                  {msg.translatedText && (
+                    <p className="st-slide" style={{ fontSize: 12, color: theme.accentL, fontStyle: 'italic', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                      &ldquo;{msg.translatedText}&rdquo;
+                    </p>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -815,7 +1126,7 @@ export default function ChatThreadPage() {
         background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(212,160,23,0.1))',
         border: '1px solid rgba(124,58,237,0.25)',
       }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'Sora, sans-serif', marginBottom: 6 }}>Family Cowrie Pool</div>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'Sora, sans-serif', marginBottom: 6 }}>Family Cowrie Pot</div>
         <div style={{ fontSize: 32, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>₡847,500</div>
         <div style={{ fontSize: 11, color: C.textDim, fontWeight: 600, marginTop: 4 }}>Across 7 members · 3 Ajo circles active</div>
       </div>
@@ -824,8 +1135,8 @@ export default function ChatThreadPage() {
       <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif' }}>Active Ajo Circles</div>
       {[
         { name: 'Monthly Savings', amount: '₡150,000 / month', members: 5, next: 'Your turn: April' },
-        { name: 'Emergency Fund', amount: '₡50,000', members: 7, next: 'Pool: ₡350,000' },
-        { name: 'Education Fund', amount: '₡75,000 / month', members: 4, next: 'Pool: ₡225,000' },
+        { name: 'Emergency Fund', amount: '₡50,000', members: 7, next: 'Pot: ₡350,000' },
+        { name: 'Education Fund', amount: '₡75,000 / month', members: 4, next: 'Pot: ₡225,000' },
       ].map((ajo, i) => (
         <div key={i} style={{
           padding: 14, borderRadius: 14,
@@ -888,6 +1199,26 @@ export default function ChatThreadPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {/* FEATURE 3: Blood Call button (family threads only) */}
+          {chatType === 'family' && (
+            <button onClick={() => {
+              try { navigator.vibrate?.([200,100,200,100,200]) } catch {}
+              const bcMsg: Msg = {
+                id: `bc-${Date.now()}`, type: 'blood_call', sender: 'Me', isMe: true,
+                content: 'BLOOD-CALL SOS', location: 'My current location',
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }
+              setMessages(prev => [...prev, bcMsg])
+              sesoChatApi.sendMessage(threadId, { body: 'BLOOD-CALL SOS', type: 'BLOOD_CALL' }).catch(() => {})
+              flash('🩸 Blood Call sent to family')
+            }} style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'rgba(178,34,34,0.15)', border: '1px solid rgba(178,34,34,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, cursor: 'pointer', color: '#ef4444',
+              animation: 'stBreathe 2s infinite',
+            }}>🩸</button>
+          )}
           {(chatType === 'personal' || chatType === 'family' ? [
             {ic:'📞',act:() => startCall('audio')},{ic:'📹',act:() => startCall('video')}
           ] : chatType === 'business' ? [
@@ -901,15 +1232,69 @@ export default function ChatThreadPage() {
               fontSize: 14, cursor: 'pointer', color: C.textDim,
             }}>{btn.ic}</button>
           ))}
+          {/* 3-dot menu */}
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowHeaderMenu(v => !v)} style={{
+              width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, cursor: 'pointer', color: C.textDim,
+            }}>⋮</button>
+            {showHeaderMenu && (
+              <div className="st-menu-in" style={{
+                position: 'absolute', top: 38, right: 0, width: 200, borderRadius: 14,
+                background: '#1a1f1a', border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 12px 40px rgba(0,0,0,0.5)', zIndex: 50, overflow: 'hidden',
+              }}>
+                {/* FEATURE 2: Trade Session Quick-Launch */}
+                <button onClick={() => {
+                  setShowHeaderMenu(false)
+                  const participantId = threadId.replace(/^[pbgf]-/, '')
+                  sesoChatApi.startBusiness(participantId, 'trade').then((res: any) => {
+                    const bizId = res?.chatId || res?.data?.chatId || `b-new-${Date.now()}`
+                    router.push(`/dashboard/chat/${bizId}`)
+                  }).catch(() => {
+                    router.push(`/dashboard/chat/b-new-${Date.now()}`)
+                  })
+                  flash('🤝 Opening Trade Session...')
+                }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer', color: C.goldL, fontSize: 13, fontWeight: 600,
+                }}>🤝 Open Trade Session</button>
+                <button onClick={() => { setShowHeaderMenu(false); flash('📌 Chat pinned') }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer', color: C.text, fontSize: 13, fontWeight: 600,
+                }}>📌 Pin Chat</button>
+                <button onClick={() => { setShowHeaderMenu(false); flash('🔇 Chat muted') }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer', color: C.text, fontSize: 13, fontWeight: 600,
+                }}>🔇 Mute</button>
+                <button onClick={() => { setShowHeaderMenu(false); router.push('/dashboard/chat/settings') }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', color: C.text, fontSize: 13, fontWeight: 600,
+                }}>⚙ Settings</button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ═══ CONTEXT BAR ═══ */}
+      {/* ═══ CONTEXT BAR — FEATURE 12: Skin Context Display ═══ */}
       <div style={{
         padding: '6px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Skin badge */}
+          <span style={{
+            fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
+            background: `${skinMeta.color}18`, color: skinMeta.color,
+            border: `1px solid ${skinMeta.color}35`,
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>{skinMeta.emoji} {skinMeta.label.toUpperCase()}</span>
           {chatType === 'business' && (
             <span style={{
               fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
@@ -924,13 +1309,6 @@ export default function ChatThreadPage() {
               textTransform: 'uppercase', letterSpacing: '0.04em',
             }}>🔐 KINSHIP ENCRYPTED</span>
           )}
-          {chatType === 'personal' && (
-            <span style={{
-              fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
-              background: 'rgba(26,124,62,0.1)', color: C.greenL, border: '1px solid rgba(26,124,62,0.2)',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>⚒ ÌṢẸ́ · WORK CONTEXT</span>
-          )}
           {chatType === 'group' && (
             <span style={{
               fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
@@ -941,6 +1319,8 @@ export default function ChatThreadPage() {
         </div>
         <span style={{ fontSize: 9, color: C.textDim2, fontWeight: 600 }}>E2E AES-256</span>
       </div>
+      {/* Skin accent bar */}
+      <div style={{ height: 2, background: `linear-gradient(to right, ${skinMeta.color}, transparent)`, flexShrink: 0 }} />
 
       {/* ═══ SPIRIT VOICE BAR ═══ */}
       <div style={{
@@ -989,26 +1369,116 @@ export default function ChatThreadPage() {
       {/* ═══ BUSINESS ESCROW BAR ═══ */}
       {chatType === 'business' && (
         <div style={{
-          padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: 'rgba(212,160,23,0.06)', borderBottom: '1px solid rgba(212,160,23,0.15)', flexShrink: 0,
+          padding: '10px 14px', background: 'rgba(212,160,23,0.06)',
+          borderBottom: '1px solid rgba(212,160,23,0.15)', flexShrink: 0,
         }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif' }}>Escrow Amount</div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>₡42,000</div>
+          {/* Status pipeline */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8 }}>
+            {(['OPEN', 'LOCKED', 'IN_TRANSIT', 'DELIVERED', 'COMPLETE', 'SEALED'] as EscrowStatus[]).map((step, i, arr) => {
+              const statusIdx = arr.indexOf(escrowStatus)
+              const stepIdx = i
+              const done = stepIdx <= statusIdx
+              const active = stepIdx === statusIdx
+              return (
+                <React.Fragment key={step}>
+                  <div style={{
+                    width: active ? 10 : 7, height: active ? 10 : 7, borderRadius: '50%',
+                    background: done ? C.goldL : 'rgba(255,255,255,.1)',
+                    border: active ? `2px solid ${C.goldL}` : 'none',
+                    boxShadow: active ? `0 0 8px ${C.goldL}66` : 'none',
+                    transition: 'all .3s',
+                  }} />
+                  {i < arr.length - 1 && (
+                    <div style={{ flex: 1, height: 2, background: done && stepIdx < statusIdx ? C.goldL : 'rgba(255,255,255,.08)', transition: 'all .3s' }} />
+                  )}
+                </React.Fragment>
+              )
+            })}
           </div>
+          {/* Labels */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif' }}>
+                {escrowStatus === 'DISPUTED' ? '⚖ DISPUTED' : escrowStatus.replace('_', ' ')}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>₡{escrowAmount.toLocaleString()}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 9, color: C.textDim2 }}>Session BS-2026-A4K9</div>
+              <div style={{ fontSize: 9, color: C.textDim2, marginTop: 2 }}>
+                {escrowStatus === 'OPEN' ? 'Awaiting lock' :
+                 escrowStatus === 'LOCKED' ? 'Cowries locked in escrow' :
+                 escrowStatus === 'IN_TRANSIT' ? 'Runner delivering goods' :
+                 escrowStatus === 'DELIVERED' ? 'Goods received — confirm?' :
+                 escrowStatus === 'COMPLETE' ? 'Awaiting final release' :
+                 escrowStatus === 'SEALED' ? 'Transaction complete' :
+                 'Under elder review'}
+              </div>
+            </div>
+          </div>
+          {/* Action buttons — context-sensitive */}
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => flash('📍 Tracking runner...')} style={{
-              padding: '8px 14px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
-              color: C.blueL, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-            }}>📍 Track</button>
-            <button onClick={() => flash('✓ Delivery confirmed!')} style={{
-              padding: '8px 14px', borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
-              color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer',
-            }}>✓ Confirm</button>
-            <button onClick={() => flash('⚠ Dispute opened')} style={{
-              padding: '8px 14px', borderRadius: 10, background: 'rgba(178,34,34,0.1)', border: '1px solid rgba(178,34,34,0.2)',
-              color: C.redL, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-            }}>⚖ Dispute</button>
+            {escrowStatus === 'OPEN' && (
+              <button onClick={async () => {
+                setEscrowLoading(true)
+                try { await escrowApi.create({ buyerAccountId: 'me', sellerAccountId: 'seller', amount: escrowAmount, currency: 'CWR', description: contact.subtitle, proofOfHandType: 'PHOTO' }) } catch {}
+                setEscrowStatus('LOCKED')
+                setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: `🔒 ₡${escrowAmount.toLocaleString()} locked in escrow`, time: '' }])
+                setEscrowLoading(false)
+                flash('🔒 Escrow locked!')
+              }} disabled={escrowLoading} style={{
+                flex: 1, padding: '9px 14px', borderRadius: 10, background: 'linear-gradient(135deg, rgba(212,160,23,.3), rgba(212,160,23,.15))', border: '1px solid rgba(212,160,23,.3)',
+                color: C.goldL, fontSize: 11, fontWeight: 800, cursor: 'pointer',
+              }}>{escrowLoading ? '...' : '🔒 Lock Escrow'}</button>
+            )}
+            {escrowStatus === 'IN_TRANSIT' && (
+              <button onClick={() => flash('📍 Tracking runner...')} style={{
+                padding: '9px 14px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
+                color: C.blueL, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              }}>📍 Track Runner</button>
+            )}
+            {(escrowStatus === 'IN_TRANSIT' || escrowStatus === 'DELIVERED') && (
+              <button onClick={async () => {
+                setEscrowLoading(true)
+                try { await escrowApi.approve('session-escrow', 'buyer') } catch {}
+                setEscrowStatus(escrowStatus === 'IN_TRANSIT' ? 'DELIVERED' : 'COMPLETE')
+                setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: escrowStatus === 'IN_TRANSIT' ? '📦 Delivery confirmed by buyer' : '✅ Session complete — releasing cowries', time: '' }])
+                setEscrowLoading(false)
+                flash(escrowStatus === 'IN_TRANSIT' ? '📦 Delivery confirmed!' : '✅ Session sealed!')
+              }} disabled={escrowLoading} style={{
+                flex: 1, padding: '9px 14px', borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
+                color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer',
+              }}>{escrowLoading ? '...' : escrowStatus === 'IN_TRANSIT' ? '✓ Confirm Delivery' : '✓ Release Cowries'}</button>
+            )}
+            {escrowStatus === 'COMPLETE' && (
+              <button onClick={async () => {
+                setEscrowLoading(true)
+                try { await escrowApi.release('session-escrow') } catch {}
+                setEscrowStatus('SEALED')
+                setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: `🏛 ₡${escrowAmount.toLocaleString()} released to seller. Session SEALED.`, time: '' }])
+                setEscrowLoading(false)
+                flash('🏛 Session sealed! Cowries released.')
+              }} disabled={escrowLoading} style={{
+                flex: 1, padding: '9px 14px', borderRadius: 10, background: 'linear-gradient(135deg, #d4a017, #e07b00)', border: 'none',
+                color: '#000', fontSize: 11, fontWeight: 800, cursor: 'pointer',
+              }}>{escrowLoading ? '...' : '🏛 Seal & Release'}</button>
+            )}
+            {escrowStatus === 'SEALED' && (
+              <div style={{ flex: 1, padding: '9px 14px', borderRadius: 10, background: 'rgba(74,222,128,.08)', border: '1px solid rgba(74,222,128,.2)', textAlign: 'center' }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: C.greenL }}>✅ SEALED — ₡{escrowAmount.toLocaleString()} released</span>
+              </div>
+            )}
+            {escrowStatus !== 'SEALED' && escrowStatus !== 'DISPUTED' && (
+              <button onClick={async () => {
+                try { await escrowApi.dispute('session-escrow', 'Goods not as described') } catch {}
+                setEscrowStatus('DISPUTED')
+                setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: '⚖ Dispute opened — Elder review initiated', time: '' }])
+                flash('⚖ Dispute filed')
+              }} style={{
+                padding: '9px 14px', borderRadius: 10, background: 'rgba(178,34,34,0.1)', border: '1px solid rgba(178,34,34,0.2)',
+                color: C.redL, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              }}>⚖</button>
+            )}
           </div>
         </div>
       )}
@@ -1018,6 +1488,32 @@ export default function ChatThreadPage() {
         flex: 1, overflowY: 'auto', paddingTop: 10, paddingBottom: 10,
         position: 'relative',
       }}>
+        {/* FEATURE 11: Trust Tier Upgrade banner */}
+        {showTrustBanner && chatType === 'personal' && (
+          <div className="st-fade" style={{
+            margin: '8px 18px', padding: '12px 16px', borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(26,124,62,0.1), rgba(74,222,128,0.06))',
+            border: '1px solid rgba(74,222,128,0.25)',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ fontSize: 20 }}>🔥</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.greenL }}>You have exchanged many messages with {contact.name}</div>
+              <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>Upgrade trust to Inner Fire?</div>
+            </div>
+            <button onClick={() => {
+              setShowTrustBanner(false)
+              sesoChatApi.updateTrust(threadId, 'inner_fire').catch(() => {})
+              flash('Trust upgraded to Inner Fire!')
+            }} style={{
+              padding: '6px 14px', borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
+              color: '#fff', fontSize: 10, fontWeight: 800, cursor: 'pointer', flexShrink: 0,
+            }}>Upgrade</button>
+            <button onClick={() => setShowTrustBanner(false)} style={{
+              background: 'none', border: 'none', color: C.textDim2, cursor: 'pointer', fontSize: 14, padding: 2,
+            }}>✕</button>
+          </div>
+        )}
         {/* family decorative spinning rings */}
         {chatType === 'family' && (
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.06 }}>
@@ -1075,8 +1571,66 @@ export default function ChatThreadPage() {
             <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', color: C.textDim, cursor: 'pointer', fontSize: 16, padding: 4 }}>✕</button>
           </div>
         )}
-        {/* quick action pills */}
+        {/* quick action pills — enhanced with Features 5, 7, 8, 10 */}
         <div className="st-no-scroll" style={{ display: 'flex', gap: 6, marginBottom: 8, overflowX: 'auto', paddingBottom: 2 }}>
+          {/* FEATURE 5: Cowrie Transfer */}
+          <button onClick={() => setShowCowrieInput(true)} style={{
+            padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+            background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.15)',
+            color: C.goldL, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>₡ Send Cowrie</button>
+
+          {/* FEATURE 7: Griot AI Wisdom */}
+          <button onClick={() => {
+            if (griotLoading) return
+            setGriotLoading(true)
+            orishaApi.query('griot', 'Generate a contextual African proverb for a chat conversation', { context: 'chat', chatType }).then((res: any) => {
+              const wisdom = res?.response || res?.data?.response || '"When the music changes, so does the dance." -- African proverb'
+              const wisdomMsg: Msg = {
+                id: `gw-${Date.now()}`, type: 'griot_insight', sender: 'Griot AI', isMe: false,
+                content: wisdom,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }
+              setMessages(prev => [...prev, wisdomMsg])
+            }).catch(() => {
+              const fallbackMsg: Msg = {
+                id: `gw-${Date.now()}`, type: 'griot_insight', sender: 'Griot AI', isMe: false,
+                content: '"If you want to go fast, go alone. If you want to go far, go together." -- African proverb',
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }
+              setMessages(prev => [...prev, fallbackMsg])
+            }).finally(() => setGriotLoading(false))
+          }} style={{
+            padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+            background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.15)',
+            color: C.purpleL, whiteSpace: 'nowrap', flexShrink: 0,
+            opacity: griotLoading ? 0.5 : 1,
+          }}>{griotLoading ? '🧙 Loading...' : '🧙 Griot Wisdom'}</button>
+
+          {/* FEATURE 8: Location Pin */}
+          <button onClick={() => {
+            if (!navigator.geolocation) { flash('Geolocation not supported'); return }
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                const locMsg: Msg = {
+                  id: `loc-${Date.now()}`, type: 'location_pin', sender: 'Me', isMe: true,
+                  lat: pos.coords.latitude, lng: pos.coords.longitude,
+                  content: `Location: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                }
+                setMessages(prev => [...prev, locMsg])
+                sesoChatApi.sendMessage(threadId, { body: `📍 ${pos.coords.latitude},${pos.coords.longitude}`, type: 'LOCATION_PIN' }).catch(() => {})
+                flash('📍 Location shared')
+              },
+              () => flash('📍 Location permission denied'),
+              { enableHighAccuracy: true }
+            )
+          }} style={{
+            padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+            color: C.textDim, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>📍 Share Path</button>
+
           <button onClick={() => flash(VOCAB.tip)} style={{
             padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
@@ -1099,14 +1653,9 @@ export default function ChatThreadPage() {
             }}>{VOCAB.bloodCall}</button>
           )}
 
-          <button onClick={() => flash('📍 Location shared')} style={{
-            padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-            color: C.textDim, whiteSpace: 'nowrap', flexShrink: 0,
-          }}>📍 Share Path</button>
-
+          {/* FEATURE 10: In-Chat Poll (group threads) */}
           {chatType === 'group' && (
-            <button onClick={() => flash('📊 Poll created')} style={{
+            <button onClick={() => setShowPollCreator(true)} style={{
               padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
               background: 'rgba(26,124,62,0.08)', border: '1px solid rgba(26,124,62,0.15)',
               color: C.greenL, whiteSpace: 'nowrap', flexShrink: 0,
@@ -1135,7 +1684,7 @@ export default function ChatThreadPage() {
                 fontFamily: 'Inter, DM Sans, sans-serif', boxSizing: 'border-box',
               }}
             />
-            <button style={{
+            <button onClick={() => flash('😊 Emoji keyboard')} style={{
               position: 'absolute', right: 10, bottom: 8, background: 'none', border: 'none',
               fontSize: 16, cursor: 'pointer', color: C.textDim2,
             }}>😊</button>
@@ -1164,22 +1713,34 @@ export default function ChatThreadPage() {
             background: '#1a1f1a', border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
           }}>
-            {/* quick reactions row */}
+            {/* quick reactions row — FEATURE 13: Kila, Drum, Ubuntu */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: 6, padding: '14px 16px 10px' }}>
-              {['❤️', '😂', '😮', '😢', '🙏', '🔥'].map((emoji, i) => (
-                <button key={emoji} className="st-react-in" onClick={() => addReact(actionMsg.id, emoji)} style={{
+              {[
+                { emoji: '⭐', label: 'Kila' },
+                { emoji: '🥁', label: 'Drum' },
+                { emoji: '🤝', label: 'Ubuntu' },
+                { emoji: '❤️', label: '' },
+                { emoji: '😂', label: '' },
+                { emoji: '🔥', label: '' },
+              ].map((r, i) => (
+                <button key={r.emoji} className="st-react-in" onClick={() => {
+                  addReact(actionMsg.id, r.emoji)
+                  /* FEATURE 13: Wire to sesoChatApi.react */
+                  sesoChatApi.react(actionMsg.id, r.emoji).catch(() => {})
+                }} style={{
                   width: 40, height: 40, borderRadius: '50%', fontSize: 20, cursor: 'pointer',
                   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   animationDelay: `${i * 0.04}s`,
-                }}>{emoji}</button>
+                }}>{r.emoji}</button>
               ))}
             </div>
             <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
-            {/* action buttons */}
+            {/* action buttons — FEATURE 4: Chat-to-Feed Bridge added */}
             {[
               { icon: '↩', label: 'Reply', act: () => { setReplyTo(actionMsg); setActionMsg(null) } },
               { icon: '➡', label: 'Forward', act: () => { setForwardMsg(actionMsg); setActionMsg(null) } },
+              { icon: '🥁', label: 'Drum to Village', act: () => { setDrumToVillageMsg(actionMsg); setActionMsg(null) } },
               { icon: '📋', label: 'Copy', act: () => doCopy(actionMsg.content) },
               { icon: starred.has(actionMsg.id) ? '⭐' : '☆', label: starred.has(actionMsg.id) ? 'Unstar' : 'Star', act: () => doStar(actionMsg.id) },
               ...(actionMsg.isMe ? [{ icon: '✏', label: 'Edit', act: () => { setInput(actionMsg.content || ''); setActionMsg(null); flash('Editing message...') } }] : []),
@@ -1276,6 +1837,161 @@ export default function ChatThreadPage() {
         </div>
       )}
 
+      {/* ═══ FEATURE 5: COWRIE TRANSFER INPUT MODAL ═══ */}
+      {showCowrieInput && (
+        <div onClick={() => setShowCowrieInput(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 920, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div className="st-menu-in" onClick={e => e.stopPropagation()} style={{
+            width: 300, borderRadius: 20, padding: 24,
+            background: '#1a1f1a', border: '1px solid rgba(212,160,23,0.25)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <span style={{ fontSize: 36 }}>🐚</span>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.goldL, fontFamily: 'Sora, sans-serif', marginTop: 8 }}>Send Cowrie</div>
+            </div>
+            <input
+              value={cowrieAmount} onChange={e => setCowrieAmount(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="Enter amount..."
+              style={{
+                width: '100%', padding: '14px', borderRadius: 12, textAlign: 'center',
+                background: 'rgba(212,160,23,0.06)', border: '1px solid rgba(212,160,23,0.2)',
+                color: C.goldL, fontSize: 22, fontWeight: 900, fontFamily: 'Sora, sans-serif',
+                outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button onClick={() => setShowCowrieInput(false)} style={{
+                flex: 1, padding: 12, borderRadius: 12, background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)', color: C.textDim, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}>Cancel</button>
+              <button onClick={() => {
+                if (!cowrieAmount || parseInt(cowrieAmount) <= 0) return
+                const amt = parseInt(cowrieAmount)
+                const msg: Msg = {
+                  id: `ct-${Date.now()}`, type: 'cowrie_transfer', sender: 'Me', isMe: true,
+                  cowrieAmt: amt, content: `Sent ₡${amt.toLocaleString()}`,
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                }
+                setMessages(prev => [...prev, msg])
+                sesoChatApi.sendMessage(threadId, { body: `COWRIE_TRANSFER:${amt}`, type: 'COWRIE_TRANSFER' }).catch(() => {})
+                setShowCowrieInput(false)
+                setCowrieAmount('')
+                flash(`₡${amt.toLocaleString()} sent`)
+              }} style={{
+                flex: 1, padding: 12, borderRadius: 12,
+                background: 'linear-gradient(135deg, #d4a017, #b8860b)',
+                border: 'none', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer',
+                opacity: cowrieAmount && parseInt(cowrieAmount) > 0 ? 1 : 0.4,
+              }}>Send ₡</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ FEATURE 10: POLL CREATOR MODAL ═══ */}
+      {showPollCreator && (
+        <div onClick={() => setShowPollCreator(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 920, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div className="st-menu-in" onClick={e => e.stopPropagation()} style={{
+            width: 320, borderRadius: 20, padding: 20,
+            background: '#1a1f1a', border: '1px solid rgba(26,124,62,0.25)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'Sora, sans-serif', marginBottom: 14 }}>📊 Create Poll</div>
+            <input
+              value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
+              placeholder="Ask a question..."
+              style={{
+                width: '100%', padding: '10px 14px', borderRadius: 10, marginBottom: 10,
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
+                color: C.text, fontSize: 13, fontWeight: 600, outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            {pollOpts.map((opt, i) => (
+              <input key={i}
+                value={opt} onChange={e => { const next = [...pollOpts]; next[i] = e.target.value; setPollOpts(next) }}
+                placeholder={`Option ${i + 1}`}
+                style={{
+                  width: '100%', padding: '8px 12px', borderRadius: 8, marginBottom: 6,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)',
+                  color: C.text, fontSize: 12, outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+            ))}
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button onClick={() => { setShowPollCreator(false); setPollQuestion(''); setPollOpts(['', '', '', '']) }} style={{
+                flex: 1, padding: 10, borderRadius: 10, background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)', color: C.textDim, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}>Cancel</button>
+              <button onClick={() => {
+                const validOpts = pollOpts.filter(o => o.trim())
+                if (!pollQuestion.trim() || validOpts.length < 2) return
+                const pollMsg: Msg = {
+                  id: `poll-${Date.now()}`, type: 'poll', sender: 'Me', isMe: true,
+                  content: pollQuestion, pollOptions: validOpts.map(o => ({ label: o, votes: 0 })),
+                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                }
+                setMessages(prev => [...prev, pollMsg])
+                sesoChatApi.sendMessage(threadId, { body: JSON.stringify({ question: pollQuestion, options: validOpts }), type: 'POLL' }).catch(() => {})
+                setShowPollCreator(false)
+                setPollQuestion('')
+                setPollOpts(['', '', '', ''])
+                flash('📊 Poll created')
+              }} style={{
+                flex: 1, padding: 10, borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
+                color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ FEATURE 4: DRUM TO VILLAGE CONFIRMATION ═══ */}
+      {drumToVillageMsg && (
+        <div onClick={() => setDrumToVillageMsg(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 920, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div className="st-menu-in" onClick={e => e.stopPropagation()} style={{
+            width: 300, borderRadius: 20, padding: 20,
+            background: '#1a1f1a', border: '1px solid rgba(26,124,62,0.25)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'Sora, sans-serif', marginBottom: 6 }}>🥁 Drum to Village</div>
+            <div style={{ fontSize: 11, color: C.textDim, marginBottom: 14, lineHeight: 1.5 }}>Share this message to the Soro Soke Feed?</div>
+            <div style={{
+              padding: '10px 14px', borderRadius: 12, marginBottom: 14,
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)',
+              fontSize: 12, color: C.textDim, fontStyle: 'italic', lineHeight: 1.5, maxHeight: 60, overflow: 'hidden',
+            }}>&ldquo;{drumToVillageMsg.content?.slice(0, 120)}{(drumToVillageMsg.content?.length ?? 0) > 120 ? '...' : ''}&rdquo;</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setDrumToVillageMsg(null)} style={{
+                flex: 1, padding: 10, borderRadius: 10, background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)', color: C.textDim, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              }}>Cancel</button>
+              <button onClick={() => {
+                sorosokeApi.createPost({
+                  body: drumToVillageMsg.content || '',
+                  villageId: 'commerce',
+                  skinContext: activeSkin,
+                  type: 'TEXT_DRUM',
+                }).catch(() => {})
+                setDrumToVillageMsg(null)
+                flash('🥁 Drummed to Village Feed!')
+              }} style={{
+                flex: 1, padding: 10, borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
+                color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              }}>🥁 Drum It</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ═══ TOAST ═══ */}
       {toast && (
         <div className={toastOut ? 'st-toast-out' : 'st-toast-in'} style={{
@@ -1306,7 +2022,7 @@ export default function ChatThreadPage() {
             {contact.emoji || '👤'}
           </div>
           <div style={{ textAlign:'center' }}>
-            <p style={{ fontSize:22, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora,sans-serif', marginBottom:4 }}>{contact.name}</p>
+            <p style={{ fontSize:22, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora, sans-serif', marginBottom:4 }}>{contact.name}</p>
             <p className="st-ring" style={{ fontSize:13, color:C.greenL }}>Ringing...</p>
           </div>
           {/* Accept / Decline buttons */}
@@ -1352,7 +2068,7 @@ export default function ChatThreadPage() {
             width:100, height:100, borderRadius:'50%', background:`linear-gradient(135deg,${theme.accent},${theme.accentL})`,
             display:'flex', alignItems:'center', justifyContent:'center', fontSize:44,
           }}>{contact.emoji || '👤'}</div>
-          <p style={{ fontSize:20, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora,sans-serif' }}>{contact.name}</p>
+          <p style={{ fontSize:20, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora, sans-serif' }}>{contact.name}</p>
           <p className="st-ring" style={{ fontSize:13, color:C.greenL }}>Calling...</p>
           <button onClick={endCall} style={{
             marginTop:40, width:60, height:60, borderRadius:'50%',
@@ -1417,7 +2133,7 @@ export default function ChatThreadPage() {
                   display:'flex', alignItems:'center', justifyContent:'center', fontSize:52,
                   boxShadow:`0 0 50px ${theme.accent}33`,
                 }}>{contact.emoji || '👤'}</div>
-                <p style={{ fontSize:20, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora,sans-serif' }}>{contact.name}</p>
+                <p style={{ fontSize:20, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora, sans-serif' }}>{contact.name}</p>
                 {/* Audio waveform */}
                 <div style={{ display:'flex', gap:3, alignItems:'flex-end', height:24 }}>
                   {Array.from({length:12}).map((_,i)=>(
@@ -1458,9 +2174,9 @@ export default function ChatThreadPage() {
                   color:'#fff', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center',
                 }}>📷</button>
                 {/* Flip camera */}
-                <button style={{
+                <button onClick={() => setCallCamFacing(f => f === 'user' ? 'environment' : 'user')} style={{
                   width:52, height:52, borderRadius:'50%', border:'none', cursor:'pointer',
-                  background:'rgba(255,255,255,.1)', color:'#fff', fontSize:20,
+                  background: callCamFacing === 'environment' ? 'rgba(124,58,237,.4)' : 'rgba(255,255,255,.1)', color:'#fff', fontSize:20,
                   display:'flex', alignItems:'center', justifyContent:'center',
                 }}>🔄</button>
               </>

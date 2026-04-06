@@ -21,6 +21,17 @@ interface ReportAnswers {
   [key: string]: string
 }
 
+interface TransferApp {
+  id: string
+  fromVillageId: string
+  toVillageId: string
+  reason: string
+  submittedAt: number
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'COOLING' | 'APPROVED' | 'DENIED'
+  cooldownDays: number
+  decisionAt?: number
+}
+
 // ── Progress step labels (African-themed) ────────────────────
 const STEP_LABELS: { step: Step; emoji: string; label: string }[] = [
   { step: 1, emoji: '\u{1F3D8}', label: 'Destination' },
@@ -152,6 +163,27 @@ function VillageTransferPage() {
         setTransferId(generateTransferId())
       }
       setSubmitting(false)
+
+      // Save transfer application to localStorage for My Applications page
+      try {
+        const savedCooldown = cooldown || { days: 0, label: 'Immediate' }
+        const savedCooldownDays = savedCooldown.days
+        const appId = transferId || generateTransferId()
+        const existingRaw = localStorage.getItem('village_transfer_apps')
+        const existing: TransferApp[] = existingRaw ? JSON.parse(existingRaw) : []
+        const newApp: TransferApp = {
+          id: appId,
+          fromVillageId,
+          toVillageId,
+          reason: (selectedReason as string) ?? '',
+          submittedAt: Date.now(),
+          status: savedCooldownDays === 0 ? 'APPROVED' : rule?.requiresElder ? 'UNDER_REVIEW' : 'COOLING',
+          cooldownDays: savedCooldownDays,
+        }
+        existing.unshift(newApp)
+        localStorage.setItem('village_transfer_apps', JSON.stringify(existing))
+      } catch { /* ignore localStorage errors */ }
+
       setStep(5)
       return
     }

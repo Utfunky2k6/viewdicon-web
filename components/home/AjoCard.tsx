@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 
 interface AjoCircle {
   circleId: string
@@ -17,6 +18,7 @@ interface AjoCircle {
 
 export function AjoCard({ circle }: { circle: AjoCircle }) {
   if (!circle) return null;
+  const router = useRouter()
   const pctPaid = circle.totalCount > 0 ? Math.round((circle.paidCount / circle.totalCount) * 100) : 0
 
   return (
@@ -93,6 +95,7 @@ export function AjoCard({ circle }: { circle: AjoCircle }) {
 
         {/* CTA */}
         <button
+          onClick={() => router.push('/dashboard/banking')}
           className="w-full rounded-full active:scale-[0.97] transition-transform"
           style={{
             background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',

@@ -155,7 +155,7 @@ export default function RoutePlanner({ villageId: _v, roleKey: _r }: ToolProps) 
         >
           {copied ? '✅ Copied!' : '📋 Copy Route'}
         </button>
-        <button style={{ flex: 1, padding: 11, background: CARD, border: `1px solid ${BD}`, borderRadius: 8, color: TX, fontSize: 13, cursor: 'pointer' }}>
+        <button onClick={() => navigator.share?.({ title: 'Route Plan', text: 'Check out this route!' }).catch(() => {})} style={{ flex: 1, padding: 11, background: CARD, border: `1px solid ${BD}`, borderRadius: 8, color: TX, fontSize: 13, cursor: 'pointer' }}>
           💬 Share to Seso Chat
         </button>
       </div>

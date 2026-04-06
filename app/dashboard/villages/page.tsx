@@ -6,6 +6,7 @@ import VillageRouter from '@/components/onboarding/VillageRouter'
 import { useVillageStore } from '@/stores/villageStore'
 import { type CanonicalVillage } from '@/constants/villages'
 import { VillageFlagBg } from '@/components/village/VillageFlagBg'
+import { villageApi } from '@/lib/api'
 
 // ── Category filter ────────────────────────────────────────────
 type Cat = 'all' | 'economy' | 'people' | 'creative' | 'civic' | 'spirit'
@@ -191,6 +192,7 @@ export default function VillagesPage() {
   const [griotVillageId, setGriotVillageId] = React.useState<string | null>(null)
   const [memberCounts, setMemberCounts] = React.useState<Record<string, number>>({})
   const [registryLive, setRegistryLive] = React.useState(false)
+  const [toastMsg, setToastMsg] = React.useState<string | null>(null)
 
   // Zustand village store
   const { activeVillageId, setActiveVillage } = useVillageStore(s => ({
@@ -253,6 +255,8 @@ export default function VillagesPage() {
     if (alreadyIn) {
       setJoinedIds(prev => { const n = new Set(prev); n.delete(id); return n })
       if (activeVillageId === id) setActiveVillage(null)
+      // Persist leave to village-registry
+      villageApi.leave(id).catch(() => {})
       return
     }
 
@@ -263,17 +267,8 @@ export default function VillagesPage() {
 
     setJoinedIds(prev => { const n = new Set(prev); n.add(id); return n })
     setActiveVillage(id)
-    // Persist to village-registry (fire-and-forget)
-    const token = typeof window !== 'undefined'
-      ? (JSON.parse(localStorage.getItem('afk-auth') || '{}')?.state?.accessToken ?? '')
-      : ''
-    if (token) {
-      fetch('/api/v1/village-memberships', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ villageId: id, roleKey: 'citizen', isPrimary: true }),
-      }).catch(() => {})
-    }
+    // Persist join to village-registry
+    villageApi.join(id).catch(() => {})
   }
 
   const handleOpen = (id: string) => {
@@ -344,10 +339,30 @@ export default function VillagesPage() {
                 🦅 Transfer
               </button>
             )}
-            <button onClick={() => alert('Village creation coming soon.')} style={{ padding: '8px 12px', borderRadius: 11, background: 'linear-gradient(135deg, #1a7c3e, #145f30)', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-              + New
+            <button onClick={() => setShowGriot(true)} style={{ padding: '8px 12px', borderRadius: 11, background: 'linear-gradient(135deg, #1a7c3e, #145f30)', border: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              + Find My Village
             </button>
           </div>
+        </div>
+
+        {/* Tool Marketplace shortcut */}
+        <div style={{ marginTop: 12 }}>
+          <button
+            onClick={() => router.push('/dashboard/villages/marketplace')}
+            style={{
+              width: '100%', padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
+              background: 'linear-gradient(135deg, rgba(26,124,62,.18), rgba(212,160,23,.1))',
+              border: '1.5px solid rgba(26,124,62,.35)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}
+          >
+            <span style={{ fontSize: 20 }}>🛒</span>
+            <div style={{ textAlign: 'left', flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f7f0' }}>Tool Marketplace</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginTop: 1 }}>Browse &amp; launch tools from all 20 villages</div>
+            </div>
+            <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 700 }}>Open →</span>
+          </button>
         </div>
 
         {/* Pan-African Naming Principle */}
@@ -430,6 +445,17 @@ export default function VillagesPage() {
           <div style={{ fontSize: 40, marginBottom: 12 }}>🏘️</div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>No villages in this category</div>
         </div>
+      )}
+
+      {/* ── Toast ── */}
+      {toastMsg && (
+        <div style={{
+          position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+          padding: '12px 24px', borderRadius: 14, zIndex: 999,
+          background: 'rgba(26,124,62,.92)', border: '1px solid #1a7c3e',
+          color: '#fff', fontSize: 13, fontWeight: 700,
+          boxShadow: '0 8px 32px rgba(0,0,0,.4)', whiteSpace: 'nowrap',
+        }}>{toastMsg}</div>
       )}
 
     </div>

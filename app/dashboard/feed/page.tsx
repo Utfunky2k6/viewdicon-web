@@ -5,8 +5,11 @@
 // 3 Skins · Dual Toggle · 9 Sub-Tabs · 3 Sort Modes · Live API
 // ═══════════════════════════════════════════════════════════════════
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import StoriesRow from '@/components/feed/StoriesRow'
 import { sorosokeApi } from '@/lib/api'
+import { useAuthStore } from '@/stores/authStore'
+import { getRankFromXP } from '@/constants/ranks'
 import { MotionFeed } from '@/components/feed/MotionFeed'
 import type { Post as CanonicalPost } from '@/components/feed/feedTypes'
 import { mapBackendPost } from '@/components/feed/feedTypes'
@@ -14,6 +17,7 @@ import { MOCK_POSTS, MOCK_MOTION_POSTS, MOCK_GALLERY_POSTS, MOCK_DISCOVER_POSTS 
 import { FeedPostCard, VillageSquare, GriotCard, SKINS, toDisplay } from '@/components/feed/FeedPostCard'
 import type { Skin, ViewMode } from '@/components/feed/FeedPostCard'
 import { CreateSheet } from '@/components/feed/CreateSheet'
+import { MarketCryCard, MOCK_MARKET_CRIES } from '@/components/ads/MarketCryCard'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'soro-styles'
@@ -75,6 +79,7 @@ const CIRCLE_TABS: { key: CircleTab; label: string }[] = [
    MAIN PAGE — 4-DRUM ARCHITECTURE
 ════════════════════════════════════════ */
 export default function SoroFeedPage() {
+  const feedRouter = useRouter()
   const [skin,     setSkin]     = React.useState<Skin>('ise')
   const [geo,      setGeo]      = React.useState<GeoScope>('village')
   const [drumMode, setDrumMode] = React.useState<DrumMode>('soro_soke')
@@ -83,6 +88,13 @@ export default function SoroFeedPage() {
   const [createOpen, setCreateOpen] = React.useState(false)
   const [feedLive, setFeedLive] = React.useState(false)
   const [livePosts, setLivePosts] = React.useState<CanonicalPost[]>(MOCK_POSTS)
+  const [dismissedGates, setDismissedGates] = React.useState<Set<number>>(new Set())
+  const [searchOpen, setSearchOpen] = React.useState(false)
+  const [searchQuery, setSearchQuery] = React.useState('')
+
+  /* ── User rank for header badge ── */
+  const feedUser = useAuthStore(s => s.user)
+  const feedRank = getRankFromXP(feedUser?.ubuntuScore ?? (feedUser as any)?.honorXp ?? 0)
 
   /* ── CSS inject ── */
   React.useEffect(() => {
@@ -143,8 +155,19 @@ export default function SoroFeedPage() {
     if (sort === 'hot' || sort === 'ready') ps = [...ps].sort((a, b) => b.heatScore - a.heatScore)
     if (sort === 'ready') ps = ps.filter(p => p.stage === 'FEAST' || p.stage === 'BOIL')
 
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      ps = ps.filter(p =>
+        (p.content ?? '').toLowerCase().includes(q) ||
+        p.author.toLowerCase().includes(q) ||
+        p.village.toLowerCase().includes(q) ||
+        (p.tags ?? []).some(t => t.toLowerCase().includes(q))
+      )
+    }
+
     return ps
-  }, [livePosts, skin, geo, drumMode, subTab, sort])
+  }, [livePosts, skin, geo, drumMode, subTab, sort, searchQuery])
 
   /* derive display posts — viewMode is determined by post type, not tab */
   const displayPostsWithMode = React.useMemo(() => filteredPosts.map(p => {
@@ -171,26 +194,37 @@ export default function SoroFeedPage() {
   return (
     <div style={{ minHeight:'100dvh',background:'#07090a',color:'#f0f5ee',fontFamily:'DM Sans,sans-serif',display:'flex',flexDirection:'column' }}>
 
-      {/* Adinkra bg */}
-      <div style={{ position:'fixed',inset:0,pointerEvents:'none',zIndex:0,opacity:.025,backgroundImage:'repeating-linear-gradient(45deg,#d4a017 0px,#d4a017 1px,transparent 0,transparent 50%)',backgroundSize:'20px 20px' }} />
+      {/* Adinkra Gye Nyame sovereign bg */}
+      <div aria-hidden="true" style={{ position:'fixed',inset:0,pointerEvents:'none',zIndex:0,opacity:.022,backgroundImage:`url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%231a7c3e' stroke-linecap='round'%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3Cpath d='M22 22 Q14 14 14 22' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E")`,backgroundSize:'100px 100px',backgroundRepeat:'repeat' }} />
+
+      {/* ── Pan-African Kente top stripe ── */}
+      <div aria-hidden="true" style={{ height:3,background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)',flexShrink:0,position:'relative',zIndex:41 }} />
 
       {/* ── Sticky Header ── */}
-      <div style={{ position:'sticky',top:0,zIndex:40,background:'#0c1009',flexShrink:0 }}>
+      <div style={{ position:'sticky',top:3,zIndex:40,background:'#0c1009',flexShrink:0 }}>
 
         {/* top row */}
         <div style={{ padding:'10px 16px 6px',display:'flex',alignItems:'center',justifyContent:'space-between' }}>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif',fontSize:20,fontWeight:900,background:'linear-gradient(135deg,#4ade80,#d4a017)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent' }}>Sòrò Sókè</div>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:20,fontWeight:900,background:'linear-gradient(135deg,#4ade80,#d4a017)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent' }}>Sòrò Sókè</div>
             {feedLive && <span style={{ fontSize:9,padding:'2px 6px',background:'rgba(74,222,128,.12)',border:'1px solid rgba(74,222,128,.25)',borderRadius:20,color:'#4ade80',fontWeight:700 }}>● LIVE</span>}
             <div style={{ fontSize:11,color:'rgba(255,255,255,.4)',marginTop:-2,fontStyle:'italic' }}>The Voice of the Village</div>
           </div>
-          <div style={{ display:'flex',gap:8 }}>
+          <div style={{ display:'flex',gap:8,alignItems:'center' }}>
+            {/* Rank badge — shown to the left of action icons */}
+            <div style={{ padding:'4px 10px',borderRadius:99,background:`${feedRank.color}18`,border:`1px solid ${feedRank.color}44`,color:feedRank.color,fontSize:10,fontWeight:800,flexShrink:0,display:'flex',alignItems:'center',gap:3,whiteSpace:'nowrap' }}>
+              {feedRank.emoji} {feedRank.name}
+            </div>
             <div onClick={() => setCreateOpen(true)} style={{ padding:'5px 10px',borderRadius:20,background:'rgba(239,68,68,.12)',border:'1px solid rgba(239,68,68,.25)',display:'flex',alignItems:'center',gap:4,cursor:'pointer' }}>
               <span style={{ fontSize:10 }}>🔴</span>
               <span style={{ fontSize:10,fontWeight:700,color:'#f87171' }}>LIVE</span>
             </div>
-            {['✏','🔔','🔍'].map((ico, i) => (
-              <div key={i} onClick={i === 0 ? () => setCreateOpen(true) : undefined} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,cursor:'pointer' }}>{ico}</div>
+            {[
+              { ico: '✏', action: () => setCreateOpen(true) },
+              { ico: '🔔', action: () => feedRouter.push('/dashboard/settings') },
+              { ico: '🔍', action: () => setSearchOpen(s => !s) },
+            ].map(({ ico, action }, i) => (
+              <div key={i} onClick={action} style={{ width:34,height:34,borderRadius:'50%',background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,cursor:'pointer' }}>{ico}</div>
             ))}
           </div>
         </div>
@@ -218,6 +252,16 @@ export default function SoroFeedPage() {
           ))}
         </div>
 
+        {/* ── Amaterasu · Feed Intelligence ── */}
+        <div style={{ margin: '0 14px 6px', padding: '10px 14px', borderRadius: 14, background: 'linear-gradient(135deg,rgba(249,115,22,0.1),rgba(154,52,18,0.06))', border: '1px solid rgba(249,115,22,0.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 20 }}>☀️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: '#f97316', fontFamily: "'Space Grotesk',sans-serif" }}>AMATERASU · FEED INTELLIGENCE</div>
+            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', fontFamily: "'Inter',sans-serif", marginTop: 1 }}>Your village is 87% harmonious today · 3 emerging voices detected</div>
+          </div>
+          <a href="/dashboard/ai" style={{ padding: '5px 10px', borderRadius: 8, background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)', color: '#f97316', fontSize: 9, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", textDecoration: 'none' }}>Ask ☀️</a>
+        </div>
+
         {/* ── Dual drum toggle ── */}
         <div style={{ padding:'8px 16px 6px',display:'flex',alignItems:'center',gap:10 }}>
           <div style={{ flex:1,display:'flex',background:'rgba(255,255,255,.05)',borderRadius:99,padding:3,border:'1px solid rgba(255,255,255,.08)',position:'relative',overflow:'hidden' }}>
@@ -236,7 +280,7 @@ export default function SoroFeedPage() {
               🥁 SORO SOKE
             </div>
             <div onClick={() => switchDrumMode('circle')} style={{ flex:1,padding:'7px 12px',borderRadius:99,textAlign:'center',fontSize:11,fontWeight:800,cursor:'pointer',position:'relative',zIndex:1,color:drumMode==='circle' ? '#fff' : 'rgba(255,255,255,.4)',transition:'color .25s ease' }}>
-              🌳 CIRCLE
+              🌳 UKOO
             </div>
           </div>
         </div>
@@ -244,7 +288,7 @@ export default function SoroFeedPage() {
         {/* ── Sub-tabs ── */}
         <div style={{ display:'flex',overflowX:'auto',padding:'0 14px 2px',borderBottom:'1px solid rgba(255,255,255,.06)',scrollbarWidth:'none' }}>
           {currentTabs.map(({ key, label }) => (
-            <div key={key} onClick={() => setSubTab(key)} style={{ padding:'7px 12px',fontSize:10,fontWeight:700,color:subTab===key ? (drumMode==='circle' ? '#c084fc' : '#4ade80') : 'rgba(255,255,255,.3)',cursor:'pointer',whiteSpace:'nowrap',borderBottom:`2px solid ${subTab===key ? (drumMode==='circle' ? '#7c3aed' : '#1a7c3e') : 'transparent'}`,transition:'all .2s' }}>{label}</div>
+            <div key={key} onClick={() => { if (key === 'family') { feedRouter.push('/dashboard/chat'); return } setSubTab(key) }} style={{ padding:'7px 12px',fontSize:10,fontWeight:700,color:subTab===key ? (drumMode==='circle' ? '#c084fc' : '#4ade80') : 'rgba(255,255,255,.3)',cursor:'pointer',whiteSpace:'nowrap',borderBottom:`2px solid ${subTab===key ? (drumMode==='circle' ? '#7c3aed' : '#1a7c3e') : 'transparent'}`,transition:'all .2s' }}>{label}</div>
           ))}
         </div>
 
@@ -256,6 +300,19 @@ export default function SoroFeedPage() {
             ))}
           </div>
         )}
+
+        {/* ── Search bar ── */}
+        {searchOpen && (
+          <div style={{ padding:'6px 14px 8px',borderBottom:'1px solid rgba(255,255,255,.06)' }}>
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search posts, #hashtags, @mentions..."
+              style={{ width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:12,padding:'9px 14px',fontSize:12,color:'#f0f5ee',outline:'none',fontFamily:'DM Sans,sans-serif' }}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Stories Row ── */}
@@ -265,12 +322,16 @@ export default function SoroFeedPage() {
       {subTab === 'motion' && (
         <div style={{ flex:1 }}>
           <MotionFeed posts={MOCK_MOTION_POSTS} onInteract={(type, id) => {
+            if (type === 'comment') {
+              sorosokeApi.comments(id).catch(() => {})
+              return
+            }
             const actions: Record<string, ((id: string) => Promise<unknown>) | undefined> = {
               kila:   (id) => sorosokeApi.kila(id),
               stir:   (id) => sorosokeApi.stir(id),
               drum:   (id) => sorosokeApi.drum(id, { content: '' }),
               ubuntu: (id) => sorosokeApi.ubuntu(id),
-              spray:  (id) => sorosokeApi.spray(id, { amount: 0 }),
+              spray:  (id) => sorosokeApi.spray(id, { amount: 50 }),
             }
             actions[type]?.(id)?.catch(() => {})
           }} />
@@ -282,13 +343,13 @@ export default function SoroFeedPage() {
         <div style={{ flex:1,overflowY:'auto',position:'relative',zIndex:5 }}>
           {/* Night market banner */}
           {isNightMarket && drumMode === 'soro_soke' && (
-            <div className="nm-banner" style={{ margin:'8px 12px',background:'linear-gradient(135deg,#2a1a00,#1a1000)',border:'1px solid rgba(212,160,23,.3)',borderRadius:14,padding:'11px 14px',display:'flex',alignItems:'center',gap:10,cursor:'pointer' }}>
+            <div className="nm-banner" style={{ margin:'8px 12px',background:'linear-gradient(135deg,#2a1a00,#1a1000)',border:'1px solid rgba(212,160,23,.3)',borderRadius:14,padding:'11px 14px',display:'flex',alignItems:'center',gap:10 }}>
               <span style={{ fontSize:26,flexShrink:0 }}>🏮</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontFamily:'Sora,sans-serif',fontSize:13,fontWeight:800,color:'#fbbf24' }}>Night Market Open</div>
+                <div style={{ fontFamily:'Sora, sans-serif',fontSize:13,fontWeight:800,color:'#fbbf24' }}>Night Market Open</div>
                 <div style={{ fontSize:10,color:'rgba(212,160,23,.6)',marginTop:2 }}>Commerce posts get +15 heat · Until midnight</div>
               </div>
-              <div style={{ fontFamily:'Sora,sans-serif',fontSize:18,fontWeight:900,color:'#fbbf24',flexShrink:0 }}>{23 - new Date().getHours()}h left</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:18,fontWeight:900,color:'#fbbf24',flexShrink:0 }}>{23 - new Date().getHours()}h left</div>
             </div>
           )}
 
@@ -301,7 +362,7 @@ export default function SoroFeedPage() {
             <div style={{ margin:'8px 12px',background:'linear-gradient(135deg,rgba(26,124,62,.08),rgba(74,222,128,.04))',border:'1px solid rgba(74,222,128,.15)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:10 }}>
               <span style={{ fontSize:26,flexShrink:0 }}>🌍</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontFamily:'Sora,sans-serif',fontSize:13,fontWeight:800,color:'#4ade80' }}>Discover · Connecting 20 Villages</div>
+                <div style={{ fontFamily:'Sora, sans-serif',fontSize:13,fontWeight:800,color:'#4ade80' }}>Discover · Connecting 20 Villages</div>
                 <div style={{ fontSize:10,color:'rgba(74,222,128,.55)',marginTop:2 }}>You are browsing cross-village content · React with Ubuntu, Spray or Share · You cannot post here</div>
               </div>
               <div style={{ fontSize:9,fontWeight:700,color:'rgba(74,222,128,.4)',border:'1px solid rgba(74,222,128,.15)',borderRadius:6,padding:'2px 7px',flexShrink:0 }}>React Only</div>
@@ -319,15 +380,56 @@ export default function SoroFeedPage() {
           {displayPostsWithMode.length === 0 && (
             <div style={{ padding:'32px 24px',textAlign:'center' }}>
               <div style={{ fontSize:40,marginBottom:12 }}>🥁</div>
-              <div style={{ fontFamily:'Sora,sans-serif',fontSize:14,fontWeight:700,color:'rgba(255,255,255,.6)',marginBottom:6 }}>No posts here yet</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:14,fontWeight:700,color:'rgba(255,255,255,.6)',marginBottom:6 }}>No posts here yet</div>
               <div style={{ fontSize:12,color:'rgba(255,255,255,.3)' }}>Switch skin, try a different tab, or drum the first post!</div>
             </div>
           )}
 
-          {/* Posts — pass per-card viewMode */}
-          {displayPostsWithMode.map(({ post, viewMode }) => (
-            <FeedPostCard key={post.id} post={post} viewMode={viewMode} />
-          ))}
+          {/* Posts — inject Market Cry ads every 5th post + Village Gate every 20th */}
+          {displayPostsWithMode.map(({ post, viewMode }, idx) => {
+            const gateThreshold = Math.floor(idx / 20)
+            const showGate = idx > 0 && (idx + 1) % 20 === 0 && !dismissedGates.has(gateThreshold)
+            return (
+              <React.Fragment key={post.id}>
+                <FeedPostCard post={post} viewMode={viewMode} />
+                {/* Market Cry ad injection: every 5th post, not in Discover mode */}
+                {(idx + 1) % 5 === 0 && subTab !== 'discover' && idx / 5 < MOCK_MARKET_CRIES.length && (
+                  <MarketCryCard ad={MOCK_MARKET_CRIES[Math.floor(idx / 5)]} />
+                )}
+                {/* Village Gate Rest Stop — every 20 posts (anti-dark-pattern) */}
+                {showGate && (
+                  <div style={{
+                    margin: '12px 10px', borderRadius: 20, padding: '28px 20px',
+                    background: 'linear-gradient(135deg,#0a1a0d,#061008)',
+                    border: '1px solid rgba(74,222,128,.15)',
+                    textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>🏛</div>
+                    <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: '#f0f5ee', marginBottom: 8 }}>
+                      You&apos;ve reached the Village Gate
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,.45)', lineHeight: 1.7, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>
+                      You&apos;ve scrolled {idx + 1} posts. The village will still be here when you return.{'\n'}Take a breath.
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+                      <button
+                        onClick={() => setDismissedGates(s => new Set([...s, gateThreshold]))}
+                        style={{ padding: '10px 22px', borderRadius: 12, border: '1px solid rgba(74,222,128,.25)', background: 'rgba(74,222,128,.08)', color: '#4ade80', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Continue scrolling
+                      </button>
+                      <button
+                        onClick={() => { if (typeof window !== 'undefined') { window.scrollTo({ top: 0, behavior: 'smooth' }) } }}
+                        style={{ padding: '10px 22px', borderRadius: 12, border: '1px solid rgba(255,255,255,.1)', background: 'transparent', color: 'rgba(255,255,255,.4)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Rest for now
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            )
+          })}
 
           <div style={{ height:100 }} />
         </div>

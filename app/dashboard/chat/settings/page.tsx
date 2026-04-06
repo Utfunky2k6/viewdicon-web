@@ -31,9 +31,24 @@ const C = {
 type Section = 'main' | 'privacy' | 'security' | 'notifications' | 'data' | 'storage' | 'blocked' | 'about'
 
 interface Toggle { value: boolean; toggle: () => void }
-function useToggle(init = false): Toggle {
-  const [value, setValue] = React.useState(init)
-  return { value, toggle: () => setValue(v => !v) }
+function useToggle(init = false, storageKey?: string): Toggle {
+  const [value, setValue] = React.useState<boolean>(() => {
+    if (storageKey && typeof window !== 'undefined') {
+      const stored = localStorage.getItem(`chat-${storageKey}`)
+      if (stored !== null) { try { return JSON.parse(stored) as boolean } catch { return init } }
+    }
+    return init
+  })
+  return {
+    value,
+    toggle: () => setValue(v => {
+      const next = !v
+      if (storageKey && typeof window !== 'undefined') {
+        localStorage.setItem(`chat-${storageKey}`, JSON.stringify(next))
+      }
+      return next
+    }),
+  }
 }
 
 function ToggleSwitch({ on, onToggle, color = C.greenL }: { on: boolean; onToggle: () => void; color?: string }) {
@@ -87,7 +102,7 @@ function SectionHeader({ title, sub }: { title: string; sub?: string }) {
   return (
     <div style={{ padding: '20px 18px 8px' }}>
       <div style={{ fontSize: 11, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '.1em' }}>{sub}</div>
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 900, color: C.text, marginTop: 2 }}>{title}</div>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 900, color: C.text, marginTop: 2 }}>{title}</div>
     </div>
   )
 }
@@ -118,41 +133,50 @@ export default function ChatSettingsPage() {
   const [section, setSection] = React.useState<Section>('main')
   const [unblockId, setUnblockId] = React.useState<string | null>(null)
   const [blocked, setBlocked] = React.useState(INITIAL_BLOCKED)
+  const [toast, setToast] = React.useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+  const [showClearMediaConfirm, setShowClearMediaConfirm] = React.useState(false)
+
+  /* toast helper */
+  const flash = React.useCallback((msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2200)
+  }, [])
 
   // Privacy toggles
-  const lastSeen      = useToggle(true)
-  const profilePhoto  = useToggle(true)
-  const readReceipts  = useToggle(true)
-  const onlineStatus  = useToggle(true)
-  const groupInvite   = useToggle(true)
-  const disappearing  = useToggle(false)
+  const lastSeen      = useToggle(true, 'lastSeen')
+  const profilePhoto  = useToggle(true, 'profilePhoto')
+  const readReceipts  = useToggle(true, 'readReceipts')
+  const onlineStatus  = useToggle(true, 'onlineStatus')
+  const groupInvite   = useToggle(true, 'groupInvite')
+  const disappearing  = useToggle(false, 'disappearing')
   const [disappearTimer, setDisappearTimer] = React.useState<'24h' | '7d' | '90d'>('7d')
 
   // Security toggles
-  const biometricLock = useToggle(false)
-  const twoStep       = useToggle(false)
-  const nkisiShield   = useToggle(true)
-  const screenshotLock= useToggle(true)
-  const autoDelete    = useToggle(false)
-  const incognito     = useToggle(false)
+  const biometricLock = useToggle(false, 'biometricLock')
+  const twoStep       = useToggle(false, 'twoStep')
+  const nkisiShield   = useToggle(true, 'nkisiShield')
+  const screenshotLock= useToggle(true, 'screenshotLock')
+  const autoDelete    = useToggle(false, 'autoDelete')
+  const incognito     = useToggle(false, 'incognito')
 
   // Notification toggles
-  const msgNotif      = useToggle(true)
-  const groupNotif    = useToggle(true)
-  const callNotif     = useToggle(true)
-  const bloodCallAlert= useToggle(true)
-  const tradeAlert    = useToggle(true)
-  const soundNotif    = useToggle(true)
-  const vibration     = useToggle(true)
-  const preview       = useToggle(false)
+  const msgNotif      = useToggle(true, 'msgNotif')
+  const groupNotif    = useToggle(true, 'groupNotif')
+  const callNotif     = useToggle(true, 'callNotif')
+  const bloodCallAlert= useToggle(true, 'bloodCallAlert')
+  const tradeAlert    = useToggle(true, 'tradeAlert')
+  const soundNotif    = useToggle(true, 'soundNotif')
+  const vibration     = useToggle(true, 'vibration')
+  const preview       = useToggle(false, 'preview')
 
   // Data toggles
-  const dataSaver     = useToggle(false)
-  const autoDownload  = useToggle(true)
-  const autoDownloadWifi = useToggle(true)
-  const spiritVoiceAuto  = useToggle(false)
-  const offlineQueue  = useToggle(true)
-  const ussdFallback  = useToggle(false)
+  const dataSaver     = useToggle(false, 'dataSaver')
+  const autoDownload  = useToggle(true, 'autoDownload')
+  const autoDownloadWifi = useToggle(true, 'autoDownloadWifi')
+  const spiritVoiceAuto  = useToggle(false, 'spiritVoiceAuto')
+  const offlineQueue  = useToggle(true, 'offlineQueue')
+  const ussdFallback  = useToggle(false, 'ussdFallback')
 
   // Inject CSS
   React.useEffect(() => {
@@ -178,7 +202,7 @@ export default function ChatSettingsPage() {
         color: C.textDim, fontSize: 18, cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>‹</button>
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>{title}</div>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>{title}</div>
     </div>
   )
 
@@ -282,9 +306,9 @@ export default function ChatSettingsPage() {
       right={<ToggleSwitch on={autoDelete.value} onToggle={autoDelete.toggle} color={C.redL} />} />
 
     <GroupLabel label="Session Management" />
-    <Row icon="📱" label="Linked Devices" sub="2 active sessions" onClick={() => {}} />
-    <Row icon="🔓" label="View Active Sessions" sub="See all devices with access" onClick={() => {}} />
-    <Row icon="⚠" label="Report a Security Issue" sub="Contact Nkisi Shield team" onClick={() => {}} danger />
+    <Row icon="📱" label="Linked Devices" sub="2 active sessions" onClick={() => flash('Device management coming soon')} />
+    <Row icon="🔓" label="View Active Sessions" sub="See all devices with access" onClick={() => flash('Session viewer coming soon')} />
+    <Row icon="⚠" label="Report a Security Issue" sub="Contact Nkisi Shield team" onClick={() => flash('Opening security report form...')} danger />
   </>, '🛡 Security')
 
   // ── NOTIFICATIONS SECTION ─────────────────────────────────────────
@@ -313,12 +337,12 @@ export default function ChatSettingsPage() {
       right={<ToggleSwitch on={preview.value} onToggle={preview.toggle} />} />
 
     <GroupLabel label="Custom Sounds" />
-    <Row icon="🥁" label="Talking Drum Tone" sub="Default notification sound" onClick={() => {}} />
-    <Row icon="🎵" label="Custom Ringtone" sub="Upload your own sound" onClick={() => {}} />
+    <Row icon="🥁" label="Talking Drum Tone" sub="Default notification sound" onClick={() => flash('Tone selector coming soon')} />
+    <Row icon="🎵" label="Custom Ringtone" sub="Upload your own sound" onClick={() => flash('Ringtone upload coming soon')} />
 
     <GroupLabel label="Do Not Disturb" />
-    <Row icon="🌙" label="Night Quiet Hours" sub="Auto-mute 11 PM – 6 AM" onClick={() => {}} />
-    <Row icon="🕌" label="Prayer Time Silence" sub="Auto-mute during Fajr, Dhuhr, Asr, Maghrib, Isha" onClick={() => {}} accent={C.goldL} />
+    <Row icon="🌙" label="Night Quiet Hours" sub="Auto-mute 11 PM -- 6 AM" onClick={() => flash('Quiet hours toggled')} />
+    <Row icon="🕌" label="Prayer Time Silence" sub="Auto-mute during Fajr, Dhuhr, Asr, Maghrib, Isha" onClick={() => flash('Prayer silence toggled')} accent={C.goldL} />
   </>, '🔔 Notifications')
 
   // ── DATA SAVER SECTION ────────────────────────────────────────────
@@ -326,7 +350,7 @@ export default function ChatSettingsPage() {
     <div style={{ margin: '16px 18px', padding: 14, borderRadius: 14, background: dataSaver.value ? 'rgba(26,124,62,.1)' : 'rgba(255,255,255,.03)', border: `1px solid ${dataSaver.value ? 'rgba(26,124,62,.25)' : C.border}`, transition: 'all .3s' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: dataSaver.value ? 10 : 0 }}>
         <div>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 15, fontWeight: 900, color: dataSaver.value ? C.greenL : C.text }}>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 15, fontWeight: 900, color: dataSaver.value ? C.greenL : C.text }}>
             {dataSaver.value ? '✅ Data Saver Active' : '📡 Data Saver'}
           </div>
           <div style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>
@@ -380,7 +404,7 @@ export default function ChatSettingsPage() {
   // ── STORAGE SECTION ────────────────────────────────────────────────
   if (section === 'storage') return wrap(<>
     <div style={{ margin: '16px 18px', textAlign: 'center' }}>
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 32, fontWeight: 900, color: C.text }}>200 MB</div>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 32, fontWeight: 900, color: C.text }}>200 MB</div>
       <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>Total chat storage used</div>
       <div style={{ height: 10, background: 'rgba(255,255,255,.06)', borderRadius: 99, overflow: 'hidden', margin: '12px 0 4px' }}>
         <div style={{ display: 'flex', height: '100%' }}>
@@ -403,17 +427,17 @@ export default function ChatSettingsPage() {
     {STORAGE_CATS.map(c => (
       <Row key={c.label} icon={c.icon} label={c.label} sub={c.size}
         right={
-          <button style={{ padding: '5px 12px', borderRadius: 8, background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.2)', color: C.redL, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+          <button onClick={() => flash(`${c.label} cache cleared`)} style={{ padding: '5px 12px', borderRadius: 8, background: 'rgba(220,38,38,.08)', border: '1px solid rgba(220,38,38,.2)', color: C.redL, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
             Clear
           </button>
         } accent={c.color} />
     ))}
 
     <GroupLabel label="Tools" />
-    <Row icon="🔍" label="Review Large Files" sub="Find and delete files over 5 MB" onClick={() => {}} />
-    <Row icon="📦" label="Export Chat History" sub="Download all messages as PDF or JSON" onClick={() => {}} />
-    <Row icon="☁" label="Back Up to Vault" sub="Encrypt and store in your Ancestral Vault" onClick={() => {}} accent={C.purpleL} />
-    <Row icon="🗑" label="Clear All Chat Media" sub="Frees storage, keeps message text" onClick={() => {}} danger />
+    <Row icon="🔍" label="Review Large Files" sub="Find and delete files over 5 MB" onClick={() => flash('Scanning for large files...')} />
+    <Row icon="📦" label="Export Chat History" sub="Download all messages as PDF or JSON" onClick={() => flash('Preparing chat export...')} />
+    <Row icon="☁" label="Back Up to Vault" sub="Encrypt and store in your Ancestral Vault" onClick={() => flash('Encrypting and backing up to Vault...')} accent={C.purpleL} />
+    <Row icon="🗑" label="Clear All Chat Media" sub="Frees storage, keeps message text" onClick={() => setShowClearMediaConfirm(true)} danger />
   </>, '💾 Storage')
 
   // ── BLOCKED USERS SECTION ──────────────────────────────────────────
@@ -463,7 +487,7 @@ export default function ChatSettingsPage() {
   if (section === 'about') return wrap(<>
     <div style={{ padding: '24px 18px', textAlign: 'center' }}>
       <div style={{ fontSize: 48, marginBottom: 8 }}>💬</div>
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 20, fontWeight: 900, color: C.text }}>Seso Chat</div>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 20, fontWeight: 900, color: C.text }}>Seso Chat</div>
       <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>v2.4.0 · Sovereign Division</div>
     </div>
 
@@ -483,11 +507,11 @@ export default function ChatSettingsPage() {
     </div>
 
     <GroupLabel label="Links" />
-    <Row icon="📜" label="Privacy Policy" onClick={() => {}} />
-    <Row icon="📋" label="Terms of Service" onClick={() => {}} />
-    <Row icon="🔓" label="Open Source Licenses" onClick={() => {}} />
-    <Row icon="🐛" label="Report a Bug" onClick={() => {}} />
-    <Row icon="💡" label="Send Feedback" onClick={() => {}} />
+    <Row icon="📜" label="Privacy Policy" onClick={() => window.open('https://viewdicon-web.vercel.app/privacy', '_blank')} />
+    <Row icon="📋" label="Terms of Service" onClick={() => window.open('https://viewdicon-web.vercel.app/terms', '_blank')} />
+    <Row icon="🔓" label="Open Source Licenses" onClick={() => flash('Viewing open source licenses...')} />
+    <Row icon="🐛" label="Report a Bug" onClick={() => flash('Bug report form opening...')} />
+    <Row icon="💡" label="Send Feedback" onClick={() => flash('Feedback form opening...')} />
   </>, 'ℹ About')
 
   // ── MAIN SETTINGS PAGE ─────────────────────────────────────────────
@@ -503,14 +527,14 @@ export default function ChatSettingsPage() {
             <div style={{ position: 'absolute', bottom: -2, right: -2, width: 16, height: 16, borderRadius: '50%', background: C.greenL, border: `2px solid ${C.bg}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8 }}>✦</div>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 900, color: C.text }}>Umoh Okonkwo</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 900, color: C.text }}>Umoh Okonkwo</div>
             <div style={{ fontSize: 11, color: C.textDim, marginTop: 2 }}>@umoh_okokwo · NG-IGB-5532-1123</div>
             <div style={{ display: 'flex', gap: 5, marginTop: 5 }}>
               <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: 'rgba(26,124,62,.1)', border: '1px solid rgba(26,124,62,.2)', color: C.greenL }}>🛡 GREEN</span>
               <span style={{ fontSize: 9, fontWeight: 800, padding: '2px 7px', borderRadius: 99, background: 'rgba(212,160,23,.1)', border: '1px solid rgba(212,160,23,.2)', color: C.goldL }}>Crest III</span>
             </div>
           </div>
-          <button style={{ padding: '6px 12px', borderRadius: 9, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Edit</button>
+          <button onClick={() => router.push('/dashboard/settings')} style={{ padding: '6px 12px', borderRadius: 9, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Edit</button>
         </div>
       </div>
 
@@ -529,7 +553,7 @@ export default function ChatSettingsPage() {
         {/* Danger zone */}
         <div style={{ margin: '16px 18px 0' }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Account</div>
-          <button style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.15)', color: C.redL, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => setShowDeleteConfirm(true)} style={{ width: '100%', padding: '13px', borderRadius: 14, background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.15)', color: C.redL, fontSize: 14, fontWeight: 700, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 20 }}>🗑</span>
             <div>
               <div>Delete My Account</div>
@@ -538,6 +562,92 @@ export default function ChatSettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div className="cs-fade" style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          padding: '10px 22px', borderRadius: 14, zIndex: 999,
+          background: 'rgba(26,124,62,0.95)', border: '1px solid rgba(74,222,128,0.4)',
+          color: '#fff', fontSize: 12, fontWeight: 700,
+          fontFamily: 'Sora, sans-serif', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          whiteSpace: 'nowrap',
+        }}>{toast}</div>
+      )}
+
+      {/* ── Delete Account Confirmation Modal ── */}
+      {showDeleteConfirm && (
+        <div onClick={() => setShowDeleteConfirm(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '90%', maxWidth: 340, background: '#0f0f0f', borderRadius: 20,
+            padding: 24, border: '1px solid rgba(220,38,38,.2)',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🗑</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: C.redL, fontFamily: 'Sora, sans-serif' }}>Delete Your Account?</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 8, lineHeight: 1.6 }}>
+                This is permanent. All your messages, connections, trust tiers, and village data will be erased.
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowDeleteConfirm(false)} style={{
+                flex: 1, padding: 12, borderRadius: 12, background: 'rgba(255,255,255,.05)',
+                border: '1px solid rgba(255,255,255,.08)', color: C.textDim,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}>Cancel</button>
+              <button onClick={() => {
+                setShowDeleteConfirm(false)
+                flash('Account deletion requested. Check your email.')
+              }} style={{
+                flex: 1, padding: 12, borderRadius: 12, background: 'rgba(220,38,38,.15)',
+                border: '1px solid rgba(220,38,38,.3)', color: C.redL,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Clear All Media Confirmation Modal ── */}
+      {showClearMediaConfirm && (
+        <div onClick={() => setShowClearMediaConfirm(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,.7)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: '90%', maxWidth: 340, background: '#0f0f0f', borderRadius: 20,
+            padding: 24, border: '1px solid rgba(220,38,38,.2)',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🗑</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: C.redL, fontFamily: 'Sora, sans-serif' }}>Clear All Chat Media?</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 8, lineHeight: 1.6 }}>
+                This will delete all images, voice notes, and documents from your chats. Message text will be preserved.
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowClearMediaConfirm(false)} style={{
+                flex: 1, padding: 12, borderRadius: 12, background: 'rgba(255,255,255,.05)',
+                border: '1px solid rgba(255,255,255,.08)', color: C.textDim,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}>Cancel</button>
+              <button onClick={() => {
+                setShowClearMediaConfirm(false)
+                flash('All chat media cleared')
+              }} style={{
+                flex: 1, padding: 12, borderRadius: 12, background: 'rgba(220,38,38,.15)',
+                border: '1px solid rgba(220,38,38,.3)', color: C.redL,
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}>Clear All</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

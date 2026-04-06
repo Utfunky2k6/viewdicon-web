@@ -3,8 +3,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { sorosokeApi, profileApi } from '@/lib/api'
-
-const EGBE_TABS = ['Profile', 'Posts', 'Connections', 'Kinsmen'] as const
+const EGBE_TABS = ['Profile', 'Posts', 'ORÍKÌ', 'Connections'] as const
 type EgbeTab = typeof EGBE_TABS[number]
 
 type PostType = 'PERSONAL' | 'VILLAGE' | 'ORACLE'
@@ -53,6 +52,7 @@ export function EgbeProfile() {
   const [editOpen, setEditOpen] = React.useState(false)
   const user = useAuthStore(s => s.user)
   const authorId = user?.id ?? ''
+  const router = useRouter()
 
   React.useEffect(() => {
     if (typeof document !== 'undefined' && !document.getElementById('egbe-css')) {
@@ -83,13 +83,16 @@ export function EgbeProfile() {
 
       {tab === 'Profile' && <EgbeProfileTab />}
       {tab === 'Posts' && <EgbePostsTab authorId={authorId} />}
+      {tab === 'ORÍKÌ' && <EgbeOrikiTab />}
       {tab === 'Connections' && <EgbeConnectionsTab />}
-      {tab === 'Kinsmen' && <KinsmenTab />}
 
-      {/* Edit button */}
-      <div style={{ padding: '8px 12px 16px' }}>
-        <button onClick={() => setEditOpen(true)} style={{ width: '100%', padding: 12, borderRadius: 12, border: '1.5px solid #d97706', background: 'rgba(217,119,6,.08)', color: '#fbbf24', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-          ✏️ Edit EGBE Profile
+      {/* Action buttons */}
+      <div style={{ padding: '8px 12px 16px', display: 'flex', gap: 8 }}>
+        <button onClick={() => setEditOpen(true)} style={{ flex: 1, padding: 12, borderRadius: 12, border: '1.5px solid #d97706', background: 'rgba(217,119,6,.08)', color: '#fbbf24', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          ✏️ Edit Profile
+        </button>
+        <button onClick={() => router.push('/dashboard/ads/create')} style={{ flex: 1, padding: 12, borderRadius: 12, border: '1.5px solid #d4a017', background: 'rgba(212,160,23,.06)', color: '#fbbf24', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+          🥁 Promote
         </button>
       </div>
 
@@ -103,7 +106,7 @@ function EgbeProfileTab() {
     <>
       {/* What others see */}
       <div style={{ margin: '8px 12px', background: '#1a0f00', border: '1px solid #d97706', borderRadius: 12, padding: 12 }}>
-        <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, marginBottom: 6 }}>👁 What Others See in EGBE Mode</div>
+        <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 700, marginBottom: 6 }}>👁 What Others See in UMOJA Mode</div>
         <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.6 }}>Your social handle, personality, posts, and connections. Your work history, village role, and clan matters are completely hidden. This is your public creative face.</div>
       </div>
 
@@ -329,7 +332,7 @@ function EgbeConnectionsTab() {
 // ── Kinsmen Tab — Rings of Belonging ──────────────────────────────────────
 
 const RINGS_META = [
-  { level: 1, key: 'IDILE', yoruba: 'Ìdílé', sub: 'The Hearth', emoji: '🔥', color: '#D97706', desc: 'Family that shares your fire' },
+  { level: 1, key: 'IDILE', yoruba: 'Ukoo',  sub: 'The Hearth', emoji: '🔥', color: '#D97706', desc: 'Family that shares your fire' },
   { level: 2, key: 'EGBE',  yoruba: 'Ẹgbẹ́',  sub: 'The Age-Set', emoji: '🤝', color: '#7C3AED', desc: 'Peers who began the journey together' },
   { level: 3, key: 'ILU',   yoruba: 'Ìlú',   sub: 'The Village', emoji: '🏘', color: '#1a7c3e', desc: 'The town that knows your name' },
   { level: 4, key: 'IJOBA', yoruba: 'Ìjọba', sub: 'The Nation',  emoji: '🌍', color: '#6b7280', desc: 'People who share the land' },
@@ -339,6 +342,44 @@ const RINGS_META = [
 const INITIAL_KINSMEN: { handle: string; name: string; avatar: string; village: string; crest: string; ring: number; ringKey: string; since: string }[] = []
 
 const RING_COUNTS = { ring1: 0, ring2: 0, ring3: 0, ring4: 0 }
+
+// ── ORÍKÌ tab — Skill + Praise content ───────────────────────────
+function EgbeOrikiTab() {
+  const router = useRouter()
+  const MOCK_ORIKI = [
+    { id:'v1', title:'Kente demonstration — 2m 14s', emoji:'🎨', heat:'FEAST', gbo:234, grad:['#1a0520','#3d0a4a'] },
+    { id:'v2', title:'Market speech — 47s',           emoji:'🎙', heat:'Boiling', gbo:89,  grad:['#200a00','#4d1f00'] },
+    { id:'v3', title:'Harvest proof — 1m 03s',        emoji:'🌾', heat:'Simmering', gbo:45, grad:['#04100a','#0f3018'] },
+  ]
+  const HEAT_COLOR: Record<string, string> = { 'FEAST':'#d4a017', 'Boiling':'#ef4444', 'Simmering':'#d97706', 'Ember':'#6b7280' }
+  return (
+    <div style={{ padding: '12px' }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 12 }}>
+        Your ORÍKÌ — Proof of Skill
+      </div>
+      <button
+        onClick={() => router.push('/dashboard/feed')}
+        style={{ width: '100%', padding: '12px', borderRadius: 14, background: 'linear-gradient(135deg,rgba(192,57,43,.15),rgba(192,57,43,.05))', border: '1px solid rgba(192,57,43,.3)', color: '#f87171', fontSize: 13, fontWeight: 800, cursor: 'pointer', marginBottom: 14, fontFamily: 'Sora, sans-serif' }}
+      >
+        🎭 Enter ORÍKÌ Praise Feed
+      </button>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        {MOCK_ORIKI.map(v => (
+          <div key={v.id} style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer' }}>
+            <div style={{ height: 72, background: `linear-gradient(135deg,${v.grad[0]},${v.grad[1]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>{v.emoji}</div>
+            <div style={{ padding: '6px 7px 8px', background: 'rgba(255,255,255,.03)' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#f0f5ee', lineHeight: 1.4, marginBottom: 4 }}>{v.title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 8, fontWeight: 700, color: HEAT_COLOR[v.heat] ?? '#6b7280', padding: '1px 5px', borderRadius: 99, background: `${HEAT_COLOR[v.heat] ?? '#6b7280'}18`, border: `1px solid ${HEAT_COLOR[v.heat] ?? '#6b7280'}30` }}>{v.heat}</span>
+                <span style={{ fontSize: 8, color: 'rgba(255,255,255,.35)' }}>⭐ {v.gbo}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function KinsmenTab() {
   const [activeRing, setActiveRing] = React.useState<number | null>(null)

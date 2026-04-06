@@ -25,7 +25,7 @@ export default function ToolWorkspace({ tool }: { tool: ToolDefinition }) {
         {tool.icon}
       </div>
 
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 6 }}>{tool.name}</div>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 6 }}>{tool.name}</div>
       <div style={{ fontSize: 13, color: C.sub, lineHeight: 1.6, marginBottom: 20, maxWidth: 280, margin: '0 auto 20px' }}>{tool.description}</div>
 
       {/* Badges */}

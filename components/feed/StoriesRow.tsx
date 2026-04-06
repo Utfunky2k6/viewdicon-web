@@ -2,8 +2,8 @@
 import * as React from 'react'
 
 // ═══════════════════════════════════════════════════════════════
-// Stories Row + Fullscreen Viewer — Instagram-style stories
-// with African cultural identity
+// Stories Row + Fullscreen Viewer — Soro Soke Fire Stories
+// Soro Soke culturally-rooted ephemeral story sharing
 // ═══════════════════════════════════════════════════════════════
 
 interface Story {
@@ -47,13 +47,21 @@ export default function StoriesRow() {
   const [activeStory, setActiveStory] = React.useState(0)
   const [activeSlide, setActiveSlide] = React.useState(0)
   const [viewed, setViewed] = React.useState<Set<string>>(new Set(STORIES.filter(s=>s.viewed).map(s=>s.id)))
+  const [storyReply, setStoryReply] = React.useState('')
+  const [hearted, setHearted] = React.useState(false)
+  const [createStoryOpen, setCreateStoryOpen] = React.useState(false)
+  const [createStoryText, setCreateStoryText] = React.useState('')
+  const [replySent, setReplySent] = React.useState(false)
   const timerRef = React.useRef<ReturnType<typeof setTimeout>|null>(null)
 
   const openStory = (idx: number) => {
-    if (idx === 0) return // "Your Story" — would open creation flow
+    if (idx === 0) { setCreateStoryOpen(true); return }
     setActiveStory(idx)
     setActiveSlide(0)
     setViewerOpen(true)
+    setHearted(false)
+    setStoryReply('')
+    setReplySent(false)
     setViewed(prev => new Set(prev).add(STORIES[idx].id))
   }
 
@@ -213,18 +221,75 @@ export default function StoriesRow() {
 
           {/* Reply bar */}
           <div style={{ padding:'12px 14px', background:'rgba(0,0,0,.6)', display:'flex', gap:8 }}>
-            <input placeholder="Reply to story..." style={{
+            <input
+              value={storyReply}
+              onChange={e => setStoryReply(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && storyReply.trim()) {
+                  setReplySent(true)
+                  setStoryReply('')
+                  setTimeout(() => setReplySent(false), 2000)
+                }
+              }}
+              placeholder={replySent ? 'Reply sent!' : 'Reply to story...'}
+              style={{
               flex:1, background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)',
               borderRadius:24, padding:'10px 16px', color:'#fff', fontSize:13, outline:'none',
             }}/>
-            <button style={{
-              width:40, height:40, borderRadius:'50%', background:'rgba(255,255,255,.1)',
-              border:'none', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
-            }}>❤️</button>
+            {storyReply.trim() ? (
+              <button onClick={() => {
+                setReplySent(true)
+                setStoryReply('')
+                setTimeout(() => setReplySent(false), 2000)
+              }} style={{
+                width:40, height:40, borderRadius:'50%', background:'#1a7c3e',
+                border:'none', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff',
+              }}>↑</button>
+            ) : (
+              <button onClick={() => setHearted(h => !h)} style={{
+                width:40, height:40, borderRadius:'50%', background: hearted ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.1)',
+                border:'none', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+                transition:'all .2s',
+              }}>{hearted ? '❤️' : '🤍'}</button>
+            )}
           </div>
 
           {/* Inject progress + slide keyframes */}
           <style>{`@keyframes storyProgress{from{width:0}to{width:100%}}@keyframes storySlideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}`}</style>
+        </div>
+      )}
+      {/* ── Create Story mini-sheet ── */}
+      {createStoryOpen && (
+        <div style={{ position:'fixed',inset:0,zIndex:500,background:'rgba(0,0,0,.65)',backdropFilter:'blur(4px)',display:'flex',flexDirection:'column' }} onClick={() => setCreateStoryOpen(false)}>
+          <div style={{ flex:1 }} />
+          <div onClick={e => e.stopPropagation()} style={{ background:'#111a0d',borderRadius:'24px 24px 0 0',padding:'20px 16px 40px' }}>
+            <div style={{ width:40,height:4,borderRadius:99,background:'rgba(255,255,255,.2)',margin:'0 auto 16px' }} />
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:18,fontWeight:900,color:'#f0f5ee',marginBottom:14 }}>Add to Your Story</div>
+            <textarea
+              value={createStoryText}
+              onChange={e => setCreateStoryText(e.target.value)}
+              placeholder="What's happening in your village right now?"
+              style={{ width:'100%',boxSizing:'border-box',background:'rgba(255,255,255,.05)',border:'1.5px solid rgba(255,255,255,.1)',borderRadius:14,padding:'14px 16px',fontSize:14,color:'#f0f5ee',outline:'none',resize:'none',minHeight:80,lineHeight:1.5,fontFamily:'DM Sans,sans-serif' }}
+            />
+            <div style={{ display:'flex',gap:8,marginTop:12 }}>
+              {[
+                { emoji:'📝', label:'Text', type:'text' },
+                { emoji:'🛒', label:'Market', type:'market' },
+                { emoji:'📿', label:'Proverb', type:'proverb' },
+              ].map(({ emoji, label }) => (
+                <div key={label} style={{ flex:1,padding:10,background:'rgba(255,255,255,.04)',border:'1px solid rgba(255,255,255,.08)',borderRadius:10,textAlign:'center',fontSize:11,fontWeight:700,color:'rgba(255,255,255,.5)',cursor:'pointer' }}>
+                  {emoji} {label}
+                </div>
+              ))}
+            </div>
+            <button
+              disabled={createStoryText.trim().length < 3}
+              onClick={() => { setCreateStoryOpen(false); setCreateStoryText('') }}
+              style={{ width:'100%',padding:14,background:createStoryText.trim().length < 3 ? 'rgba(26,124,62,.3)' : '#1a7c3e',border:'none',borderRadius:14,fontSize:14,fontWeight:700,color:'#fff',cursor:createStoryText.trim().length < 3 ? 'not-allowed' : 'pointer',fontFamily:'Sora, sans-serif',marginTop:12 }}
+            >
+              🔥 Light Your Story
+            </button>
+          </div>
         </div>
       )}
     </>

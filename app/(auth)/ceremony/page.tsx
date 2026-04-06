@@ -114,25 +114,25 @@ function buildSequence(circle: UserCircle | null): Step[] {
 }
 
 const STEP_LABELS: Record<Step,string> = {
-  TERMS: 'Oath of Entry',
-  PRIVACY: 'Privacy Consent',
-  PHONE: 'Talking Drum',
-  OTP: 'Drum Code',
-  CIRCLES: 'Three Circles',
-  HERITAGE_VERIFY: 'Heritage Verification',
-  DEVICE: 'Sovereign Binding',
-  FINGERPRINT: 'Fingerprint Bind',
-  BIOMETRIC: 'Face Recognition',
-  VOICE: 'Voice Registration',
-  HERITAGE: 'Heritage Check',
-  NAMING: 'Naming Ceremony',
-  FAMILY: 'Family Tree',
-  VILLAGE: 'Village Gate',
-  ROLE: 'Choose Role',
-  CONFIRM: 'Confirm Path',
-  CORONATION: 'Digital Birth',
-  ALLY_CORONATION: 'Ally Coronation',
-  ALLY_NAME: 'Your Identity',
+  TERMS:            'Ìbẹwẹ — Oath of Entry',
+  PRIVACY:          'Ìpamọ̀ Àṣírí — Sacred Privacy',
+  PHONE:            'Ìlù Ifọ̀rọ̀wánilẹ̀nì — Talking Drum',
+  OTP:              'Ìlù Kóòdù — Drum Code',
+  CIRCLES:          'Ẹ̀gẹ Ìpilẹ̀ — Root Circles',
+  HERITAGE_VERIFY:  'Iní Ìmọ̀ — Ancestry Check',
+  DEVICE:           'Ìdádúró Ọba — Sovereign Binding',
+  FINGERPRINT:      'Ika Ẹni — Fingerprint Seal',
+  BIOMETRIC:        'Ojú Ẹni — Face Seal',
+  VOICE:            'Ohùn Ẹni — Voice Seal',
+  HERITAGE:         'Ìbátan Ẹni — Heritage Check',
+  NAMING:           'Sísún Orúkọ — Naming Ceremony',
+  FAMILY:           'Igi Ìdílé — Family Tree',
+  VILLAGE:          'Ẹnu Abúlé — Village Gate',
+  ROLE:             'Àṣà Ìpò — Your Station',
+  CONFIRM:          'Ìjẹ̀rísí — Seal Your Path',
+  CORONATION:       'Ìbí Ìtàn — Digital Birth',
+  ALLY_CORONATION:  'Ìgbà Ọrẹ — Ally Coronation',
+  ALLY_NAME:        'Orúkọ Rẹ — Your Name',
 }
 
 // ── Shared atoms ───────────────────────────────────────────────
@@ -182,24 +182,34 @@ function Shell({ children, progress, step, theme, stepIndex, sequenceLength }: {
     <div style={{ position:'fixed', inset:0, background:theme.bg, display:'flex', flexDirection:'column', overflow:'hidden', color:theme.text, transition:'background .3s ease, color .3s ease' }}>
       <style>{CEREMONY_CSS}</style>
 
+      {/* Adinkra Gye Nyame — ceremony sovereign background pattern */}
+      <div aria-hidden="true" style={{
+        position:'absolute', inset:0, pointerEvents:'none', zIndex:0, opacity:0.03,
+        backgroundImage:`url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%231a7c3e' fill='none' stroke-linecap='round'%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3Cline x1='50' y1='8' x2='50' y2='22' stroke-width='1.2'/%3E%3Cline x1='50' y1='78' x2='50' y2='92' stroke-width='1.2'/%3E%3Cline x1='8' y1='50' x2='22' y2='50' stroke-width='1.2'/%3E%3Cline x1='78' y1='50' x2='92' y2='50' stroke-width='1.2'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1' transform='rotate(90 50 50)'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3C/g%3E%3C/svg%3E")`,
+        backgroundSize:'100px 100px', backgroundRepeat:'repeat',
+      }} />
+
+      {/* Pan-African Kente stripe — top sovereign edge */}
+      <div aria-hidden="true" style={{ height:4, flexShrink:0, background:'linear-gradient(90deg, #1a7c3e 0%,#1a7c3e 25%, #d4a017 25%,#d4a017 50%, #b22222 50%,#b22222 75%, #1a1a1a 75%,#1a1a1a 100%)', zIndex:21, position:'relative' }} />
+
       {/* Top Bar */}
-      <div style={{ padding:'12px 16px 8px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`1px solid ${theme.border}`, background:theme.card, zIndex:20 }}>
+      <div style={{ padding:'12px 16px 8px', display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`1px solid ${theme.border}`, background:theme.card, zIndex:20, position:'relative' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#1a7c3e,#b22222)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🌍</div>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:14, fontWeight:900, letterSpacing:'-0.02em', color:theme.text }}>VIEWDICON</div>
+            <div style={{ fontFamily:'Sora, sans-serif', fontSize:14, fontWeight:900, letterSpacing:'-0.02em', color:theme.text }}>VIEWDICON</div>
             <div style={{ fontSize:9, fontWeight:800, color:theme.accent, textTransform:'uppercase', letterSpacing:'.1em', marginTop:-1 }}>Scene {displayStep} of {sequenceLength + 1} — {STEP_LABELS[step]}</div>
           </div>
         </div>
         <div style={{ padding:'5px 10px', borderRadius:8, background:theme.muted, fontSize:10, fontWeight:800, color:theme.subText }}>{step}</div>
       </div>
 
-      {/* Progress Line */}
+      {/* Progress Line — Kente-style: left half green, right half gold→red */}
       <div style={{ height:4, background:theme.muted, position:'relative', zIndex:20, overflow:'hidden' }}>
-        <motion.div initial={{ scaleX:0 }} animate={{ scaleX:progress/100 }} transition={{ duration:0.5 }} style={{ height:'100%', background:`linear-gradient(to right, ${theme.accent}, #b22222)`, borderRadius:'0 2px 2px 0', transformOrigin:'left' }} />
+        <motion.div initial={{ scaleX:0 }} animate={{ scaleX:progress/100 }} transition={{ duration:0.5 }} style={{ height:'100%', background:`linear-gradient(to right, #1a7c3e, #d4a017, #b22222)`, borderRadius:'0 2px 2px 0', transformOrigin:'left' }} />
       </div>
 
-      <div style={{ flex:1, display:'flex', flexDirection:'column', position:'relative', overflowY:'auto' }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', position:'relative', zIndex:1, overflowY:'auto' }}>
         {children}
       </div>
 
@@ -215,7 +225,7 @@ function TermsStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:24, background:theme.bg }}>
       <div style={{ textAlign:'center', marginBottom:32 }}>
         <div style={{ fontSize:48, marginBottom:16 }}>📜</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:26, fontWeight:900, color:theme.text, marginBottom:10 }}>Oath of Entry</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:26, fontWeight:900, color:theme.text, marginBottom:10 }}>Oath of Entry</div>
         <p style={{ fontSize:14, color:theme.subText, lineHeight:1.6 }}>By entering the Motherland, you swear to uphold the principles of Ubuntu, sovereignty, and kinship.</p>
       </div>
 
@@ -244,7 +254,7 @@ function PrivacyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:24, background:theme.bg }}>
       <div style={{ textAlign:'center', marginBottom:32 }}>
         <div style={{ fontSize:48, marginBottom:16 }}>🛡️</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:26, fontWeight:900, color:theme.text, marginBottom:10 }}>Privacy Consent</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:26, fontWeight:900, color:theme.text, marginBottom:10 }}>Privacy Consent</div>
         <p style={{ fontSize:14, color:theme.subText, lineHeight:1.6 }}>Your data is encrypted using the Nkisi Shield protocols.</p>
       </div>
 
@@ -273,9 +283,9 @@ function PrivacyStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
 
 // ── STEP: CIRCLES ───────────────────────────────────────────
 const CIRC_DEF = [
-  { id:0, title:'Auto-Detected African', sub:'Born in Africa or to African parents — your SIM has spoken', icon:'🧬', color:'#1a7c3e', quote:'"Roots deep in the Motherland."' },
-  { id:1, title:'Child of the Diaspora', sub:'African heritage — living anywhere in the world', icon:'🌍', color:'#e07b00', quote:'"Branches reaching across oceans."' },
-  { id:2, title:'Friend of the Motherland', sub:'Cultural ally — your heart beats for Africa\'s rise', icon:'🤝', color:'#3b82f6', quote:'"Heart beating for Africa\'s rise."' },
+  { id:0, title:'Ọmọ Ilẹ̀ Àfríkà', sub:'Born in Africa or to African parents — your roots run deep in the soil', icon:'🧬', color:'#1a7c3e', quote:'"Ẹni tó bá mọ ibí ìpilẹ̀ rẹ̀ — One who knows their origin."' },
+  { id:1, title:'Ọmọ Àṣálà — Diaspora Child', sub:'African heritage — your spirit stretches across oceans back home', icon:'🌍', color:'#e07b00', quote:'"Ẹ̀gbẹ tí a tán — Branches that never forget the root."' },
+  { id:2, title:'Óré Ilẹ̀ Ìyá — Motherland Ally', sub:'Friend of the continent — your heart beats for Africa\'s rise', icon:'🤝', color:'#3b82f6', quote:'"Kí a jẹ ẹni kan — Let us be one people."' },
 ]
 
 function CirclesStep({ geoResult, geoLoading, onNext, theme }: { geoResult:any; geoLoading:boolean; onNext:(c:number)=>void; theme:any }) {
@@ -293,9 +303,9 @@ function CirclesStep({ geoResult, geoLoading, onNext, theme }: { geoResult:any; 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:20, background:theme.bg }}>
       <div style={{ textAlign:'center', marginBottom:24 }}>
-        <div style={{ fontSize:40, marginBottom:16 }}>⚪</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:6 }}>The Three Circles</div>
-        <div style={{ fontSize:13, color:theme.subText, lineHeight:1.5 }}>Africa is more than a map; it is a lineage. Choose your point of entry.</div>
+        <div style={{ fontSize:40, marginBottom:16 }}>🌀</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:6 }}>Ẹ̀gẹ Ìpilẹ̀ — The Root Circles</div>
+        <div style={{ fontSize:13, color:theme.subText, lineHeight:1.5 }}>Africa is more than a map — it is a lineage, a spirit, a living covenant. Declare your root.</div>
       </div>
 
       <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:20 }}>
@@ -372,7 +382,7 @@ function PhoneStep({ onSendDrum, theme }: { onSendDrum:(d:string, p:string)=>voi
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:20, background:theme.bg }}>
       <div style={{ textAlign:'center', marginBottom:24 }}>
         <div style={{ fontSize:48, marginBottom:16 }}>🥁</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:theme.text, marginBottom:6 }}>Digital Talking Drum</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:24, fontWeight:900, color:theme.text, marginBottom:6 }}>Digital Talking Drum</div>
         <div style={{ fontSize:14, color:theme.subText, lineHeight:1.5 }}>Your phone number is your sacred link. No passwords needed.</div>
       </div>
 
@@ -522,7 +532,7 @@ function OtpStep({ onNext, theme, phone, devOtp, isDark, onResend, onOtpStart }:
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:20, background:theme.bg }}>
       <div style={{ textAlign:'center', marginBottom:24 }}>
         <div style={{ fontSize:48, marginBottom:14 }}>⚡</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:theme.text, marginBottom:6 }}>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:24, fontWeight:900, color:theme.text, marginBottom:6 }}>
           {verified ? '✅ Drum Sealed!' : verifying ? '⏳ Sealing Drum…' : 'Seal the Drum'}
         </div>
         <div style={{ fontSize:13, color:theme.subText, lineHeight:1.5 }}>Enter the 6-digit code sent to your drum.</div>
@@ -608,28 +618,49 @@ function OtpStep({ onNext, theme, phone, devOtp, isDark, onResend, onOtpStart }:
 }
 
 // ── Heritage data constants ──
+// Ordered geographically: East → West → South → North → Central → Global
+// so no single region appears "first" in isolation.
 const HERITAGE_GROUPS = [
-  { id:'yoruba',        emoji:'🌺', name:'Yoruba',        region:'West Africa',       note:'Nigeria · Benin · Togo' },
-  { id:'igbo',          emoji:'🦅', name:'Igbo',          region:'West Africa',       note:'Nigeria · Cameroon' },
-  { id:'hausa_fulani',  emoji:'🐪', name:'Hausa-Fulani',  region:'West Africa',       note:'Nigeria · Niger · Ghana' },
-  { id:'akan',          emoji:'🥁', name:'Akan',          region:'West Africa',       note:'Ghana · Côte d\'Ivoire' },
-  { id:'zulu',          emoji:'🛡️',  name:'Zulu',          region:'Southern Africa',   note:'South Africa' },
-  { id:'xhosa',         emoji:'🌿', name:'Xhosa',         region:'Southern Africa',   note:'South Africa' },
-  { id:'amhara',        emoji:'☀️', name:'Amhara',        region:'East Africa',       note:'Ethiopia' },
-  { id:'somali',        emoji:'🌙', name:'Somali',        region:'East Africa',       note:'Somalia · Kenya · Ethiopia' },
-  { id:'kikuyu',        emoji:'🌱', name:'Kikuyu',        region:'East Africa',       note:'Kenya' },
-  { id:'wolof',         emoji:'🐬', name:'Wolof',         region:'West Africa',       note:'Senegal · Gambia' },
-  { id:'mandinka',      emoji:'🌴', name:'Mandinka',      region:'West Africa',       note:'Gambia · Guinea · Mali' },
-  { id:'ashanti',       emoji:'👑', name:'Ashanti',       region:'West Africa',       note:'Ghana' },
-  { id:'ndebele',       emoji:'🎨', name:'Ndebele',       region:'Southern Africa',   note:'Zimbabwe · South Africa' },
-  { id:'fulani',        emoji:'🐄', name:'Fulani',        region:'Across Africa',     note:'Sahel Belt' },
-  { id:'swahili',       emoji:'⚓', name:'Swahili',       region:'East Africa',       note:'Tanzania · Kenya · Uganda' },
-  { id:'hutu_tutsi',    emoji:'🌋', name:'Great Lakes',   region:'Central Africa',    note:'Rwanda · Burundi · DRC' },
-  { id:'berber',        emoji:'🏔️', name:'Amazigh/Berber', region:'North Africa',    note:'Morocco · Algeria · Libya' },
-  { id:'arabic',        emoji:'🌙', name:'Arab-African',  region:'North Africa',      note:'Egypt · Sudan · Mauritania' },
-  { id:'diaspora',      emoji:'✈️', name:'African Diaspora', region:'Global',        note:'Caribbean · Americas · Europe' },
-  { id:'mixed',         emoji:'🌍', name:'Mixed Heritage', region:'Pan-African',     note:'Multiple ancestral roots' },
+  // ── East Africa ─────────────────────────────────────────────
+  { id:'amhara',        emoji:'☀️', name:'Amhara',         region:'East Africa',     note:'Ethiopia',                    color:'#E85D04' },
+  { id:'swahili',       emoji:'⚓', name:'Swahili',         region:'East Africa',     note:'Tanzania · Kenya · Uganda',   color:'#0891B2' },
+  { id:'kikuyu',        emoji:'🌱', name:'Kikuyu',          region:'East Africa',     note:'Kenya',                       color:'#15803D' },
+  { id:'somali',        emoji:'🌙', name:'Somali',          region:'East Africa',     note:'Somalia · Kenya · Ethiopia',  color:'#4338CA' },
+  { id:'oromo',         emoji:'🌾', name:'Oromo',           region:'East Africa',     note:'Ethiopia · Kenya',            color:'#C2410C' },
+  // ── West Africa ─────────────────────────────────────────────
+  { id:'akan',          emoji:'🥁', name:'Akan / Twi',      region:'West Africa',     note:'Ghana · Côte d\'Ivoire',      color:'#D4A017' },
+  { id:'ashanti',       emoji:'👑', name:'Ashanti',          region:'West Africa',     note:'Ghana',                       color:'#CA8A04' },
+  { id:'wolof',         emoji:'🐬', name:'Wolof',            region:'West Africa',     note:'Senegal · Gambia',            color:'#0369A1' },
+  { id:'mandinka',      emoji:'🌴', name:'Mandinka',         region:'West Africa',     note:'Gambia · Guinea · Mali',      color:'#15803D' },
+  { id:'yoruba',        emoji:'🌺', name:'Yoruba',           region:'West Africa',     note:'Nigeria · Benin · Togo',      color:'#9333EA' },
+  { id:'igbo',          emoji:'🦅', name:'Igbo',             region:'West Africa',     note:'Nigeria · Cameroon',          color:'#DC2626' },
+  { id:'hausa_fulani',  emoji:'🐪', name:'Hausa-Fulani',     region:'West Africa',     note:'Nigeria · Niger · Ghana',     color:'#D97706' },
+  { id:'fulani',        emoji:'🐄', name:'Fulani',           region:'Across Africa',   note:'Sahel Belt',                  color:'#B45309' },
+  // ── Southern Africa ─────────────────────────────────────────
+  { id:'zulu',          emoji:'🛡️', name:'Zulu',             region:'Southern Africa', note:'South Africa',                color:'#059669' },
+  { id:'xhosa',         emoji:'🌿', name:'Xhosa',            region:'Southern Africa', note:'South Africa',                color:'#0F766E' },
+  { id:'ndebele',       emoji:'🎨', name:'Ndebele',          region:'Southern Africa', note:'Zimbabwe · South Africa',     color:'#DB2777' },
+  // ── North Africa ────────────────────────────────────────────
+  { id:'berber',        emoji:'🏔️', name:'Amazigh / Berber', region:'North Africa',    note:'Morocco · Algeria · Libya',   color:'#7C3AED' },
+  { id:'arabic',        emoji:'🌙', name:'Arab-African',      region:'North Africa',    note:'Egypt · Sudan · Mauritania',  color:'#0C4A6E' },
+  // ── Central Africa ──────────────────────────────────────────
+  { id:'hutu_tutsi',    emoji:'🌋', name:'Great Lakes',       region:'Central Africa',  note:'Rwanda · Burundi · DRC',      color:'#B91C1C' },
+  // ── Diaspora / Pan-African ───────────────────────────────────
+  { id:'diaspora',      emoji:'✈️', name:'African Diaspora',  region:'Global',          note:'Caribbean · Americas · Europe', color:'#1a7c3e' },
+  { id:'mixed',         emoji:'🌍', name:'Mixed Heritage',    region:'Pan-African',     note:'Multiple ancestral roots',    color:'#6B7280' },
 ]
+
+// Region meta — colour, label, icon
+const REGION_META: Record<string, { color: string; icon: string }> = {
+  'East Africa':     { color: '#E85D04', icon: '🌅' },
+  'West Africa':     { color: '#D4A017', icon: '🌴' },
+  'Southern Africa': { color: '#059669', icon: '🦁' },
+  'North Africa':    { color: '#7C3AED', icon: '🏔️' },
+  'Central Africa':  { color: '#B91C1C', icon: '🌋' },
+  'Across Africa':   { color: '#B45309', icon: '🐄' },
+  'Global':          { color: '#1a7c3e', icon: '✈️' },
+  'Pan-African':     { color: '#6B7280', icon: '🌍' },
+}
 
 const SEASONS = [
   { id:'harmattan', emoji:'🌬️', name:'Harmattan',   months:'Nov – Feb', desc:'The dry, dusty winds from the Sahara' },
@@ -728,7 +759,7 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
 
       {/* Quote header */}
       <div style={{ padding:'10px 20px 14px', flexShrink:0 }}>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:17, fontWeight:900, color:theme.text, lineHeight:1.35, marginBottom:3 }}>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:17, fontWeight:900, color:theme.text, lineHeight:1.35, marginBottom:3 }}>
           {meta.quote.replace(/"/g,'')}
         </div>
         <div style={{ fontSize:10, color:theme.subText, fontStyle:'italic' }}>
@@ -749,7 +780,7 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
                     background: selectedGroup===g.id ? `${meta.bg}15` : theme.card,
                     textAlign:'left', cursor:'pointer', transition:'all .18s' }}>
                   <div style={{ fontSize:20, marginBottom:4 }}>{g.emoji}</div>
-                  <div style={{ fontFamily:'Sora,sans-serif', fontSize:12, fontWeight:800, color:theme.text, marginBottom:1 }}>{g.name}</div>
+                  <div style={{ fontFamily:'Sora, sans-serif', fontSize:12, fontWeight:800, color:theme.text, marginBottom:1 }}>{g.name}</div>
                   <div style={{ fontSize:9, color:meta.bg, fontWeight:700 }}>{g.region}</div>
                   <div style={{ fontSize:8, color:theme.subText, marginTop:1 }}>{g.note}</div>
                 </button>
@@ -771,7 +802,7 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
                       display:'flex', alignItems:'center', gap:12, cursor:'pointer', transition:'all .18s' }}>
                     <span style={{ fontSize:24, flexShrink:0 }}>{s.emoji}</span>
                     <div style={{ flex:1, textAlign:'left' }}>
-                      <div style={{ fontFamily:'Sora,sans-serif', fontSize:14, fontWeight:800, color:theme.text }}>{s.name}</div>
+                      <div style={{ fontFamily:'Sora, sans-serif', fontSize:14, fontWeight:800, color:theme.text }}>{s.name}</div>
                       <div style={{ fontSize:10, color:meta.bg, fontWeight:700 }}>{s.months}</div>
                       <div style={{ fontSize:10, color:theme.subText, marginTop:1 }}>{s.desc}</div>
                     </div>
@@ -786,7 +817,7 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
                 placeholder="e.g. 1995" inputMode="numeric" maxLength={4}
                 style={{ width:'100%', padding:'13px 16px', borderRadius:13, background:theme.card,
                   border:`2px solid ${yearOk ? meta.bg+'88' : theme.border}`,
-                  color:theme.text, fontSize:18, fontWeight:900, fontFamily:'Sora,sans-serif',
+                  color:theme.text, fontSize:18, fontWeight:900, fontFamily:'Sora, sans-serif',
                   outline:'none', letterSpacing:'.12em', transition:'border .2s' }} />
               {birthYear.length===4 && !yearOk && (
                 <div style={{ fontSize:10, color:'#f87171', marginTop:5 }}>Please enter a valid birth year between 1924 and {currentYear-5}.</div>
@@ -853,7 +884,7 @@ function HeritageStep({ onNext, theme }: { onNext:(heritage:string)=>void; theme
               <div style={{ padding:'12px 16px', borderRadius:14, background:`${meta.bg}10`, border:`1.5px solid ${meta.bg}33`, display:'flex', alignItems:'center', gap:12 }}>
                 <span style={{ fontSize:28 }}>📍</span>
                 <div>
-                  <div style={{ fontFamily:'Sora,sans-serif', fontSize:14, fontWeight:800, color:theme.text }}>{currentCity}, {currentCountry}</div>
+                  <div style={{ fontFamily:'Sora, sans-serif', fontSize:14, fontWeight:800, color:theme.text }}>{currentCity}, {currentCountry}</div>
                   <div style={{ fontSize:10, color:meta.bg, marginTop:2 }}>Your digital home coordinates are locked ✓</div>
                 </div>
               </div>
@@ -1091,6 +1122,8 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
   const [first, setFirst] = React.useState('')
   const [last, setLast] = React.useState('')
   const [displayName, setDisplayName] = React.useState('')
+  const [genderLocal, setGenderLocal] = React.useState<'male'|'female'|'non-binary'|'prefer-not-to-say'|''>('')
+  const [languageCode, setLanguageCode] = React.useState('en')
   const [ancestralNation, setAncestralNation] = React.useState('')
   const [originState, setOriginState] = React.useState('')
   const [originVillage, setOriginVillage] = React.useState('')
@@ -1165,6 +1198,8 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
         fullName: `${first.trim()} ${last.trim()}`,
         displayName: displayName.trim() || first.trim(),
         dateOfBirth: dob, birthYear,
+        gender: genderLocal,
+        languageCode,
         ancestralNation: originUnknown ? '(unknown — root discovery pending)' : ancestralNation,
         originState: originState.trim(), originVillage: originVillage.trim(),
         ethnicGroup, clanLineage,
@@ -1180,6 +1215,9 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
 
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', background:theme.bg }}>
+      {/* Pan-African Kente stripe header */}
+      <div style={{ height:4, background:'linear-gradient(90deg, #1a7c3e 0%,#1a7c3e 25%, #d4a017 25%,#d4a017 50%, #b22222 50%,#b22222 75%, #1a1a1a 75%,#1a1a1a 100%)', flexShrink:0 }} />
+
       <div style={{ display:'flex', background:theme.card, borderBottom:`1px solid ${theme.border}`, overflowX:'auto', scrollbarWidth:'none' }}>
         {SCENE_TABS.map((t,i)=>(
           <div key={t} onClick={()=>setTab(i)} style={{ flex:1, padding:'14px 10px', textAlign:'center', fontSize:10, fontWeight:900, color:tab===i?theme.accent:theme.subText, borderBottom:`3px solid ${tab===i?theme.accent:'transparent'}`, cursor:'pointer', minWidth:80, whiteSpace:'nowrap', transition:'all .2s' }}>{t.toUpperCase()}</div>
@@ -1192,46 +1230,91 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
           {tab === 1 && localHeritage && config !== UBUNTU_CEREMONY ? (
             <>
               <div style={{ fontSize:10,fontWeight:800,color:theme.accent,textTransform:'uppercase',letterSpacing:'.12em',marginBottom:6 }}>{config.welcomeLanguage} Naming Ceremony</div>
-              <div style={{ fontFamily:'Sora,sans-serif', fontSize:20, fontWeight:900, color:theme.text, marginBottom:2, lineHeight:1.2 }}>{config.ceremonyName}</div>
+              <div style={{ fontFamily:'Sora, sans-serif', fontSize:20, fontWeight:900, color:theme.text, marginBottom:2, lineHeight:1.2 }}>{config.ceremonyName}</div>
               <div style={{ fontSize:11, color:theme.subText, marginBottom:8, fontStyle:'italic' }}>{config.ceremonyNameTranslation}</div>
               <div style={{ background:`${m.color}12`, border:`1px solid ${m.color}30`, borderRadius:12, padding:'10px 16px', marginBottom:4, fontSize:15, fontWeight:800, color:m.color }}>{config.welcomePhrase}</div>
               <div style={{ fontSize:11, fontStyle:'italic', color:theme.subText, lineHeight:1.5 }}>{`"${config.namingProverb}"`} <span style={{ color:'rgba(255,255,255,.3)' }}>— {config.proverbOrigin}</span></div>
             </>
           ) : (
             <>
-              <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>{m.title}</div>
+              <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>{m.title}</div>
               <div style={{ fontSize:12, fontStyle:'italic', color:theme.subText, lineHeight:1.5 }}>{tab === 1 ? `"${config.namingProverb}" (${config.proverbOrigin})` : m.quote}</div>
             </>
           )}
         </div>
 
         {tab===0 && (
-          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            {/* Full heritage group picker — dedicated NAMING tab */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
-              {HERITAGE_GROUPS.slice(0,18).map(g => {
-                const sel = localHeritage === g.id
-                return (
-                  <button key={g.id} onClick={()=>setLocalHeritage(g.id)}
-                    style={{ padding:'12px 8px', borderRadius:14, border:`2px solid ${sel ? theme.accent : theme.border}`, background: sel ? `${theme.accent}15` : theme.card, display:'flex', flexDirection:'column', alignItems:'center', gap:4, cursor:'pointer', transition:'all .15s', boxShadow: sel ? `0 0 12px ${theme.accent}33` : 'none', position:'relative' }}>
-                    {sel && <div style={{ position:'absolute', top:4, right:4, width:16, height:16, borderRadius:'50%', background:theme.accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#fff', fontWeight:900 }}>{'\u2713'}</div>}
-                    <span style={{ fontSize:22 }}>{g.emoji}</span>
-                    <span style={{ fontSize:10, fontWeight:800, color: sel ? theme.accent : theme.text, textAlign:'center', lineHeight:1.2 }}>{g.name}</span>
-                    <span style={{ fontSize:8, color:theme.subText, textAlign:'center' }}>{g.note}</span>
-                  </button>
-                )
-              })}
+          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+
+            {/* Pan-African intro banner */}
+            <div style={{ background:'linear-gradient(135deg,rgba(26,124,62,.12),rgba(212,160,23,.08))', border:'1px solid rgba(212,160,23,.2)', borderRadius:16, padding:'14px 16px', textAlign:'center', position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', inset:0, backgroundImage:`url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='26' fill='none' stroke='%231a7c3e' stroke-width='0.6' stroke-opacity='.3'/%3E%3Ccircle cx='30' cy='30' r='18' fill='none' stroke='%231a7c3e' stroke-width='0.5' stroke-opacity='.2'/%3E%3Ccircle cx='30' cy='30' r='8' fill='none' stroke='%231a7c3e' stroke-width='0.5' stroke-opacity='.15'/%3E%3C/svg%3E")`, backgroundSize:'60px 60px', backgroundRepeat:'repeat', opacity:.6 }} />
+              <div style={{ position:'relative', zIndex:1 }}>
+                <div style={{ fontSize:22, marginBottom:4 }}>🌍</div>
+                <div style={{ fontFamily:'Sora, sans-serif', fontSize:15, fontWeight:900, color:theme.text, marginBottom:4 }}>54 Nations · One Motherland</div>
+                <div style={{ fontSize:11, color:theme.subText, lineHeight:1.6 }}>Your naming ceremony is drawn from your ancestral tradition — choose your heritage below, or use the universal Pan-African Ubuntu ceremony.</div>
+              </div>
             </div>
-            <button onClick={()=>{setLocalHeritage('');setTab(1)}} style={{ width:'100%', padding:'10px 0', borderRadius:12, background:'none', border:`1px dashed ${theme.border}`, color:theme.subText, fontSize:11, fontWeight:600, cursor:'pointer' }}>
-              Skip to use Pan-African Ubuntu ceremony
+
+            {/* Regional group display */}
+            {(() => {
+              const regions = Array.from(new Set(HERITAGE_GROUPS.map(g => g.region)))
+              return regions.map(region => {
+                const regionGroups = HERITAGE_GROUPS.filter(g => g.region === region)
+                const meta = REGION_META[region] ?? { color:'#1a7c3e', icon:'🌍' }
+                return (
+                  <div key={region}>
+                    {/* Region header */}
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+                      <div style={{ height:1, flex:1, background:`linear-gradient(to right, ${meta.color}40, transparent)` }} />
+                      <div style={{ fontSize:9, fontWeight:900, color:meta.color, textTransform:'uppercase', letterSpacing:'.12em', display:'flex', alignItems:'center', gap:4 }}>
+                        <span>{meta.icon}</span> {region}
+                      </div>
+                      <div style={{ height:1, flex:1, background:`linear-gradient(to left, ${meta.color}40, transparent)` }} />
+                    </div>
+                    {/* Group cards */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+                      {regionGroups.map(g => {
+                        const sel = localHeritage === g.id
+                        const accentColor = g.color ?? meta.color
+                        return (
+                          <button key={g.id} onClick={()=>setLocalHeritage(g.id)}
+                            style={{ padding:'12px 8px', borderRadius:14, border:`2px solid ${sel ? accentColor : theme.border}`, background: sel ? `${accentColor}18` : theme.card, display:'flex', flexDirection:'column', alignItems:'center', gap:4, cursor:'pointer', transition:'all .15s', boxShadow: sel ? `0 0 14px ${accentColor}44` : 'none', position:'relative' }}>
+                            {sel && <div style={{ position:'absolute', top:4, right:4, width:16, height:16, borderRadius:'50%', background:accentColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#fff', fontWeight:900 }}>✓</div>}
+                            <span style={{ fontSize:22 }}>{g.emoji}</span>
+                            <span style={{ fontSize:10, fontWeight:800, color: sel ? accentColor : theme.text, textAlign:'center', lineHeight:1.2 }}>{g.name}</span>
+                            <span style={{ fontSize:8, color:theme.subText, textAlign:'center' }}>{g.note}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })
+            })()}
+
+            <button onClick={()=>{setLocalHeritage('');setTab(1)}} style={{ width:'100%', padding:'12px 0', borderRadius:12, background:'rgba(26,124,62,.06)', border:`1px dashed ${theme.accent}44`, color:theme.accent, fontSize:11, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              🌍 Ubuntu Ceremony — Use Pan-African Universal Naming
             </button>
+
             {localHeritage && (
-              <div style={{ background:`${theme.accent}08`, border:`1px solid ${theme.accent}33`, borderRadius:16, padding:16, color:theme.accent, fontSize:12, lineHeight:1.7 }}>
-                <div style={{ fontWeight:800, marginBottom:6, fontSize:13 }}>📿 {config.ceremonyName}</div>
-                <div style={{ fontSize:11, color:theme.subText, marginBottom:6, fontStyle:'italic' }}>{config.ceremonyNameTranslation}</div>
-                <div style={{ background:`${m.color}12`, border:`1px solid ${m.color}30`, borderRadius:12, padding:'10px 14px', marginBottom:8, fontSize:15, fontWeight:800, color:m.color }}>{config.welcomePhrase}</div>
-                <div style={{ color:theme.subText, lineHeight:1.7, marginBottom:6 }}>{config.namingRitual}</div>
+              <div style={{ background:`rgba(26,124,62,.06)`, border:`1px solid ${theme.accent}33`, borderRadius:16, padding:16, color:theme.accent, fontSize:12, lineHeight:1.7 }}>
+                {/* Mini Adinkrahene concentric circles as decorative element */}
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+                  <div style={{ width:36, height:36, flexShrink:0, borderRadius:'50%', border:`2px solid ${theme.accent}40`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
+                    {HERITAGE_GROUPS.find(g=>g.id===localHeritage)?.emoji ?? '🌍'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight:900, fontSize:14, color:theme.text }}>📿 {config.ceremonyName}</div>
+                    <div style={{ fontSize:10, color:theme.subText, fontStyle:'italic' }}>{config.ceremonyNameTranslation}</div>
+                  </div>
+                </div>
+                <div style={{ background:`${m.color}12`, border:`1px solid ${m.color}30`, borderRadius:12, padding:'10px 14px', marginBottom:8, fontSize:14, fontWeight:800, color:m.color }}>{config.welcomePhrase}</div>
+                <div style={{ color:theme.subText, lineHeight:1.7, marginBottom:6, fontSize:11 }}>{config.namingRitual}</div>
                 <div style={{ display:'flex',alignItems:'center',gap:6,fontSize:10,fontWeight:800,color:theme.accent }}><span>👴</span> Officiated by: {config.elderTitle}</div>
+                <button onClick={()=>setTab(1)} style={{ marginTop:10, width:'100%', padding:'10px 0', borderRadius:12, background:`${theme.accent}18`, border:`1px solid ${theme.accent}44`, color:theme.accent, fontSize:11, fontWeight:800, cursor:'pointer' }}>
+                  Begin {config.ceremonyName} →
+                </button>
               </div>
             )}
           </div>
@@ -1255,6 +1338,53 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
             <DField label="Forename(s) *" placeholder="e.g. Amara, Kofi, Zainab" value={first} onChange={setFirst} theme={theme} />
             <DField label="Surname *" placeholder="e.g. Okafor, Mensah, Diallo" value={last} onChange={setLast} theme={theme} />
             <DField label="Display Name — How the village will know you" placeholder="e.g. Amara or @MarketKing" value={displayName} onChange={setDisplayName} theme={theme} />
+
+            {/* Language preference */}
+            <div style={{ marginBottom: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.subText, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Preferred Language</div>
+              <select
+                value={languageCode}
+                onChange={e => setLanguageCode(e.target.value)}
+                style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: theme.muted, border: `1.5px solid ${theme.border}`, color: theme.text, fontSize: 13, outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}
+              >
+                <option value="en">English</option>
+                <option value="fr">French — Français</option>
+                <option value="sw">Swahili — Kiswahili</option>
+                <option value="yo">Yoruba</option>
+                <option value="ha">Hausa</option>
+                <option value="ig">Igbo</option>
+                <option value="am">Amharic — አማርኛ</option>
+                <option value="ar">Arabic — العربية</option>
+                <option value="pt">Portuguese — Português</option>
+                <option value="zu">Zulu</option>
+              </select>
+            </div>
+
+            {/* Gender selection */}
+            <div style={{ marginBottom: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: theme.subText, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Gender — Optional</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {([
+                  { key: 'male',              label: 'Man' },
+                  { key: 'female',            label: 'Woman' },
+                  { key: 'non-binary',        label: 'Non-binary' },
+                  { key: 'prefer-not-to-say', label: 'Prefer not to say' },
+                ] as const).map(g => (
+                  <button
+                    key={g.key}
+                    type="button"
+                    onClick={() => setGenderLocal(genderLocal === g.key ? '' : g.key)}
+                    style={{
+                      padding: '10px 8px', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      border: `1.5px solid ${genderLocal === g.key ? theme.accent : theme.border}`,
+                      background: genderLocal === g.key ? `${theme.accent}18` : theme.card,
+                      color: genderLocal === g.key ? theme.accent : theme.text,
+                      transition: 'all .15s',
+                    }}
+                  >{g.label}</button>
+                ))}
+              </div>
+            </div>
 
             <VoiceRecorder label="Speak your name" theme={theme} />
 
@@ -1534,7 +1664,7 @@ function DeviceStep({ onNext, theme, onVoicePrint }: { onNext:()=>void; theme:an
           ))}
           <div style={{ position:'absolute', inset:12, borderRadius:'50%', background:`linear-gradient(135deg,${theme.accent},#0a1f0f)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, boxShadow:`0 0 30px ${theme.accent}33` }}>🖐</div>
         </div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:6 }}>This device is your Drum.</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:6 }}>This device is your Drum.</div>
         <div style={{ fontSize:12, color:theme.subText, lineHeight:1.65, maxWidth:280, margin:'0 auto' }}>
           In the old kingdoms, a king&apos;s drum was bound to his spirit.<br />Your phone is now bound to your Afro-ID.
         </div>
@@ -1557,7 +1687,7 @@ function DeviceStep({ onNext, theme, onVoicePrint }: { onNext:()=>void; theme:an
           <div style={{ fontSize:10, fontWeight:800, color:'#7da882', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
             🎙 Step 2 of 2 · Speak Your Voice Oath
           </div>
-          <div style={{ fontFamily:'Sora,sans-serif', fontSize:15, fontWeight:700, color:'#4ade80', marginBottom:12, lineHeight:1.4 }}>
+          <div style={{ fontFamily:'Sora, sans-serif', fontSize:15, fontWeight:700, color:'#4ade80', marginBottom:12, lineHeight:1.4 }}>
             &ldquo;I am proud of my African heritage&rdquo;
           </div>
           {/* Waveform bars */}
@@ -1589,7 +1719,7 @@ function DeviceStep({ onNext, theme, onVoicePrint }: { onNext:()=>void; theme:an
       {oathDone && (
         <div style={{ background:'rgba(26,124,62,.1)', border:'1.5px solid rgba(26,124,62,.35)', borderRadius:14, padding:14, marginBottom:16, textAlign:'center' }}>
           <div style={{ fontSize:28, marginBottom:4 }}>🥁</div>
-          <div style={{ fontFamily:'Sora,sans-serif', fontSize:15, fontWeight:800, color:'#4ade80' }}>Your Drum is Bound.</div>
+          <div style={{ fontFamily:'Sora, sans-serif', fontSize:15, fontWeight:800, color:'#4ade80' }}>Your Drum is Bound.</div>
           <div style={{ fontSize:11, color:'rgba(74,222,128,.6)', marginTop:4 }}>Voice oath sealed · Voice commands now active 🎙</div>
         </div>
       )}
@@ -1816,7 +1946,7 @@ function BiometricStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
       <div style={{ flex:1, display:'flex', flexDirection:'column', padding:24, background:theme.bg }}>
         <div style={{ textAlign:'center', marginBottom:32 }}>
           <div style={{ fontSize:56, marginBottom:16 }}>{enrolled ? '✅' : '🔐'}</div>
-          <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:theme.text, marginBottom:8 }}>
+          <div style={{ fontFamily:'Sora, sans-serif', fontSize:24, fontWeight:900, color:theme.text, marginBottom:8 }}>
             {enrolled ? 'Biometric Bound!' : 'Bind Your Spirit'}
           </div>
           <div style={{ fontSize:13, color:theme.subText, lineHeight:1.6 }}>
@@ -1930,7 +2060,7 @@ function VoiceStep({ onNext, theme }: { onNext:()=>void; theme:any }) {
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:24, background:theme.bg }}>
       <div style={{ textAlign:'center', marginBottom:32 }}>
         <div style={{ fontSize:48, marginBottom:16 }}>🎙️</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:26, fontWeight:900, color:theme.text, marginBottom:10 }}>Voice Registration</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:26, fontWeight:900, color:theme.text, marginBottom:10 }}>Voice Registration</div>
         <p style={{ fontSize:14, color:theme.subText, lineHeight:1.6 }}>Speak Clearly: "My voice is my key, the Motherland is my home."</p>
       </div>
 
@@ -2114,7 +2244,7 @@ function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any 
             </div>
           </div>
           <div style={{ flex:1 }}>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:20, fontWeight:900, color:theme.text, lineHeight:1.2 }}>Kinship Circle</div>
+            <div style={{ fontFamily:'Sora, sans-serif', fontSize:20, fontWeight:900, color:theme.text, lineHeight:1.2 }}>Kinship Circle</div>
             <div style={{ fontSize:11, color:theme.subText, lineHeight:1.5, marginTop:3 }}>
               {members.length > 0 ? `✅ ${members.length} member${members.length!==1?'s':''} added · Add up to ${7-members.length} more` : 'Optional — you can skip and add family later'}
             </div>
@@ -2139,7 +2269,7 @@ function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any 
               {m.emoji ?? '👤'}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:'Sora,sans-serif', fontSize:14, fontWeight:800, color:theme.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.name}</div>
+              <div style={{ fontFamily:'Sora, sans-serif', fontSize:14, fontWeight:800, color:theme.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.name}</div>
               <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:3, flexWrap:'wrap' }}>
                 <span style={{ fontSize:10, fontWeight:700, color:tierColor(m.tier), background:`${tierColor(m.tier)}15`, padding:'2px 8px', borderRadius:99 }}>{m.rel}</span>
                 <span style={{ fontSize:10, color:'rgba(255,255,255,.35)', fontStyle:'italic' }}>{m.afRel}</span>
@@ -2182,13 +2312,13 @@ function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any 
   if (view === 'categories') return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:20, background:theme.bg }}>
       <button onClick={()=>setView('list')} style={{ alignSelf:'flex-start', display:'flex', alignItems:'center', gap:5, background:'none', border:'none', color:theme.subText, fontSize:13, fontWeight:700, cursor:'pointer', marginBottom:16 }}>← Back</button>
-      <div style={{ fontFamily:'Sora,sans-serif', fontSize:20, fontWeight:900, color:theme.text, marginBottom:4 }}>Who is this person?</div>
+      <div style={{ fontFamily:'Sora, sans-serif', fontSize:20, fontWeight:900, color:theme.text, marginBottom:4 }}>Who is this person?</div>
       <div style={{ fontSize:12, color:theme.subText, marginBottom:20 }}>Select the category that describes your relationship.</div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
         {KINSHIP_CATS.map(cat => (
           <button key={cat.id} onClick={()=>handleSelectCat(cat.id)} style={{ padding:'18px 12px', borderRadius:18, border:`2px solid ${cat.color}33`, background:`${cat.color}08`, display:'flex', flexDirection:'column', alignItems:'center', gap:8, cursor:'pointer', transition:'all .2s', textAlign:'center' }}>
             <span style={{ fontSize:28 }}>{cat.emoji}</span>
-            <span style={{ fontFamily:'Sora,sans-serif', fontSize:13, fontWeight:800, color:theme.text }}>{cat.label}</span>
+            <span style={{ fontFamily:'Sora, sans-serif', fontSize:13, fontWeight:800, color:theme.text }}>{cat.label}</span>
             <span style={{ fontSize:10, color:cat.color, fontWeight:700 }}>
               {KINSHIP_OPTIONS[cat.id]?.length} types
             </span>
@@ -2208,7 +2338,7 @@ function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any 
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
           <span style={{ fontSize:28 }}>{cat.emoji}</span>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:18, fontWeight:900, color:theme.text }}>{cat.label}</div>
+            <div style={{ fontFamily:'Sora, sans-serif', fontSize:18, fontWeight:900, color:theme.text }}>{cat.label}</div>
             <div style={{ fontSize:11, color:theme.subText }}>Choose the specific relationship</div>
           </div>
         </div>
@@ -2217,7 +2347,7 @@ function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any 
             <button key={opt.type} onClick={()=>handleSelectOpt(opt)} style={{ padding:'14px 16px', borderRadius:16, border:`1.5px solid ${cat.color}33`, background:`${cat.color}06`, display:'flex', alignItems:'center', gap:14, cursor:'pointer', textAlign:'left', transition:'all .2s' }}>
               <span style={{ fontSize:24, flexShrink:0, width:36, textAlign:'center' }}>{opt.emoji}</span>
               <div style={{ flex:1 }}>
-                <div style={{ fontFamily:'Sora,sans-serif', fontSize:14, fontWeight:800, color:theme.text }}>{opt.en}</div>
+                <div style={{ fontFamily:'Sora, sans-serif', fontSize:14, fontWeight:800, color:theme.text }}>{opt.en}</div>
                 <div style={{ fontSize:11, color:cat.color, fontWeight:700, marginTop:2 }}>{opt.af}</div>
               </div>
               <div style={{ padding:'3px 9px', borderRadius:99, background:`${TIER_COLORS[opt.tier]}15`, border:`1px solid ${TIER_COLORS[opt.tier]}33`, fontSize:9, fontWeight:800, color:TIER_COLORS[opt.tier], flexShrink:0 }}>
@@ -2239,7 +2369,7 @@ function FamilyStep({ onNext, theme }: { onNext:(members:FM[])=>void; theme:any 
       <div style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:16, background:`${TIER_COLORS[selOpt.tier]}10`, border:`1.5px solid ${TIER_COLORS[selOpt.tier]}30`, marginBottom:20 }}>
         <span style={{ fontSize:28 }}>{selOpt.emoji}</span>
         <div>
-          <div style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:800, color:theme.text }}>{selOpt.en}</div>
+          <div style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:800, color:theme.text }}>{selOpt.en}</div>
           <div style={{ fontSize:12, color:TIER_COLORS[selOpt.tier], fontWeight:700 }}>{selOpt.af} · {TIER_LABELS[selOpt.tier]}</div>
         </div>
       </div>
@@ -2297,7 +2427,7 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
     return (
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:20 }}>
         <div style={{ width:64, height:64, borderRadius:'50%', background:'rgba(178,34,34,.15)', border:'2px solid rgba(178,34,34,.4)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:14 }}>🚫</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:18, fontWeight:800, color:'#f87171', textAlign:'center', marginBottom:6 }}>Village Access Denied</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:18, fontWeight:800, color:'#f87171', textAlign:'center', marginBottom:6 }}>Village Access Denied</div>
         <div style={{ fontSize:12, color:'rgba(255,255,255,.5)', textAlign:'center', lineHeight:1.65, maxWidth:280 }}>Under the Motherland Sovereignty Law, Village access requires either African soil status or completed Heritage Verification.</div>
       </div>
     )
@@ -2309,7 +2439,7 @@ function VillageStep({ onNext, theme, sovereigntyAllowed }: { onNext:(v:Village)
   return (
     <div style={{ flex:1, display:'flex', flexDirection:'column', background:theme.bg }}>
        <div style={{ padding:20, flexShrink:0 }}>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>Choose Your Village</div>
         <div style={{ fontSize:13, color:theme.subText }}>The professional guild where you will grow your legacy.</div>
       </div>
 
@@ -2388,7 +2518,7 @@ function RoleStep({ village, onNext, theme }: { village:Village; onNext:(role:st
       {/* Header */}
       <div style={{ textAlign:'center', marginBottom:20 }}>
         <div style={{ fontSize:52, marginBottom:8 }}>{selected.emoji}</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>{selected.name}</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:4 }}>{selected.name}</div>
         <div style={{ display:'inline-block', padding:'3px 14px', borderRadius:99, background:`${theme.accent}18`, border:`1px solid ${theme.accent}44`, fontSize:10, fontWeight:800, color:theme.accent, marginBottom:10 }}>{selected.sector}</div>
         <div style={{ fontSize:13, color:theme.subText, lineHeight:1.65, maxWidth:300, margin:'0 auto' }}>{selected.desc}</div>
       </div>
@@ -2468,7 +2598,7 @@ function RoleStep({ village, onNext, theme }: { village:Village; onNext:(role:st
             style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 14px', borderRadius:16, background:theme.card, border:`1.5px solid ${theme.border}`, marginBottom:8, cursor:'pointer', textAlign:'left', transition:'all .15s' }}>
             <span style={{ fontSize:22, flexShrink:0, width:36, textAlign:'center' }}>{role.emoji}</span>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:'Sora,sans-serif', fontSize:13, fontWeight:800, color:theme.text, marginBottom:2 }}>{role.name}</div>
+              <div style={{ fontFamily:'Sora, sans-serif', fontSize:13, fontWeight:800, color:theme.text, marginBottom:2 }}>{role.name}</div>
               <div style={{ fontSize:10, color:theme.accent, fontWeight:700, marginBottom:2 }}>{role.sector}</div>
               <div style={{ fontSize:10, color:theme.subText, lineHeight:1.5 }}>{role.desc}</div>
             </div>
@@ -2509,7 +2639,7 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
           <div style={{ position:'absolute', bottom:-4, right:-4, width:36, height:36, borderRadius:'50%', background:theme.card, border:`2px solid ${theme.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🛡</div>
         </div>
 
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:theme.text, letterSpacing:'-0.02em', marginBottom:6 }}>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:24, fontWeight:900, color:theme.text, letterSpacing:'-0.02em', marginBottom:6 }}>
           Confirm Your Sacred Path
         </div>
         <div style={{ fontSize:13, color:theme.subText, lineHeight:1.6, maxWidth:300, margin:'0 auto' }}>
@@ -2525,7 +2655,7 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
             {village.emoji}
           </div>
           <div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'-0.01em' }}>
+            <div style={{ fontFamily:'Sora, sans-serif', fontSize:18, fontWeight:900, color:'#fff', letterSpacing:'-0.01em' }}>
               {village.name}
             </div>
             <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.7)', marginTop:2 }}>
@@ -2540,7 +2670,7 @@ function ConfirmStep({ village, role, theme, onNext }: { village:Village; role:s
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <div style={{ width:38, height:38, borderRadius:10, background:`${village.color}14`, border:`1.5px solid ${village.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>⚔</div>
             <div>
-              <div style={{ fontFamily:'Sora,sans-serif', fontSize:15, fontWeight:800, color:theme.text }}>{role}</div>
+              <div style={{ fontFamily:'Sora, sans-serif', fontSize:15, fontWeight:800, color:theme.text }}>{role}</div>
               <div style={{ fontSize:11, color:village.color, fontWeight:700, marginTop:1 }}>{village.name}</div>
             </div>
           </div>
@@ -2677,7 +2807,7 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
           <div style={{ position:'absolute', inset:16, borderRadius:'50%', background:'radial-gradient(circle at 35% 35%,#1a7c3e,#0a1f0f)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, boxShadow:'0 0 40px rgba(26,124,62,.5)' }}>🛡</div>
         </div>
 
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:24, fontWeight:900, color:'#f0f7f0', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .4s' }}>Welcome Home!</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:24, fontWeight:900, color:'#f0f7f0', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .4s' }}>Welcome Home!</div>
         <div style={{ fontSize:13, color:'#7da882', textAlign:'center', lineHeight:1.65, marginBottom:8 }}>You are now a citizen of<br/>the Digital Motherland.</div>
         {village.ancientName && (
           <div style={{ fontFamily:'"Cinzel","Palatino",serif', fontSize:18, fontWeight:900, color: village.color, letterSpacing:'0.08em', textAlign:'center', marginBottom:4, opacity: revealed ? 1 : 0, transition:'opacity .6s .6s', textShadow:`0 0 20px ${village.color}80` }}>
@@ -2701,7 +2831,7 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
 
         {/* Security warning */}
         <div style={{ width:'100%', background:'rgba(178,34,34,.08)', border:'1px solid rgba(178,34,34,.2)', borderRadius:14, padding:'12px 14px', marginBottom:12 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:'#f87171', marginBottom:5, fontFamily:'Sora,sans-serif' }}>⚠ Keep Your Afro-ID Sacred</div>
+          <div style={{ fontSize:11, fontWeight:700, color:'#f87171', marginBottom:5, fontFamily:'Sora, sans-serif' }}>⚠ Keep Your Afro-ID Sacred</div>
           <div style={{ fontSize:10, color:'rgba(248,113,113,.7)', lineHeight:1.8 }}>• Never share publicly or with untrusted sources<br/>• Used for banking, recovery, and verification<br/>• Store it like a land title — your digital deed</div>
         </div>
 
@@ -2710,17 +2840,35 @@ function CoronationStep({ village, role, onDone, theme }: { village:Village; rol
           {[['🛡','Nkisi Shield','GREEN · 100%'],['🔒','Encrypted','AES-256'],['🌍','Sovereign','African data'],['🏅','Crest Tier','Tier 0 · New']].map(([ico,n,s])=>(
             <div key={n} style={{ flex:1, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.06)', borderRadius:14, padding:'10px 6px', textAlign:'center' }}>
               <div style={{ fontSize:18 }}>{ico}</div>
-              <div style={{ fontFamily:'Sora,sans-serif', fontSize:9, fontWeight:700, color:'#f0f7f0' }}>{n}</div>
+              <div style={{ fontFamily:'Sora, sans-serif', fontSize:9, fontWeight:700, color:'#f0f7f0' }}>{n}</div>
               <div style={{ fontSize:8, color:'#7da882', marginTop:2 }}>{s}</div>
             </div>
           ))}
         </div>
 
-        {/* Proverb */}
-        <div style={{ width:'100%', background:'rgba(212,160,23,.07)', border:'1px solid rgba(212,160,23,.18)', borderRadius:14, padding:'12px 16px', textAlign:'center', marginBottom:16 }}>
-          <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.6 }}>&ldquo;Ọmọ tí a kọ ni yóò ta ilé tì wa&rdquo;</div>
-          <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>The child we do not teach will sell our house — Yoruba Proverb</div>
-        </div>
+        {/* Proverb — rotating Pan-African proverbs */}
+        {(() => {
+          const CORONATION_PROVERBS = [
+            { text: "Umuntu ngumuntu ngabantu", translation: "A person is a person through other people", origin: "Ubuntu — Zulu / Xhosa / Nguni" },
+            { text: "Bɔ wo ho adwene so", translation: "Think well before you act", origin: "Akan Proverb — Ghana" },
+            { text: "Ikinya gitarimbuwe n\u2019imvura, kitarimbuwe n\u2019ibihe", translation: "A mountain is not moved by rain, nor by seasons", origin: "Kinyarwanda — Rwanda" },
+            { text: "Akili ni mali", translation: "Knowledge is wealth", origin: "Swahili Proverb — East Africa" },
+            { text: "Nit fit garabam mooy nit", translation: "A person\u2019s best friend is another person", origin: "Wolof — Senegal" },
+            { text: "Ayanf\u1eb9 eniyan ni \u1eb9s\u1eb9 r\u1eb9", translation: "A person\u2019s character is their beauty", origin: "Yoruba — West Africa" },
+            { text: "Chukwu d\u1ecb n\u2019onye \u1ecdb\u1ee5la", translation: "The divine lives in every person", origin: "Igbo — Nigeria" },
+            { text: "Motho ke motho ka batho", translation: "I am because we are", origin: "Sesotho — Southern Africa" },
+            { text: "Baraka ya Mungu ni sawa kwa wote", translation: "God\u2019s blessing is equal for all", origin: "Swahili — Tanzania" },
+            { text: "D\u0254 w\u0254 h\u0254 a, ehia a y\u1b9de ma f\u00e3fr\u00e3", translation: "When love is present, even the most difficult things become light", origin: "Akan — Ghana" },
+          ]
+          const proverb = CORONATION_PROVERBS[Math.floor(Date.now() / 86400000) % CORONATION_PROVERBS.length]
+          return (
+            <div style={{ width:'100%', background:'rgba(212,160,23,.07)', border:'1px solid rgba(212,160,23,.18)', borderRadius:14, padding:'12px 16px', textAlign:'center', marginBottom:16 }}>
+              <div style={{ fontSize:12, fontStyle:'italic', color:'#d4a017', lineHeight:1.6 }}>&ldquo;{proverb.text}&rdquo;</div>
+              <div style={{ fontSize:10, color:'rgba(240,247,240,.6)', marginTop:4, lineHeight:1.5 }}>{proverb.translation}</div>
+              <div style={{ fontSize:9, color:'rgba(212,160,23,.45)', marginTop:4, fontWeight:600 }}>— {proverb.origin}</div>
+            </div>
+          )
+        })()}
         <GradBtn onClick={onDone} style={{ width:'100%' }}>Enter the Motherland 🌍 →</GradBtn>
       </div>
     </div>
@@ -2766,7 +2914,7 @@ function HeritageVerifyStep({ onPass, onFail, theme }: { onPass:()=>void; onFail
       <div style={{flex:1,display:'flex',flexDirection:'column',padding:20,background:theme.bg,overflowY:'auto'}}>
         <div style={{textAlign:'center',marginBottom:20}}>
           <div style={{fontSize:48,marginBottom:10}}>{result.passed ? '✅' : '🕯'}</div>
-          <div style={{fontFamily:'Sora,sans-serif',fontSize:22,fontWeight:900,color:theme.text,marginBottom:6}}>
+          <div style={{fontFamily:'Sora, sans-serif',fontSize:22,fontWeight:900,color:theme.text,marginBottom:6}}>
             {result.passed ? 'Heritage Verified' : 'Heritage Unverified'}
           </div>
           <div style={{fontSize:13,color:theme.subText,lineHeight:1.55}}>
@@ -2795,7 +2943,7 @@ function HeritageVerifyStep({ onPass, onFail, theme }: { onPass:()=>void; onFail
     <div style={{flex:1,display:'flex',flexDirection:'column',padding:20,background:theme.bg,overflowY:'auto'}}>
       <div style={{textAlign:'center',marginBottom:20}}>
         <div style={{fontSize:48,marginBottom:10}}>🦅</div>
-        <div style={{fontFamily:'Sora,sans-serif',fontSize:22,fontWeight:900,color:theme.text,marginBottom:6}}>Griot Speaks</div>
+        <div style={{fontFamily:'Sora, sans-serif',fontSize:22,fontWeight:900,color:theme.text,marginBottom:6}}>Griot Speaks</div>
         <div style={{fontSize:13,color:theme.subText,lineHeight:1.55}}>The Griot — keeper of living memory — asks 7 questions to verify your lineage.</div>
       </div>
 
@@ -2870,7 +3018,7 @@ function AllyNameStep({ onNext, theme }: { onNext:(name:string)=>void; theme:any
     <div style={{ flex:1, display:'flex', flexDirection:'column', padding:20, background:theme.bg, overflowY:'auto' }}>
       <div style={{ textAlign:'center', marginBottom:22 }}>
         <div style={{ fontSize:48, marginBottom:10 }}>🌐</div>
-        <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:6 }}>Your Global Identity</div>
+        <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:900, color:theme.text, marginBottom:6 }}>Your Global Identity</div>
         <div style={{ fontSize:13, color:theme.subText, lineHeight:1.55 }}>Tell us who you are. This will be your profile on Viewdicon as a Friend of the Motherland.</div>
       </div>
 
@@ -2933,7 +3081,7 @@ function AllyCoronationStep({ allyName, onDone, theme }: { allyName?:string; onD
       <div style={{width:90,height:90,borderRadius:'50%',background:'linear-gradient(135deg,#1e40af,#3b82f6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:44,marginBottom:20,boxShadow:'0 0 40px rgba(59,130,246,.35)',opacity:revealed?1:0,transform:revealed?'scale(1)':'scale(.4)',transition:'all .8s cubic-bezier(.34,1.56,.64,1)'}}>
         🤝
       </div>
-      <div style={{fontFamily:'Sora,sans-serif',fontSize:20,fontWeight:900,color:'#f0f7f0',textAlign:'center',marginBottom:4}}>{allyName ? `Welcome, ${allyName}` : 'Welcome, Friend of the Motherland'}</div>
+      <div style={{fontFamily:'Sora, sans-serif',fontSize:20,fontWeight:900,color:'#f0f7f0',textAlign:'center',marginBottom:4}}>{allyName ? `Welcome, ${allyName}` : 'Welcome, Friend of the Motherland'}</div>
       <div style={{fontSize:13,color:'#93c5fd',textAlign:'center',lineHeight:1.65,marginBottom:18,maxWidth:300}}>You are a cultural ally and bridge-builder. Your Ally ID is permanent.</div>
       <div style={{width:'100%',background:'rgba(30,64,175,.12)',border:'1.5px solid rgba(59,130,246,.3)',borderRadius:18,padding:'14px 18px',marginBottom:16}}>
         <div style={{fontSize:9,fontWeight:800,color:'rgba(147,197,253,.5)',textTransform:'uppercase',letterSpacing:'.12em',marginBottom:4}}>Ally Identification</div>
@@ -3134,7 +3282,7 @@ function CeremonyInner() {
         heritage: nd.heritage || selectedHeritage || undefined,
         heritageCircle,
         displayName: overrideDisplayName || nd.displayName || nd.first || fullName || allyName || undefined,
-        languageCode: 'en',
+        languageCode: nd.languageCode || 'en',
         ancestralNation: nd.ancestralNation || undefined,
         ethnicGroup: nd.ethnicGroup || undefined,
         clanLineage: nd.clanLineage || undefined,
@@ -3185,15 +3333,23 @@ function CeremonyInner() {
           }).catch(() => { /* family service failures are non-fatal */ })
         })
       }
-    } catch {
-      // Registration failed — still advance, user can retry login
+    } catch (err) {
+      // Re-throw so callers (handlePreCoronation) can block navigation
+      throw err
     }
   }
 
+  const [registerError, setRegisterError] = React.useState('')
+
   // Called when user confirms their village/role — registers BEFORE coronation
   const handlePreCoronation = async () => {
-    await handleRegister()
-    next()
+    setRegisterError('')
+    try {
+      await handleRegister()
+      next()
+    } catch {
+      setRegisterError('Registration failed — please check your connection and try again.')
+    }
   }
 
   const handleDone = async () => {
@@ -3229,6 +3385,14 @@ function CeremonyInner() {
 
   return (
     <Shell progress={progress} step={step} theme={theme} stepIndex={idx} sequenceLength={SEQUENCE.length}>
+      {/* Registration error banner — shown when handlePreCoronation fails */}
+      {registerError && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 200, padding: '12px 20px', background: 'rgba(178,34,34,.95)', borderBottom: '1px solid rgba(178,34,34,.8)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+          <span style={{ fontSize: 13, color: '#fff', fontWeight: 700, flex: 1, lineHeight: 1.4 }}>{registerError}</span>
+          <button onClick={() => setRegisterError('')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,.7)', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>✕</button>
+        </div>
+      )}
       <AnimatePresence mode="wait">
         <motion.div key={step} initial={{ opacity:0, x:20 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-20 }} transition={{ duration:0.25 }} style={{ flex:1, display:'flex', flexDirection:'column' }}>
           {step==='TERMS'           && <TermsStep onNext={next} theme={theme} />}
@@ -3249,6 +3413,8 @@ function CeremonyInner() {
           {step==='HERITAGE'        && <HeritageStep onNext={(h) => { setSelectedHeritage(h); next() }} theme={theme} />}
           {step==='NAMING'          && <NamingStep onNext={next} theme={theme} heritage={selectedHeritage} isDark={isDark} onNamingData={(d) => {
             setFullName(d.fullName || ''); setDateOfBirth(d.dateOfBirth || '')
+            // Collect gender from naming step
+            if (d.gender) setGender(d.gender as typeof gender)
             // Store all ceremony naming fields in a ref for register
             namingDataRef.current = d
           }} />}

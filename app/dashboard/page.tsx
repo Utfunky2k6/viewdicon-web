@@ -67,28 +67,31 @@ function getAfricanGreeting() {
   return { text: AFRICAN_GREETINGS[lang][period], language: lang }
 }
 
-// ── Village name map ──────────────────────────────────────────
-const VILLAGE_NAMES: Record<string, { en: string; local: string }> = {
-  commerce:     { en: 'Commerce Village',     local: 'Ìlú Oníṣòwò'     },
-  health:       { en: 'Health Village',       local: 'Ìlú Ìwòsàn'      },
-  agriculture:  { en: 'Agriculture Village',  local: 'Ìlú Àgbẹ̀'        },
-  education:    { en: 'Education Village',    local: 'Ilé Ìwé'          },
-  justice:      { en: 'Justice Village',      local: 'Ìlú Ìdájọ́'       },
-  finance:      { en: 'Finance Village',      local: 'Ìlú Owó'         },
-  builders:     { en: 'Builders Village',     local: 'Ìlú Oníṣẹ́'       },
-  technology:   { en: 'Technology Village',   local: 'Ìlú Ìmọ̀-ẹ̀rọ'    },
-  arts:         { en: 'Arts Village',         local: 'Ìlú Oníṣọnà'     },
-  media:        { en: 'Media Village',        local: 'Ìlú Ìròyìn'      },
-  security:     { en: 'Security Village',     local: 'Ìlú Aṣọ́jú'       },
-  spirituality: { en: 'Spirituality Village', local: 'Ìlú Ìmọ̀lè'      },
-  fashion:      { en: 'Fashion Village',      local: 'Ìlú Aṣọ'         },
-  family:       { en: 'Family Village',       local: 'Ìlú Ìdílé'       },
-  transport:    { en: 'Transport Village',    local: 'Ìlú Ọkọ̀'         },
-  energy:       { en: 'Energy Village',       local: 'Ìlú Agbára'      },
-  hospitality:  { en: 'Hospitality Village',  local: 'Ìlú Àlejò'       },
-  government:   { en: 'Government Village',   local: 'Ìlú Ìjọba'       },
-  sports:       { en: 'Sports Village',       local: 'Ìlú Eré-Ìdárayá' },
-  holdings:     { en: 'Holdings Village',     local: 'Ìlú Ohun Ìní'    },
+// ── Village name map — multi-linguistic Pan-African names ────────
+// Each village has names from different African language families,
+// not just Yoruba. Names drawn from: Swahili, Akan/Twi, Amharic,
+// Zulu, Wolof, Hausa, Arabic-North-African, Lingala traditions.
+const VILLAGE_NAMES: Record<string, { en: string; local: string; lang: string }> = {
+  commerce:     { en: 'Commerce Village',     local: 'Mji wa Biashara',   lang: 'Swahili'  },
+  health:       { en: 'Health Village',       local: 'Kua ya Afya',       lang: 'Swahili'  },
+  agriculture:  { en: 'Agriculture Village',  local: 'Aburokyire Kuro',   lang: 'Akan/Twi' },
+  education:    { en: 'Education Village',    local: 'Bet Timhirt',       lang: 'Amharic'  },
+  justice:      { en: 'Justice Village',      local: 'Indlu Yobulungisa', lang: 'Zulu'     },
+  finance:      { en: 'Finance Village',      local: 'Dëkk bi Xaalis',   lang: 'Wolof'    },
+  builders:     { en: 'Builders Village',     local: 'Gari Magina',       lang: 'Hausa'    },
+  technology:   { en: 'Technology Village',   local: 'Mji wa Teknolojia', lang: 'Swahili'  },
+  arts:         { en: 'Arts Village',         local: 'Abadwuma Kuro',     lang: 'Akan/Twi' },
+  media:        { en: 'Media Village',        local: 'Mji wa Habari',     lang: 'Swahili'  },
+  security:     { en: 'Security Village',     local: 'Indlu Yokuphepha',  lang: 'Zulu'     },
+  spirituality: { en: 'Spirituality Village', local: 'Mji wa Roho',       lang: 'Swahili'  },
+  fashion:      { en: 'Fashion Village',      local: 'Dëkk bi Ngom',     lang: 'Wolof'    },
+  family:       { en: 'Family Village',       local: 'Umzi Womndeni',     lang: 'Xhosa'    },
+  transport:    { en: 'Transport Village',    lang: 'Hausa', local: 'Gari Hanya'           },
+  energy:       { en: 'Energy Village',       local: 'Mji wa Nguvu',      lang: 'Swahili'  },
+  hospitality:  { en: 'Hospitality Village',  local: 'Bet Tesfa',         lang: 'Amharic'  },
+  government:   { en: 'Government Village',   local: 'Kuo ya Serikali',   lang: 'Swahili'  },
+  sports:       { en: 'Sports Village',       local: 'Abasa Kuro',        lang: 'Akan/Twi' },
+  holdings:     { en: 'Holdings Village',     local: 'Mji wa Mali',       lang: 'Swahili'  },
 }
 
 export default function DashboardPage() {
@@ -98,6 +101,7 @@ export default function DashboardPage() {
   const [sosResponded, setSosResponded] = React.useState(false)
   const [vitality, setVitality] = React.useState({ cowrie:'₡0', kila:'0', jobs:'0', live:'🔴 0', isLive:false, notifCount:0 })
   const [devOtp, setDevOtp] = React.useState('')
+  const [proverbDrummed, setProverbDrummed] = React.useState(false)
   // Welcome banner — shown when arriving from ceremony (?welcome=1)
   const [showWelcome, setShowWelcome] = React.useState(false)
   const { user, setUser, isNewCitizen, setNewCitizen } = useAuthStore()
@@ -200,8 +204,7 @@ export default function DashboardPage() {
             <button onClick={() => { setDevOtp(''); localStorage.removeItem('afk-latest-otp') }} style={{ background:'none', border:'none', color:'#fbbf24', fontSize:10, cursor:'pointer', padding:0, marginLeft:4 }}>✕</button>
           </div>
         )}
-        <span style={{ padding:'2px 8px', borderRadius:99, background: isDark ? 'rgba(26,124,62,.25)' : 'rgba(26,124,62,.1)', fontSize:10, fontWeight:700 }}>{isAlly ? '🤝 ALLY' : `⚒ ${activeSkinLabel} · WORK`}</span>
-        <span>🔋</span>
+        <span style={{ padding:'2px 8px', borderRadius:99, background: isDark ? 'rgba(26,124,62,.25)' : 'rgba(26,124,62,.1)', fontSize:10, fontWeight:700 }}>{isAlly ? '🤝 ALLY' : `🌍 ${activeSkinLabel}`}</span>
       </div>
 
       {/* ── WELCOME BANNER — first-time citizen arrival from ceremony ── */}
@@ -217,7 +220,7 @@ export default function DashboardPage() {
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
             <div style={{ transform: 'scale(1.5)', color:'#4ade80' }}><GyeNyame size={40} /></div>
               <div>
-                <div style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:900, color:'#4ade80', lineHeight:1.2 }}>
+                <div style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:900, color:'#4ade80', lineHeight:1.2 }}>
                   Welcome to the Motherland{user?.firstName ? `, ${user.firstName}` : ''}!
                 </div>
                 <div style={{ fontSize:10, color:'rgba(74,222,128,.6)', fontWeight:600, marginTop:2 }}>
@@ -297,7 +300,7 @@ export default function DashboardPage() {
           <UbuntuRing score={user?.ubuntuScore ?? (isAlly ? 45 : 72)} />
           <div style={{ flex:1 }}>
             <div style={{ fontSize:10, fontWeight:700, color:'#7da882', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:3 }}>{greeting.english}, {user?.firstName || user?.displayName || 'Traveller'} {greeting.emoji}</div>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:22, fontWeight:800, color:'#f0f7f0', lineHeight:1.1, marginBottom:4 }}>{isAlly ? "Unity & Service." : user?.firstName ? `Welcome, ${user.firstName}.` : "Welcome Home."}</div>
+            <div style={{ fontFamily:'Sora, sans-serif', fontSize:22, fontWeight:800, color:'#f0f7f0', lineHeight:1.1, marginBottom:4 }}>{isAlly ? "Unity & Service." : user?.firstName ? `Welcome, ${user.firstName}.` : "Welcome Home."}</div>
             {isAlly ? (
               <div style={{ fontSize:11, color:'#a7f3d0', marginBottom:8 }}>Thank you for standing with the continent.</div>
             ) : activeVillage ? (
@@ -366,7 +369,7 @@ export default function DashboardPage() {
       {/* ZONE 2: TOOLS */}
       {!isAlly && (
         <>
-          <SectionLabel label="⚒ Village Tools" more="Vault" mode={mode} />
+          <SectionLabel label="⚒ Village Tools" more="Vault" onMore={() => router.push('/dashboard/sessions')} mode={mode} />
           <VillageTools mode={mode} />
         </>
       )}
@@ -389,7 +392,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <CowrieWallet mode={mode} onAction={(a) => { if (a === 'earnings' || a === 'history') router.push('/dashboard/cowrie-flow'); else console.log('Wallet Action:', a) }} />
+      <CowrieWallet mode={mode} onAction={(a) => {
+        if (a === 'earnings' || a === 'history') router.push('/dashboard/cowrie-flow')
+        else if (a === 'send' || a === 'transfer') router.push('/dashboard/banking')
+        else if (a === 'receive' || a === 'add') router.push('/dashboard/banking')
+        else if (a === 'withdraw') router.push('/dashboard/cowrie-flow')
+        else router.push('/dashboard/cowrie-flow')
+      }} />
 
       {/* ── CALENDAR — Quick Access ─────────────────── */}
       <div onClick={() => router.push('/dashboard/calendar')} style={{ margin:'8px 12px 0', borderRadius:14, padding:'12px 16px', cursor:'pointer', background:'linear-gradient(135deg,#0d1020,#1a1040)', border:'1px solid rgba(251,191,36,.15)', display:'flex', alignItems:'center', gap:14, transition:'all .2s' }}>
@@ -407,14 +416,14 @@ export default function DashboardPage() {
         <div style={{ display:'flex', alignItems:'center', gap:14, position:'relative', zIndex:1 }}>
           <div style={{ fontSize:36, flexShrink:0 }}>🌳</div>
           <div style={{ flex:1 }}>
-            <div style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:900, background:'linear-gradient(135deg,#4ade80,#1a7c3e)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:2 }}>BAOBAB</div>
+            <div style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:900, background:'linear-gradient(135deg,#4ade80,#1a7c3e)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:2 }}>BAOBAB</div>
             <div style={{ fontSize:10, color:'rgba(74,222,128,.5)', fontWeight:600 }}>Bank · Marketplace · Calendar · Villages · 17 more apps</div>
           </div>
           <div style={{ width:36, height:36, borderRadius:12, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#4ade80', fontWeight:900 }}>→</div>
         </div>
       </div>
 
-      <SectionLabel label="🔴 Live Now · Jollof TV" more="All channels" mode={mode} />
+      <SectionLabel label="🔴 Live Now · Jollof TV" more="All channels" onMore={() => router.push('/dashboard/tv')} mode={mode} />
       <div onClick={() => router.push('/dashboard/tv')} style={{ cursor: 'pointer' }}>
         <JollofTVCard />
       </div>
@@ -440,13 +449,16 @@ export default function DashboardPage() {
       <AjoCard mode={mode} />
 
       {/* DAILY PROVERB */}
-      <div style={{ margin:'8px 12px 16px', borderRadius:14, padding:14, cursor:'pointer', position:'relative', overflow:'hidden', background:'linear-gradient(135deg,#1a0a00,#2d1500)' }}>
+      <div onClick={() => router.push('/dashboard/ai')} style={{ margin:'8px 12px 16px', borderRadius:14, padding:14, cursor:'pointer', position:'relative', overflow:'hidden', background:'linear-gradient(135deg,#1a0a00,#2d1500)' }}>
         <div style={{ position:'absolute', right:-6, bottom:-6, width:60, height:60, borderRadius:'50%', background:'rgba(212,160,23,.08)' }}/>
         <div style={{ fontSize:10, fontWeight:700, color:'#d4a017', textTransform:'uppercase', letterSpacing:'.07em', marginBottom:8 }}>✦ Daily Wisdom — shared by the Griot</div>
         <div style={{ fontSize:13, fontStyle:'italic', color:'#d4a017', lineHeight:1.65, marginBottom:5, fontWeight:600 }}>&ldquo;Agbado t&iacute; a b&aacute; jẹ papọ̀ n&iacute; dun&rdquo;</div>
         <div style={{ fontSize:10, color:'rgba(212,160,23,.5)' }}>Corn eaten together always tastes sweeter · Yoruba proverb</div>
-        <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, background: 'rgba(212,160,23,.12)', border: '1px solid rgba(212,160,23,.25)', borderRadius:99, padding:'4px 10px', fontSize:10, color: '#d4a017', fontWeight:700, cursor:'pointer' }}>
-          🥁 Drum this proverb to your village
+        <div
+          onClick={(e) => { e.stopPropagation(); setProverbDrummed(true); setTimeout(() => setProverbDrummed(false), 2500) }}
+          style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:8, background: proverbDrummed ? 'rgba(74,222,128,.15)' : 'rgba(212,160,23,.12)', border: `1px solid ${proverbDrummed ? 'rgba(74,222,128,.35)' : 'rgba(212,160,23,.25)'}`, borderRadius:99, padding:'4px 10px', fontSize:10, color: proverbDrummed ? '#4ade80' : '#d4a017', fontWeight:700, cursor:'pointer', transition:'all .3s' }}
+        >
+          {proverbDrummed ? '✓ Drummed to village!' : '🥁 Drum this proverb to your village'}
         </div>
       </div>
 

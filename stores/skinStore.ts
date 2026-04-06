@@ -34,9 +34,9 @@ export const SKIN_META: Record<ActiveSkin, {
   label: string; yoruba: string; emoji: string; color: string
   tagline: string; badge: string; icon: string
 }> = {
-  WORK:   { label: 'Ise',   yoruba: 'Ise',   emoji: '⚒',  color: '#1a7c3e', tagline: 'Work · Village', badge: '⚒ ISE · WORK MODE',   icon: '⚒'  },
-  SOCIAL: { label: 'Egbe',  yoruba: 'Egbe',  emoji: '🎭', color: '#d97706', tagline: 'Social · Public', badge: '🎭 EGBE · SOCIAL MODE', icon: '🎭' },
-  CLAN:   { label: 'Idile', yoruba: 'Idile', emoji: '🏛', color: '#7c3aed', tagline: 'Clan · Private', badge: '🏛 IDILE · CLAN MODE',  icon: '🏛' },
+  WORK:   { label: 'Kazi',  yoruba: 'Ise',   emoji: '⚒',  color: '#1a7c3e', tagline: 'Work · Village', badge: '⚒ KAZI · WORK MODE',   icon: '⚒'  },
+  SOCIAL: { label: 'Umoja', yoruba: 'Egbe',  emoji: '🎭', color: '#d97706', tagline: 'Social · Public', badge: '🎭 UMOJA · SOCIAL MODE', icon: '🎭' },
+  CLAN:   { label: 'Ukoo',  yoruba: 'Idile', emoji: '🏛', color: '#7c3aed', tagline: 'Clan · Private', badge: '🏛 UKOO · CLAN MODE',  icon: '🏛' },
 }
 
 // ── Store interface ──────────────────────────────────────────

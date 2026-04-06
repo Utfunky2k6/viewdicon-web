@@ -347,7 +347,7 @@ export function CommentSheet({
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px 8px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 16, fontWeight: 800, color: '#f0f5ee' }}>Village Voices</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 800, color: '#f0f5ee' }}>Village Voices</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{comments.length} voices · {comments.reduce((a, c) => a + c.replies.length, 0)} replies</div>
           </div>
 

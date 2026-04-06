@@ -30,6 +30,7 @@ export default function MobilePaymentCollect({ villageId, roleKey }: Props) {
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'received'>('idle');
   const [copied, setCopied] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [shared, setShared] = useState<'seso' | 'sms' | null>(null);
 
   const totalCollected = payments
     .filter((p) => p.status === 'RECEIVED')
@@ -232,36 +233,38 @@ export default function MobilePaymentCollect({ villageId, roleKey }: Props) {
               {copied ? 'Copied!' : 'Copy Link'}
             </button>
             <button
+              onClick={() => { setShared('seso'); setTimeout(() => setShared(null), 2000) }}
               style={{
                 flex: 1,
                 padding: '10px 0',
                 borderRadius: 10,
                 border: '1px solid rgba(255,255,255,0.1)',
-                background: CARD_BG,
-                color: TEXT,
+                background: shared === 'seso' ? 'rgba(46,204,113,0.12)' : CARD_BG,
+                color: shared === 'seso' ? GREEN : TEXT,
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: FONT,
                 cursor: 'pointer',
               }}
             >
-              WhatsApp
+              {shared === 'seso' ? 'Sent!' : '💬 Seso Chat'}
             </button>
             <button
+              onClick={() => { setShared('sms'); setTimeout(() => setShared(null), 2000) }}
               style={{
                 flex: 1,
                 padding: '10px 0',
                 borderRadius: 10,
                 border: '1px solid rgba(255,255,255,0.1)',
-                background: CARD_BG,
-                color: TEXT,
+                background: shared === 'sms' ? 'rgba(46,204,113,0.12)' : CARD_BG,
+                color: shared === 'sms' ? GREEN : TEXT,
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: FONT,
                 cursor: 'pointer',
               }}
             >
-              SMS
+              {shared === 'sms' ? 'Sent!' : 'SMS'}
             </button>
           </div>
 

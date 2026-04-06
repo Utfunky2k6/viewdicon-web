@@ -28,7 +28,7 @@ export function FingerprintScene({ onNext, theme }: FingerprintSceneProps) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, background: theme.bg }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 44, marginBottom: 16 }}>🧬</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 24, fontWeight: 900, color: theme.text, marginBottom: 8 }}>Bloodline Signature</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 24, fontWeight: 900, color: theme.text, marginBottom: 8 }}>Bloodline Signature</div>
         <div style={{ fontSize: 13, color: theme.subText, lineHeight: 1.6, maxWidth: 280, margin: '0 auto' }}>
           By pressing your print, you bind your biological lineage to the sovereign ledger.
         </div>

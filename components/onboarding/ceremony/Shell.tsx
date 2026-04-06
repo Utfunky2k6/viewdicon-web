@@ -68,7 +68,7 @@ export function Shell({ children, progress, step, theme, stepIndex, sequenceLeng
               style={{ width: 34, height: 34, objectFit: 'contain', filter: 'drop-shadow(0 0 4px rgba(26,124,62,.4))' }}
             />
           <div>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 14, fontWeight: 900, letterSpacing: '-0.02em', color: theme.text }}>VIEWDICON</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 14, fontWeight: 900, letterSpacing: '-0.02em', color: theme.text }}>VIEWDICON</div>
             <div style={{ fontSize: 9, fontWeight: 800, color: theme.gold, textTransform: 'uppercase', letterSpacing: '.12em', marginTop: -1, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>Scene {displayStep} of {sequenceLength}</span>
               <span style={{ opacity: 0.3 }}>|</span>

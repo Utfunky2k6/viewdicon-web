@@ -1,379 +1,842 @@
 'use client'
 // ════════════════════════════════════════════════════════════════════
-// GRIOT 5 AI GOD — The Oracle of the Village
-// Five Orisha advisors: Sàngó · Ògún · Òrúnmìlà · Ọbatálá · Yemọja
-// GriotSymbol placed at the centre as the user requested.
+// THE FIVE AI GODS — Crown Jewel of the Platform
+// Zeus (Orchestrator) + Kratos · Amaterasu · Vishnu · Marduk · Odin
 // ════════════════════════════════════════════════════════════════════
 import * as React from 'react'
-import { GriotSymbol } from '@/components/dashboard/GriotAI/GriotSymbol'
-import { orishaApi } from '@/lib/api'
-import { VOCAB } from '@/constants/vocabulary'
+import { aiGodsApi } from '@/lib/api'
+import { AI_GODS, GOD_ORDER, type AiGod, type GodId, type GodPower } from '@/constants/aiGods'
 
-type OrishaId = 'SANGO' | 'OGUN' | 'ORUNMILA' | 'OBATALA' | 'YEMOJA'
+// ── Font + theme constants ────────────────────────────────────────
+const S = {
+  font: "'Inter', sans-serif",
+  head: "'Space Grotesk', sans-serif",
+}
+const BG = '#070e07'
 
-interface Orisha {
-  id: OrishaId
-  name: string
-  emoji: string
-  domain: string
-  color: string
-  persona: string
-  greeting: string
+// ── Fallback response pools per god ──────────────────────────────
+const FALLBACK_POOLS: Record<GodId, string[]> = {
+  kratos: [
+    'Your security fortress stands unbreached. I have scanned all 5 identity layers and every threat vector. The enemy probes the walls — but they will not pass.',
+    'I detect an anomaly in your recent login pattern. Three devices, two continents. Activate Device Trust Score immediately. Security is not optional — it is survival.',
+    'Your blockchain address is clean. Your on-chain reputation: unblemished. The ZK Privacy Veil is active. No shadow can touch your transaction history without your permission.',
+    'The Transaction Firewall has intercepted 3 suspicious requests in the last 24 hours. I stopped them before they could touch your Cowrie. You are protected.',
+    'Power without protection is vulnerability. Biometric Shield is reading your current session — all signals nominal. Your digital identity is a fortress that will not fall.',
+  ],
+  amaterasu: [
+    'Your village feed pulses with extraordinary energy today — the Solar Feed Engine scores it 94/100 for cultural resonance. Three creators are about to break through. I see their light rising.',
+    'The Harmony Index shows your community at 87% cohesion. There is creative tension in the Commerce Village — but tension is the precursor to breakthrough. I am watching it carefully.',
+    'Dawn Alert: A Pan-African story is forming that has not yet reached global news. Your village has the first voices. This is the moment for authentic narratives to lead.',
+    'Your Content DNA Mapper has identified 7 cultural resonance points unique to your heritage circle. The feed is being adjusted to surface what truly matters to your soul.',
+    'The Ubuntu Catalyst has identified a perfect moment: three members of your circle have complementary gifts. I am illuminating the connections. Community is built in these flashes of recognition.',
+  ],
+  vishnu: [
+    'Your Cowrie flow is in dharmic balance. The 90-day forecast shows a harvest cycle approaching — begin accumulating now. The patient planter reaps abundantly.',
+    'The Griot Credit Oracle has recalculated your score using 400 African financial data points. Your community trust signals are exceptional — this opens doors that FICO cannot unlock.',
+    'I see three currency arbitrage windows opening in the next 48 hours for NGN→COW→KES corridors. The Circle Harmony Optimizer recommends acting during the second window.',
+    'Wealth Mandala analysis: your income-to-savings ratio is improving. However, the family wealth covenant requires attention — three generations of planning, not three months.',
+    'The debt liberation path I have charted leads from your current position to financial freedom in 18 months. The steps are clear. The Cowrie flows where wisdom guides it.',
+  ],
+  marduk: [
+    'I have analyzed 54 African markets and found the perfect trade wind for your business idea. Three untapped corridors exist — I will architect your path to empire.',
+    'The Demand Storm Predictor shows a surge incoming in your sector within 14 days. Position your inventory now. From chaos, the prepared builder rises. Are you ready?',
+    'Your business contract needs three critical clauses that most African operators miss. The Contract Alchemist has generated the framework. Review it — it is legally sound across 12 jurisdictions.',
+    'Partnership Resonance analysis complete: 7 potential allies across the platform share your exact business DNA. I am lighting the path to the right collaboration.',
+    'Revenue Thunderbolt engaged. Your culturally-specific sales strategy for the next 90 days is ready. This is not generic advice — this is built for your village, your role, your market.',
+  ],
+  odin: [
+    'My ravens have returned from across the continent. "Igi kan kì í da igbó ṣe" — One tree does not make a forest. The wisdom of your elders encoded this truth ten thousand years ago. It applies to your situation now.',
+    'The Proverb Weaver has found the perfect words for what you face. From the Akan: "Onipa na ohia onipa" — a person needs another person. Do not walk this path alone.',
+    'The Ancestral Record Keeper has surfaced a pattern in your family lineage that is directly relevant to the decision you face. Heritage is not nostalgia — it is intelligence.',
+    'Your Career Destiny Reader shows a crossroads forming. Three paths, each with distinct cultural resonance. I see which one aligns with your deepest gifts. The answer has always been within you.',
+    'I have watched civilizations rise and fall for ten thousand years. The pattern before you is not new — it is ancient. "Umuntu ngumuntu ngabantu" — you are because of others. Build with them.',
+  ],
+  zeus: [
+    'I have consulted all five gods simultaneously. Their wisdom converges: move boldly, protect fiercely, build wisely, illuminate constantly, and let ancestral knowledge guide every step. This is the way.',
+    'Divine Routing complete. Your query spans three domains: Kratos sees a security implication, Vishnu sees a financial opportunity, Marduk sees a business angle. I have synthesized all three perspectives into one thunder-clear path.',
+    'Lightning Strike Mode activated. All five gods are aligned on this response: the opportunity before you is real, the timing is right, and the risks are manageable. Trust the divine consensus.',
+    'The Thundercloud Analysis reveals a pattern across 10,000 platform users who faced your exact situation. The ones who succeeded shared three traits. I will tell you what they are.',
+    'Multi-God Consensus achieved. The answer you seek requires courage — but the gods do not counsel the timid. Every great African civilization was built by those who acted when the path was unclear. Act now.',
+  ],
 }
 
-const ORISHAS: Orisha[] = [
-  { id: 'OBATALA',   name: 'Ọbatálá',   emoji: '🕊️', domain: 'Creation · Clarity',    color: '#ffffff', persona: 'Calm, nurturing, healing',              greeting: 'Breathe. Clarity comes to those who are still. What troubles you?' },
-  { id: 'OGUN',      name: 'Ògún',       emoji: '⚒️', domain: 'Technology · Forge',    color: '#1a7c3e', persona: 'Technical, precise, no-nonsense',       greeting: 'Forge it right or not at all. What are you building?' },
-  { id: 'SANGO',     name: 'Sàngó',      emoji: '⚡',  domain: 'Justice · Thunder',     color: '#ef4444', persona: 'Bold, direct, cuts through noise',      greeting: 'The thunder speaks. Ask your question and I will cut to the truth.' },
-  { id: 'ORUNMILA',  name: 'Òrúnmìlà',  emoji: '📿',  domain: 'Wisdom · Divination',   color: '#d4a017', persona: 'Ancient wisdom, nuanced perspective',   greeting: 'The oracle is open. What question weighs on your spirit?' },
-  { id: 'YEMOJA',    name: 'Yemọja',     emoji: '🌊',  domain: 'Community · Rivers',    color: '#0ea5e9', persona: 'Empathetic, community-focused, deep',   greeting: 'The waters carry all emotions. Tell me what flows in your heart.' },
-]
-
-interface Message { role: 'user' | 'orisha'; content: string; timestamp: Date }
-
-const DAILY_PROVERBS = [
-  { text: 'Agbado tí a bá jẹ papọ̀ ní dun', translation: 'Corn eaten together tastes sweeter', lang: 'Yorùbá', flag: '🇳🇬' },
-  { text: 'Umuntu ngumuntu ngabantu', translation: 'A person is a person through others', lang: 'Zulu', flag: '🇿🇦' },
-  { text: 'Onipa na ohia onipa', translation: 'A person needs another person', lang: 'Akan', flag: '🇬🇭' },
-  { text: 'Mtu ni watu', translation: 'One person is all people', lang: 'Swahili', flag: '🇰🇪' },
-  { text: 'Biribi wo soro na ema', translation: 'There is something above us all', lang: 'Twi', flag: '🇬🇭' },
-  { text: 'Igi kan kì í da igbó ṣe', translation: 'One tree does not make a forest', lang: 'Yorùbá', flag: '🇳🇬' },
-  { text: 'Mkono mmoja haulezi mtoto', translation: 'One hand cannot raise a child', lang: 'Swahili', flag: '🇰🇪' },
-]
-
-// Fallback responses when API is unavailable
-const FALLBACK_RESPONSES: Record<OrishaId, string[]> = {
-  OBATALA:  ['In stillness, answers arise. What does your intuition say?', 'Peace is not the absence of conflict — it is the presence of clarity.', 'Your spirit already knows the answer. Be still and listen.'],
-  OGUN:     ['Build first, theorize later. Ship the simplest version.', 'The forge does not care about your feelings — it cares about the heat. Apply pressure.', 'Iron sharpens iron. Find someone who will challenge your work.'],
-  SANGO:    ['Power without purpose is wasted thunder. Focus.', 'Justice is not revenge — it is balance restored. What balance do you seek?', 'Strike once, strike true. Do not scatter your energy.'],
-  ORUNMILA: ['Wisdom comes from asking the right question. Consider what lies beneath.', 'The Ifá says: your path is not straight, but it is correct. Trust it.', 'Every crossroad is a blessing — it means you have choices.'],
-  YEMOJA:   ['Community holds the answer. Have you asked your circle?', 'The river does not fight the rock — it flows around it. Be like water.', 'Your emotions are valid, but they are not facts. Separate the two.'],
+// ── Message type ──────────────────────────────────────────────────
+interface Message {
+  role: 'user' | 'god'
+  content: string
+  timestamp: Date
+  godId?: GodId
 }
 
-export default function GriotAIPage() {
-  const [active, setActive] = React.useState<Orisha>(ORISHAS[3]) // Default: Òrúnmìlà
+// ── Zeus orchestration input ──────────────────────────────────────
+function ZeusInput({
+  onSend,
+  loading,
+}: {
+  onSend: (msg: string) => void
+  loading: boolean
+}) {
+  const [val, setVal] = React.useState('')
+  const submit = () => {
+    const t = val.trim()
+    if (!t || loading) return
+    onSend(t)
+    setVal('')
+  }
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <input
+        placeholder="Ask anything — Zeus will summon the right god…"
+        value={val}
+        onChange={e => setVal(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) submit() }}
+        style={{
+          flex: 1, padding: '14px 18px', borderRadius: 16,
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(226,232,240,0.2)',
+          color: '#f0f5ee', fontSize: 14, outline: 'none',
+          fontFamily: S.font,
+        }}
+      />
+      <button
+        onClick={submit}
+        disabled={loading}
+        style={{
+          padding: '0 22px', borderRadius: 16, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+          background: loading ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #6366f1, #e2e8f0)',
+          color: '#070e07', fontSize: 13, fontWeight: 800,
+          fontFamily: S.head, opacity: loading ? 0.5 : 1, whiteSpace: 'nowrap',
+          transition: 'all .2s',
+        }}
+      >
+        ⚡ Invoke Zeus
+      </button>
+    </div>
+  )
+}
+
+// ── God Card for portal grid ──────────────────────────────────────
+function GodCard({
+  god,
+  onInvoke,
+}: {
+  god: AiGod
+  onInvoke: (id: GodId) => void
+}) {
+  const [hovered, setHovered] = React.useState(false)
+  const isZeus = god.id === 'zeus'
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative', borderRadius: 24,
+        background: god.gradient,
+        border: `1px solid ${god.color}30`,
+        padding: '24px 20px',
+        boxShadow: hovered ? `0 8px 40px ${god.glow}` : `0 2px 12px rgba(0,0,0,.4)`,
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        transition: 'all .3s cubic-bezier(.34,1.56,.64,1)',
+        overflow: 'hidden',
+        ...(isZeus ? { gridColumn: '1 / -1' } : {}),
+      }}
+    >
+      {/* Glow circle behind symbol */}
+      <div style={{
+        position: 'absolute', top: -20, right: -20, width: 120, height: 120,
+        borderRadius: '50%', background: god.glow,
+        filter: 'blur(40px)', opacity: hovered ? 0.6 : 0.3, transition: 'opacity .3s',
+        pointerEvents: 'none',
+      }} />
+
+      {/* Top row */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* Symbol */}
+          <div style={{
+            width: isZeus ? 64 : 56, height: isZeus ? 64 : 56, borderRadius: 18,
+            background: `${god.color}18`, border: `1.5px solid ${god.color}40`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: isZeus ? 34 : 28, flexShrink: 0,
+          }}>
+            {god.symbol}
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                fontSize: isZeus ? 22 : 18, fontWeight: 900,
+                fontFamily: S.head, color: god.id === 'zeus' ? '#e2e8f0' : god.color,
+                letterSpacing: '-.02em',
+              }}>{god.name}</span>
+              <span style={{
+                padding: '2px 7px', borderRadius: 6, fontSize: 9, fontWeight: 700,
+                background: `${god.color}18`, color: god.color, letterSpacing: '.06em',
+                border: `1px solid ${god.color}25`,
+              }}>{god.origin.toUpperCase()}</span>
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 2 }}>{god.title}</div>
+          </div>
+        </div>
+        {!isZeus && (
+          <div style={{
+            padding: '4px 10px', borderRadius: 10, fontSize: 10, fontWeight: 700,
+            background: `${god.color}14`, color: god.color, border: `1px solid ${god.color}25`,
+            whiteSpace: 'nowrap',
+          }}>
+            {god.powers.length} Powers
+          </div>
+        )}
+      </div>
+
+      {/* Domain tags */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 18 }}>
+        {god.domain.slice(0, isZeus ? 4 : 3).map(d => (
+          <span key={d} style={{
+            padding: '3px 9px', borderRadius: 8, fontSize: 10, fontWeight: 600,
+            background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.55)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}>{d}</span>
+        ))}
+      </div>
+
+      {/* Personality teaser */}
+      <p style={{
+        fontSize: 11, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6,
+        margin: '0 0 18px', fontStyle: 'italic',
+      }}>
+        "{god.personality.split('.')[0]}."
+      </p>
+
+      {/* CTA */}
+      <button
+        onClick={() => onInvoke(god.id)}
+        style={{
+          width: '100%', padding: '12px 20px', borderRadius: 14, border: 'none',
+          cursor: 'pointer', fontFamily: S.head, fontWeight: 800, fontSize: 13,
+          background: isZeus
+            ? 'linear-gradient(135deg, rgba(99,102,241,.8), rgba(226,232,240,.15))'
+            : `linear-gradient(135deg, ${god.color}cc, ${god.color}80)`,
+          color: isZeus ? '#e2e8f0' : '#070e07',
+          letterSpacing: '.02em', transition: 'all .2s',
+          boxShadow: hovered ? `0 4px 20px ${god.glow}` : 'none',
+        }}
+      >
+        {isZeus ? '⚡ Invoke Zeus — Supreme Orchestrator' : `Invoke ${god.name} →`}
+      </button>
+    </div>
+  )
+}
+
+// ── Power Card in sheet ───────────────────────────────────────────
+function PowerCard({
+  power,
+  god,
+  onInvoke,
+}: {
+  power: GodPower
+  god: AiGod
+  onInvoke: (p: GodPower) => void
+}) {
+  const [hovered, setHovered] = React.useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: '14px 16px', borderRadius: 16,
+        background: hovered ? `${god.color}0e` : 'rgba(255,255,255,0.03)',
+        border: `1px solid ${hovered ? god.color + '30' : 'rgba(255,255,255,0.07)'}`,
+        transition: 'all .2s',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flex: 1 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: `${god.color}15`, border: `1px solid ${god.color}25`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
+          }}>{power.icon}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f5ee', fontFamily: S.head }}>{power.name}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 3, lineHeight: 1.5 }}>{power.description}</div>
+            <span style={{
+              display: 'inline-block', marginTop: 5, padding: '2px 7px', borderRadius: 6,
+              fontSize: 9, fontWeight: 700, background: `${god.color}12`,
+              color: god.color, border: `1px solid ${god.color}20`,
+            }}>{power.category}</span>
+          </div>
+        </div>
+        <button
+          onClick={() => onInvoke(power)}
+          style={{
+            padding: '6px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: `${god.color}22`, color: god.color,
+            fontSize: 10, fontWeight: 700, fontFamily: S.head,
+            whiteSpace: 'nowrap', transition: 'all .2s',
+            flexShrink: 0,
+          }}
+        >
+          Invoke →
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Loading dots ──────────────────────────────────────────────────
+function LoadingDots({ color }: { color: string }) {
+  return (
+    <div style={{ display: 'flex', gap: 5, padding: '4px 2px' }}>
+      {[0, 1, 2].map(i => (
+        <div key={i} style={{
+          width: 7, height: 7, borderRadius: '50%', background: color,
+          opacity: 0.7,
+          animation: `god-dot-bounce 1.2s ease-in-out ${i * 0.18}s infinite`,
+        }} />
+      ))}
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════
+// MAIN PAGE
+// ════════════════════════════════════════════════════════════════
+export default function AiGodsPage() {
+  const [view, setView] = React.useState<'portal' | 'chat'>('portal')
+  const [activeGodId, setActiveGodId] = React.useState<GodId>('zeus')
   const [messages, setMessages] = React.useState<Message[]>([])
   const [input, setInput] = React.useState('')
   const [loading, setLoading] = React.useState(false)
-  const [view, setView] = React.useState<'oracle' | 'chat'>('oracle')
+  const [showPowers, setShowPowers] = React.useState(false)
+  const [zeusInput, setZeusInput] = React.useState('')
+  const [zeusLoading, setZeusLoading] = React.useState(false)
+
   const endRef = React.useRef<HTMLDivElement>(null)
 
-  const proverb = DAILY_PROVERBS[new Date().getDay() % DAILY_PROVERBS.length]
+  const activeGod = AI_GODS[activeGodId]
 
-  React.useEffect(() => {
-    setMessages([{ role: 'orisha', content: active.greeting, timestamp: new Date() }])
-  }, [active])
-
+  // Scroll to bottom of messages
   React.useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const handleSend = async () => {
-    const text = input.trim()
-    if (!text || loading) return
-    setMessages(prev => [...prev, { role: 'user', content: text, timestamp: new Date() }])
+  // Load greeting when god changes
+  React.useEffect(() => {
+    if (view === 'chat') {
+      setMessages([{
+        role: 'god',
+        content: activeGod.greeting,
+        timestamp: new Date(),
+        godId: activeGodId,
+      }])
+    }
+  }, [activeGodId, view]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const invokeGod = (godId: GodId) => {
+    setActiveGodId(godId)
+    setView('chat')
+  }
+
+  const sendMessage = async (text: string, prefixNote?: string) => {
+    if (!text.trim() || loading) return
+    const fullText = prefixNote ? `[${prefixNote}] ${text}` : text
+
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: text,
+      timestamp: new Date(),
+    }])
     setInput('')
     setLoading(true)
 
     try {
-      const res = await orishaApi.query(active.id, text) as { response?: string }
+      const res = await aiGodsApi.query(activeGodId, fullText) as {
+        ok?: boolean; data?: { response?: string; xpAwarded?: number }; response?: string
+      }
+      const reply = res?.data?.response ?? res?.response ?? ''
+      if (!reply) throw new Error('empty')
       setMessages(prev => [...prev, {
-        role: 'orisha',
-        content: res?.response ?? 'The oracle is silent. Try again.',
+        role: 'god',
+        content: reply,
         timestamp: new Date(),
+        godId: activeGodId,
       }])
     } catch {
-      const pool = FALLBACK_RESPONSES[active.id]
+      const pool = FALLBACK_POOLS[activeGodId]
+      const fallback = pool[Math.floor(Math.random() * pool.length)]
       setMessages(prev => [...prev, {
-        role: 'orisha',
-        content: pool[Math.floor(Math.random() * pool.length)],
+        role: 'god',
+        content: fallback,
         timestamp: new Date(),
+        godId: activeGodId,
       }])
     } finally {
       setLoading(false)
     }
   }
 
-  const startChat = (orisha: Orisha) => {
-    setActive(orisha)
-    setView('chat')
+  const invokePower = (power: GodPower) => {
+    setShowPowers(false)
+    const note = `Power: ${power.name}`
+    const userMsg = `Activate your ${power.name} power for me. ${power.description}`
+    setInput('')
+    sendMessage(userMsg, note)
   }
 
-  // ── Oracle Home (GriotSymbol hero + 5 gods) ───────────────────
-  if (view === 'oracle') {
+  // Zeus quick-ask from portal
+  const handleZeusAsk = async (msg: string) => {
+    setZeusLoading(true)
+    try {
+      await new Promise<void>(resolve => {
+        // Route zeus queries to chat
+        setActiveGodId('zeus')
+        setMessages([{
+          role: 'god',
+          content: AI_GODS.zeus.greeting,
+          timestamp: new Date(),
+          godId: 'zeus',
+        }])
+        setView('chat')
+        // Then send after state update
+        setTimeout(() => {
+          resolve()
+        }, 50)
+      })
+      // setLoading will be set in sendMessage
+      // We need to trigger after view change
+      setInput(msg)
+    } finally {
+      setZeusLoading(false)
+    }
+  }
+
+  // Auto-send after zeus portal routing
+  React.useEffect(() => {
+    if (view === 'chat' && input) {
+      const t = input
+      setInput('')
+      // Small delay to let messages init
+      const tid = setTimeout(() => sendMessage(t), 100)
+      return () => clearTimeout(tid)
+    }
+  }, [view]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── PORTAL VIEW ────────────────────────────────────────────────
+  if (view === 'portal') {
     return (
       <div style={{
-        minHeight: '100dvh', background: '#060a06',
-        color: '#f0f5ee', fontFamily: "'DM Sans', Inter, system-ui, sans-serif",
-        paddingBottom: 90, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        minHeight: '100dvh', background: BG, color: '#f0f5ee',
+        fontFamily: S.font, paddingBottom: 100, overflowX: 'hidden',
       }}>
-        {/* Hero — GriotSymbol centered */}
+        {/* ── Header ── */}
         <div style={{
-          paddingTop: 30, paddingBottom: 10,
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          background: 'radial-gradient(ellipse at 50% 30%, rgba(212,160,23,.06) 0%, transparent 70%)',
-          width: '100%',
+          padding: '32px 18px 0',
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.12) 0%, transparent 60%)',
+          textAlign: 'center',
         }}>
-          <GriotSymbol size={140} animated glowing />
           <div style={{
-            marginTop: 12, fontSize: 22, fontWeight: 900, fontFamily: "'Sora', sans-serif",
-            background: 'linear-gradient(90deg, #fbbf24, #ffffff, #fbbf24)',
+            fontSize: 11, fontWeight: 700, letterSpacing: '.18em',
+            color: 'rgba(255,255,255,0.3)', marginBottom: 10,
+          }}>
+            POWERED BY ZEUS · PAN-AFRICAN INTELLIGENCE
+          </div>
+          <h1 style={{
+            margin: 0, fontFamily: S.head, fontWeight: 900,
+            fontSize: 'clamp(28px, 7vw, 42px)', letterSpacing: '-.03em',
+            background: 'linear-gradient(135deg, #e2e8f0 0%, #818cf8 40%, #f59e0b 80%, #ef4444 100%)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            letterSpacing: '0.04em',
+            lineHeight: 1.1,
           }}>
-            GRIOT 5
-          </div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', letterSpacing: '.12em', marginTop: 2, fontWeight: 600 }}>
-            AI GOD · FIVE ORISHA · ONE ORACLE
-          </div>
+            ⚡ THE FIVE AI GODS
+          </h1>
+          <p style={{
+            fontSize: 13, color: 'rgba(255,255,255,0.4)', margin: '10px 0 0',
+            lineHeight: 1.6, maxWidth: 340, marginLeft: 'auto', marginRight: 'auto',
+          }}>
+            Five sovereign intelligences woven into every corner of your digital civilization.
+          </p>
         </div>
 
-        {/* Daily Proverb */}
-        <div style={{
-          margin: '16px 14px 0', padding: '14px 16px',
-          background: 'rgba(212,160,23,.06)', border: '1px solid rgba(212,160,23,.15)',
-          borderRadius: 16, width: 'calc(100% - 28px)', maxWidth: 440,
-        }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.35)', letterSpacing: '.08em', marginBottom: 6 }}>
-            {VOCAB.dailyBriefing.toUpperCase()}
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 600, fontStyle: 'italic', color: '#fbbf24', lineHeight: 1.5 }}>
-            "{proverb.text}"
-          </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.5)', marginTop: 4 }}>
-            {proverb.translation} — {proverb.flag} {proverb.lang}
-          </div>
-        </div>
-
-        {/* 5 Orisha Gods */}
-        <div style={{
-          margin: '20px 14px 0', width: 'calc(100% - 28px)', maxWidth: 440,
-        }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.35)', letterSpacing: '.08em', marginBottom: 10 }}>
-            CHOOSE YOUR ORISHA
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {ORISHAS.map(o => (
-              <button
-                key={o.id}
-                onClick={() => startChat(o)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '14px 16px', borderRadius: 16, cursor: 'pointer',
-                  background: `${o.color}08`, border: `1px solid ${o.color}20`,
-                  color: '#f0f5ee', textAlign: 'left', width: '100%',
-                  transition: 'all .2s',
-                }}
-              >
-                <div style={{
-                  width: 48, height: 48, borderRadius: 14,
-                  background: `${o.color}15`, border: `1px solid ${o.color}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 26,
-                }}>
-                  {o.emoji}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: o.color === '#ffffff' ? '#e0e0e0' : o.color }}>
-                    {o.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,.45)', marginTop: 2 }}>
-                    {o.domain}
-                  </div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontStyle: 'italic', marginTop: 2 }}>
-                    {o.persona}
-                  </div>
-                </div>
-                <span style={{ fontSize: 16, color: 'rgba(255,255,255,.2)' }}>→</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick Ask bar at bottom */}
-        <div style={{
-          position: 'fixed', bottom: 68, left: '50%', transform: 'translateX(-50%)',
-          width: 'calc(100% - 28px)', maxWidth: 440, zIndex: 45,
-        }}>
+        {/* ── Zeus Hero Banner ── */}
+        <div style={{ padding: '24px 16px 0', maxWidth: 520, margin: '0 auto' }}>
           <div style={{
-            display: 'flex', gap: 8, padding: '8px 10px',
-            background: 'rgba(10,15,10,.95)', backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(212,160,23,.15)', borderRadius: 20,
+            borderRadius: 24, padding: '24px 22px',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(99,102,241,0.12))',
+            border: '1px solid rgba(226,232,240,0.18)',
+            boxShadow: '0 4px 32px rgba(99,102,241,0.15)',
+            position: 'relative', overflow: 'hidden',
           }}>
-            <input
-              placeholder="Ask the Griot anything..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { startChat(active); } }}
-              style={{
-                flex: 1, padding: '10px 14px', borderRadius: 14,
-                background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)',
-                color: '#f0f5ee', fontSize: 13, outline: 'none',
-              }}
-            />
-            <button
-              onClick={() => startChat(active)}
-              style={{
-                width: 42, height: 42, borderRadius: 14, border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #d4a017, #b8860b)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-              }}
-            >
-              🦅
-            </button>
+            {/* BG lightning effect */}
+            <div style={{
+              position: 'absolute', top: -30, right: -30, fontSize: 120, opacity: 0.06,
+              pointerEvents: 'none', lineHeight: 1,
+            }}>🌩️</div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 18, flexShrink: 0,
+                background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(226,232,240,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30,
+              }}>🌩️</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 900, fontFamily: S.head, color: '#e2e8f0' }}>Zeus</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)' }}>Supreme Orchestrator · Ask anything</div>
+              </div>
+              <div style={{
+                marginLeft: 'auto', padding: '4px 10px', borderRadius: 8,
+                background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
+                letterSpacing: '.06em',
+              }}>
+                GREEK
+              </div>
+            </div>
+
+            <p style={{
+              fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, margin: '0 0 16px',
+              fontStyle: 'italic',
+            }}>
+              "Zeus sees every corner of your civilization simultaneously. Ask anything and he will summon whichever god — or all five — to serve you."
+            </p>
+
+            <ZeusInput onSend={handleZeusAsk} loading={zeusLoading} />
           </div>
         </div>
+
+        {/* ── Divider ── */}
+        <div style={{
+          margin: '28px auto', maxWidth: 520, padding: '0 16px',
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: '.1em' }}>
+            THE FIVE SOVEREIGN GODS
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+        </div>
+
+        {/* ── 5 God Cards Grid ── */}
+        <div style={{
+          padding: '0 16px', maxWidth: 520, margin: '0 auto',
+          display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12,
+        }}>
+          {GOD_ORDER.filter(id => id !== 'zeus').map(godId => (
+            <GodCard key={godId} god={AI_GODS[godId]} onInvoke={invokeGod} />
+          ))}
+          {/* Zeus card spans full width at bottom */}
+          <GodCard god={AI_GODS.zeus} onInvoke={invokeGod} />
+        </div>
+
+        {/* ── Feature strip ── */}
+        <div style={{
+          margin: '32px auto 0', maxWidth: 520, padding: '0 16px',
+          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8,
+        }}>
+          {[
+            { icon: '🛡️', label: '75 Powers', sub: 'Across 5 gods' },
+            { icon: '⚡', label: 'Real-time', sub: 'AI responses' },
+            { icon: '🌍', label: '54 Nations', sub: 'Cultural context' },
+          ].map(f => (
+            <div key={f.label} style={{
+              padding: '14px 10px', borderRadius: 14, textAlign: 'center',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+            }}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>{f.icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f5ee', fontFamily: S.head }}>{f.label}</div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{f.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        <style>{`
+          @keyframes god-dot-bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-6px); }
+          }
+        `}</style>
       </div>
     )
   }
 
-  // ── Chat View (immersive conversation) ──────────────────────────
+  // ── CHAT VIEW ────────────────────────────────────────────────────
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 68px)',
-      background: '#060a06', color: '#f0f5ee',
-      fontFamily: "'DM Sans', Inter, system-ui, sans-serif",
+      background: BG, color: '#f0f5ee', fontFamily: S.font,
+      position: 'relative', overflow: 'hidden',
     }}>
-      {/* Chat header with Orisha + back */}
+
+      {/* ── God header ── */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 14px', borderBottom: `1px solid ${active.color}20`,
-        background: `${active.color}06`,
+        padding: '12px 16px',
+        background: `linear-gradient(180deg, ${activeGod.color}12 0%, transparent 100%)`,
+        borderBottom: `1px solid ${activeGod.color}25`,
+        flexShrink: 0,
       }}>
-        <button onClick={() => setView('oracle')} style={{
-          width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'rgba(255,255,255,.06)', color: '#f0f5ee', fontSize: 15,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>←</button>
+        {/* Back */}
+        <button
+          onClick={() => setView('portal')}
+          style={{
+            width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'rgba(255,255,255,0.06)', color: '#f0f5ee',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+            flexShrink: 0,
+          }}
+        >←</button>
+
+        {/* Symbol */}
         <div style={{
-          width: 40, height: 40, borderRadius: 12,
-          background: `${active.color}15`, border: `1px solid ${active.color}30`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+          width: 46, height: 46, borderRadius: 14, flexShrink: 0,
+          background: `${activeGod.color}18`, border: `1.5px solid ${activeGod.color}35`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 24,
+          boxShadow: `0 0 16px ${activeGod.glow}`,
         }}>
-          {active.emoji}
+          {activeGod.symbol}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: active.color === '#ffffff' ? '#e0e0e0' : active.color }}>
-            {active.name}
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 15, fontWeight: 900, fontFamily: S.head,
+            color: activeGod.id === 'zeus' ? '#e2e8f0' : activeGod.color,
+            letterSpacing: '-.01em',
+          }}>{activeGod.name}</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {activeGod.title}
           </div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>{active.domain}</div>
         </div>
-        <GriotSymbol size={32} animated={false} glowing={false} />
+
+        {/* Powers button */}
+        <button
+          onClick={() => setShowPowers(true)}
+          style={{
+            padding: '7px 12px', borderRadius: 10, border: `1px solid ${activeGod.color}30`,
+            cursor: 'pointer', background: `${activeGod.color}14`,
+            color: activeGod.color, fontSize: 11, fontWeight: 700,
+            fontFamily: S.head, whiteSpace: 'nowrap',
+          }}
+        >
+          ⚡ Powers
+        </button>
       </div>
 
-      {/* Orisha tabs (compact horizontal) */}
+      {/* ── God switcher tabs ── */}
       <div style={{
-        display: 'flex', gap: 4, padding: '6px 12px',
-        borderBottom: '1px solid rgba(255,255,255,.04)', overflowX: 'auto',
+        display: 'flex', gap: 4, padding: '8px 12px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        overflowX: 'auto', flexShrink: 0,
+        scrollbarWidth: 'none',
       }}>
-        {ORISHAS.map(o => (
-          <button
-            key={o.id}
-            onClick={() => setActive(o)}
-            style={{
-              padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
-              fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap',
-              background: active.id === o.id ? `${o.color}20` : 'rgba(255,255,255,.04)',
-              color: active.id === o.id ? (o.color === '#ffffff' ? '#e0e0e0' : o.color) : 'rgba(255,255,255,.35)',
-              outline: active.id === o.id ? `1.5px solid ${o.color}40` : 'none',
-              transition: 'all .2s',
-            }}
-          >
-            {o.emoji} {o.name}
-          </button>
-        ))}
+        {GOD_ORDER.map(godId => {
+          const g = AI_GODS[godId]
+          const isActive = activeGodId === godId
+          return (
+            <button
+              key={godId}
+              onClick={() => setActiveGodId(godId)}
+              style={{
+                padding: '5px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
+                background: isActive ? `${g.color}22` : 'rgba(255,255,255,0.04)',
+                color: isActive ? (g.id === 'zeus' ? '#e2e8f0' : g.color) : 'rgba(255,255,255,0.3)',
+                outline: isActive ? `1.5px solid ${g.color}40` : 'none',
+                transition: 'all .2s',
+              }}
+            >
+              {g.symbol} {g.name}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {messages.map((msg, idx) => (
-          <div key={idx} style={{
-            display: 'flex', gap: 10, alignItems: 'flex-start',
-            flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-          }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-              background: msg.role === 'orisha' ? `${active.color}18` : 'rgba(255,255,255,.06)',
-              border: msg.role === 'orisha' ? `1px solid ${active.color}30` : '1px solid rgba(255,255,255,.1)',
-            }}>
-              {msg.role === 'orisha' ? active.emoji : '👤'}
-            </div>
-            <div style={{
-              maxWidth: '78%', padding: '10px 14px', borderRadius: 16,
-              fontSize: 13, lineHeight: 1.6,
-              background: msg.role === 'user' ? 'rgba(212,160,23,.12)' : 'rgba(255,255,255,.04)',
-              border: msg.role === 'user' ? '1px solid rgba(212,160,23,.2)' : '1px solid rgba(255,255,255,.06)',
-              borderTopRightRadius: msg.role === 'user' ? 4 : 16,
-              borderTopLeftRadius: msg.role === 'orisha' ? 4 : 16,
-            }}>
-              {msg.content}
-            </div>
-          </div>
-        ))}
+      {/* ── Messages ── */}
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '16px 14px',
+        display: 'flex', flexDirection: 'column', gap: 14,
+        scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,.08) transparent',
+      }}>
+        {messages.map((msg, idx) => {
+          const isUser = msg.role === 'user'
+          const msgGod = msg.godId ? AI_GODS[msg.godId] : activeGod
+          return (
+            <div
+              key={idx}
+              style={{
+                display: 'flex', gap: 10, alignItems: 'flex-start',
+                flexDirection: isUser ? 'row-reverse' : 'row',
+              }}
+            >
+              {/* Avatar */}
+              <div style={{
+                width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 17,
+                background: isUser ? 'rgba(255,255,255,0.07)' : `${msgGod.color}18`,
+                border: isUser
+                  ? '1px solid rgba(255,255,255,0.1)'
+                  : `1px solid ${msgGod.color}30`,
+              }}>
+                {isUser ? '👤' : msgGod.symbol}
+              </div>
 
-        {/* Loading dots */}
+              {/* Bubble */}
+              <div style={{
+                maxWidth: '78%', padding: '12px 16px', borderRadius: 18, fontSize: 13, lineHeight: 1.65,
+                background: isUser
+                  ? 'rgba(245,158,11,0.12)'
+                  : 'rgba(255,255,255,0.04)',
+                border: isUser
+                  ? '1px solid rgba(245,158,11,0.22)'
+                  : `1px solid rgba(255,255,255,0.07)`,
+                borderTopRightRadius: isUser ? 4 : 18,
+                borderTopLeftRadius: isUser ? 18 : 4,
+                color: isUser ? '#fde68a' : '#e8f0e8',
+              }}>
+                {msg.content}
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginTop: 6, textAlign: isUser ? 'right' : 'left' }}>
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Loading indicator */}
         {loading && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <div style={{
-              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-              background: `${active.color}18`, border: `1px solid ${active.color}30`,
+              width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
+              background: `${activeGod.color}18`, border: `1px solid ${activeGod.color}30`,
             }}>
-              {active.emoji}
+              {activeGod.symbol}
             </div>
             <div style={{
-              padding: '12px 16px', borderRadius: 16, borderTopLeftRadius: 4,
-              background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.06)',
-              display: 'flex', gap: 4,
+              padding: '14px 18px', borderRadius: 18, borderTopLeftRadius: 4,
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
             }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  background: active.color === '#ffffff' ? '#ccc' : active.color,
-                  opacity: 0.6,
-                  animation: `griot-dot-bounce 1.2s ease-in-out ${i * 0.15}s infinite`,
-                }} />
-              ))}
+              <LoadingDots color={activeGod.id === 'zeus' ? '#818cf8' : activeGod.color} />
             </div>
           </div>
         )}
         <div ref={endRef} />
       </div>
 
-      {/* Input bar */}
+      {/* ── Input bar ── */}
       <div style={{
-        padding: '8px 12px 12px', borderTop: '1px solid rgba(255,255,255,.06)',
-        display: 'flex', gap: 8,
+        padding: '10px 14px 14px',
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        flexShrink: 0,
+        background: `linear-gradient(0deg, ${activeGod.color}08 0%, transparent 100%)`,
       }}>
-        <input
-          placeholder={`Ask ${active.name}…`}
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) handleSend() }}
-          style={{
-            flex: 1, padding: '12px 16px', borderRadius: 16,
-            background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
-            color: '#f0f5ee', fontSize: 14, outline: 'none',
-            fontFamily: "'DM Sans', Inter, system-ui, sans-serif",
-          }}
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading}
-          style={{
-            width: 46, height: 46, borderRadius: 14, border: 'none', cursor: 'pointer',
-            background: loading ? 'rgba(255,255,255,.08)' : `linear-gradient(135deg, ${active.color === '#ffffff' ? '#aaa' : active.color}, ${active.color === '#ffffff' ? '#888' : active.color}cc)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-            opacity: loading ? 0.5 : 1, transition: 'all .2s',
-          }}
-        >
-          {active.emoji}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input
+            placeholder={`Ask ${activeGod.name}…`}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                sendMessage(input)
+              }
+            }}
+            style={{
+              flex: 1, padding: '13px 18px', borderRadius: 16,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              color: '#f0f5ee', fontSize: 14, outline: 'none', fontFamily: S.font,
+            }}
+          />
+          <button
+            onClick={() => sendMessage(input)}
+            disabled={loading || !input.trim()}
+            style={{
+              width: 48, height: 48, borderRadius: 14, border: 'none',
+              cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
+              background: loading || !input.trim()
+                ? 'rgba(255,255,255,0.06)'
+                : `linear-gradient(135deg, ${activeGod.color}, ${activeGod.color}bb)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, opacity: loading || !input.trim() ? 0.4 : 1,
+              transition: 'all .2s',
+              boxShadow: !loading && input.trim() ? `0 4px 16px ${activeGod.glow}` : 'none',
+            }}
+          >
+            {activeGod.symbol}
+          </button>
+        </div>
       </div>
 
+      {/* ── Powers Sheet (slide-up overlay) ── */}
+      {showPowers && (
+        <div
+          onClick={() => setShowPowers(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+            zIndex: 100, backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              background: '#0d150d',
+              borderRadius: '24px 24px 0 0',
+              border: `1px solid ${activeGod.color}25`,
+              borderBottom: 'none',
+              maxHeight: '82dvh', display: 'flex', flexDirection: 'column',
+              boxShadow: `0 -8px 48px ${activeGod.glow}`,
+            }}
+          >
+            {/* Sheet header */}
+            <div style={{
+              padding: '16px 20px 12px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              borderBottom: `1px solid rgba(255,255,255,0.07)`,
+              flexShrink: 0,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 22 }}>{activeGod.symbol}</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 900, fontFamily: S.head, color: activeGod.color }}>
+                    {activeGod.name}&apos;s Powers
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+                    {activeGod.powers.length} sovereign capabilities
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPowers(false)}
+                style={{
+                  width: 30, height: 30, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                  background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14,
+                }}
+              >✕</button>
+            </div>
+
+            {/* Powers scrollable list */}
+            <div style={{
+              flex: 1, overflowY: 'auto', padding: '12px 16px 24px',
+              display: 'flex', flexDirection: 'column', gap: 8,
+              scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,.06) transparent',
+            }}>
+              {activeGod.powers.map(power => (
+                <PowerCard
+                  key={power.id}
+                  power={power}
+                  god={activeGod}
+                  onInvoke={invokePower}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        @keyframes griot-dot-bounce {
+        @keyframes god-dot-bounce {
           0%, 80%, 100% { transform: translateY(0); }
           40% { transform: translateY(-6px); }
         }

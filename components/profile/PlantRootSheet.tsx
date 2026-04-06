@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 import * as React from 'react'
 import { VOCAB } from '@/constants/vocabulary'
+import { rootApi } from '@/lib/api'
 
 export interface PlantRootSheetProps {
   targetAfroId: string
@@ -115,10 +116,7 @@ export function PlantRootSheet({
     setLoading(true)
     setError(null)
     try {
-      await fetch(`/api/subscriptions/roots/${targetAfroId}`, {
-        method: 'DELETE',
-        headers: { 'x-afro-id': viewerAfroId },
-      })
+      await rootApi.lift(targetAfroId)
       setPhase('success')
       setTimeout(() => { onSuccess?.('NONE'); onClose() }, 1800)
     } catch {
@@ -133,15 +131,8 @@ export function PlantRootSheet({
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/subscriptions/roots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetAfroId, viewerAfroId, tier: selected }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error((data as { error?: string }).error ?? `HTTP ${res.status}`)
-      }
+      const tier = TIERS.find(t => t.id === selected)
+      await rootApi.plant(targetAfroId, selected, tier?.cowriePerMonth)
       setPhase('success')
       setTimeout(() => { onSuccess?.(selected); onClose() }, 1800)
     } catch (err) {

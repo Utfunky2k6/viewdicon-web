@@ -43,6 +43,7 @@ export default function PaymentLink({ villageId, roleKey }: ToolProps) {
   const [expiry, setExpiry] = useState<'24h' | '72h' | '7d'>('72h')
   const [generated, setGenerated] = useState<{ link: string; id: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [sharedVia, setSharedVia] = useState<'feed' | 'seso' | null>(null)
   const [links, setLinks] = useState<PayLink[]>(RECENT_LINKS)
 
   function generate() {
@@ -145,17 +146,30 @@ export default function PaymentLink({ villageId, roleKey }: ToolProps) {
           </div>
           {/* Share buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
-            {[['📱 WhatsApp', '#25d366'], ['💬 Seso Chat', blue], ['🔗 Copy Link', muted]].map(([lbl, col]) => (
-              <button
-                key={lbl as string}
-                onClick={lbl === '🔗 Copy Link' ? copy : undefined}
-                style={{
-                  flex: 1, padding: '8px 0', border: `1px solid ${col as string}44`,
-                  borderRadius: 8, background: (col as string) + '11', color: col as string,
-                  fontSize: 11, cursor: 'pointer',
-                }}
-              >{lbl as string}</button>
-            ))}
+            <button
+              onClick={() => { setSharedVia('feed'); setTimeout(() => setSharedVia(null), 2000) }}
+              style={{
+                flex: 1, padding: '8px 0', border: `1px solid ${sharedVia === 'feed' ? green : '#4ade8044'}`,
+                borderRadius: 8, background: sharedVia === 'feed' ? green + '33' : '#4ade8011', color: sharedVia === 'feed' ? green : '#4ade80',
+                fontSize: 11, cursor: 'pointer',
+              }}
+            >{sharedVia === 'feed' ? '✓ Posted' : '🥁 Post to Feed'}</button>
+            <button
+              onClick={() => { setSharedVia('seso'); setTimeout(() => setSharedVia(null), 2000) }}
+              style={{
+                flex: 1, padding: '8px 0', border: `1px solid ${sharedVia === 'seso' ? blue : blue + '44'}`,
+                borderRadius: 8, background: sharedVia === 'seso' ? blue + '33' : blue + '11', color: sharedVia === 'seso' ? blue : blue,
+                fontSize: 11, cursor: 'pointer',
+              }}
+            >{sharedVia === 'seso' ? '✓ Sent' : '💬 Seso Chat'}</button>
+            <button
+              onClick={copy}
+              style={{
+                flex: 1, padding: '8px 0', border: `1px solid ${copied ? green : muted + '44'}`,
+                borderRadius: 8, background: copied ? green + '33' : muted + '11', color: copied ? green : muted,
+                fontSize: 11, cursor: 'pointer',
+              }}
+            >{copied ? '✓ Copied' : '🔗 Copy Link'}</button>
           </div>
         </div>
       )}

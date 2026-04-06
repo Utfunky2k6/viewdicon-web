@@ -1,9 +1,11 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { ThemeMode, t } from './shared'
 import { useAuthStore } from '@/stores/authStore'
 
 export default function CowrieWallet({ mode, onAction }: { mode: ThemeMode, onAction?: (action: string) => void }) {
+  const router = useRouter()
   const isDark = mode === 'dark'
   const user = useAuthStore(s => s.user)
   const [balHidden, setBalHidden] = React.useState(false)
@@ -13,7 +15,8 @@ export default function CowrieWallet({ mode, onAction }: { mode: ThemeMode, onAc
 
   React.useEffect(() => {
     const fetchBalance = async () => {
-      const afroId = user?.afroId?.raw || 'demo-user'
+      const afroId = user?.afroId?.raw
+      if (!afroId) { setIsOffline(true); setLoading(false); return }
       try {
         const res = await fetch(`/api/cowrie/wallet/${afroId}`)
         if (res.status === 503) {
@@ -55,6 +58,10 @@ export default function CowrieWallet({ mode, onAction }: { mode: ThemeMode, onAc
 
   return (
     <div style={{ margin:'0 12px', borderRadius:14, padding:'12px 14px', background:t('card',mode), border:`1px solid ${t('border',mode)}` }}>
+      <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:8 }}>
+        <span style={{ fontSize:12 }}>🔵</span>
+        <span style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'.1em', color:'#818cf8' }}>UnionPay</span>
+      </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
         <span style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.07em', color:t('sub',mode) }}>Total Balance</span>
         <span onClick={() => setBalHidden(h => !h)} style={{ fontSize:13, cursor:'pointer', color:t('sub',mode) }}>{balHidden ? '👁️‍🗨️' : '👁️'}</span>
@@ -90,7 +97,7 @@ export default function CowrieWallet({ mode, onAction }: { mode: ThemeMode, onAc
         <div style={{ fontSize:11, flex:1, color: isDark ? '#fbbf24' : '#78350f', lineHeight:1.4 }}>
           <strong>₡ {balance?.afcoin ? balance.afcoin / 100 : 0} in AF-Coin</strong> — Stability Reserve Active
         </div>
-        <span style={{ fontSize:11, fontWeight:700, color:'#1a7c3e', cursor:'pointer' }}>View →</span>
+        <span onClick={() => router.push('/dashboard/banking')} style={{ fontSize:11, fontWeight:700, color:'#1a7c3e', cursor:'pointer' }}>View →</span>
       </div>
     </div>
   )

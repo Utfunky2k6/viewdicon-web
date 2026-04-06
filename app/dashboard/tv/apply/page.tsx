@@ -110,7 +110,7 @@ function VillageCard({ id, name, emoji, color, selected, onSelect }: {
       }}>
         {emoji}
       </div>
-      <span style={{ fontSize:13, fontWeight:700, color: selected ? color : '#f0f7f0', fontFamily:'Sora,sans-serif' }}>
+      <span style={{ fontSize:13, fontWeight:700, color: selected ? color : '#f0f7f0', fontFamily:'Sora, sans-serif' }}>
         {name}
       </span>
       {selected && <div style={{ marginLeft:'auto', width:18, height:18, borderRadius:'50%', background:color, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, color:'#fff' }}>✓</div>}
@@ -183,7 +183,7 @@ export default function ApplyToBroadcastPage() {
     return (
       <div style={{ minHeight:'100dvh', background:'#060d08', color:'#f0f7f0', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
         <div className="ap-bounce" style={{ fontSize:64, marginBottom:16 }}>🎙</div>
-        <h1 style={{ fontFamily:'Sora,sans-serif', fontSize:26, fontWeight:900, background:'linear-gradient(135deg,#4ade80,#1a7c3e)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:8 }}>
+        <h1 style={{ fontFamily:'Sora, sans-serif', fontSize:26, fontWeight:900, background:'linear-gradient(135deg,#4ade80,#1a7c3e)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:8 }}>
           Application Submitted!
         </h1>
         <p style={{ fontSize:13, color:'rgba(255,255,255,.55)', maxWidth:320, lineHeight:1.6, marginBottom:24 }}>
@@ -215,19 +215,19 @@ export default function ApplyToBroadcastPage() {
         <div style={{ display:'flex', flexDirection:'column', gap:10, width:'100%', maxWidth:320 }}>
           <button
             onClick={() => router.push('/dashboard/tv/schedule')}
-            style={{ padding:'14px 20px', borderRadius:14, border:'none', cursor:'pointer', fontWeight:800, fontSize:13, fontFamily:'Sora,sans-serif', background:'linear-gradient(135deg,#1a7c3e,#0f5028)', color:'#fff' }}
+            style={{ padding:'14px 20px', borderRadius:14, border:'none', cursor:'pointer', fontWeight:800, fontSize:13, fontFamily:'Sora, sans-serif', background:'linear-gradient(135deg,#1a7c3e,#0f5028)', color:'#fff' }}
           >
             📺 View TV Schedule
           </button>
           <button
             onClick={() => router.push('/dashboard/calendar')}
-            style={{ padding:'14px 20px', borderRadius:14, cursor:'pointer', fontWeight:700, fontSize:13, fontFamily:'Sora,sans-serif', background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.1)', color:'rgba(255,255,255,.7)' }}
+            style={{ padding:'14px 20px', borderRadius:14, cursor:'pointer', fontWeight:700, fontSize:13, fontFamily:'Sora, sans-serif', background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.1)', color:'rgba(255,255,255,.7)' }}
           >
             📅 Open My Calendar
           </button>
           <button
             onClick={() => router.push('/dashboard/tv')}
-            style={{ padding:'14px 20px', borderRadius:14, cursor:'pointer', fontWeight:700, fontSize:13, fontFamily:'Sora,sans-serif', background:'transparent', border:'none', color:'rgba(255,255,255,.3)' }}
+            style={{ padding:'14px 20px', borderRadius:14, cursor:'pointer', fontWeight:700, fontSize:13, fontFamily:'Sora, sans-serif', background:'transparent', border:'none', color:'rgba(255,255,255,.3)' }}
           >
             Back to Jollof TV
           </button>
@@ -253,7 +253,7 @@ export default function ApplyToBroadcastPage() {
             🎙
           </div>
           <div>
-            <h1 style={{ fontFamily:'Sora,sans-serif', fontSize:20, fontWeight:900, color:'#f0f7f0', margin:0 }}>Apply to Broadcast</h1>
+            <h1 style={{ fontFamily:'Sora, sans-serif', fontSize:20, fontWeight:900, color:'#f0f7f0', margin:0 }}>Apply to Broadcast</h1>
             <p style={{ fontSize:11, color:'rgba(74,222,128,.6)', margin:0 }}>Village Airwaves · Cowrie-powered slots</p>
           </div>
         </div>
@@ -268,7 +268,7 @@ export default function ApplyToBroadcastPage() {
         {step === 1 && (
           <div className="ap-fade">
             <div style={{ marginBottom:16 }}>
-              <h2 style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Choose Your Village Channel</h2>
+              <h2 style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Choose Your Village Channel</h2>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', lineHeight:1.5 }}>
                 Each village runs its own broadcast channel. Your show will air under that village's brand and reach its audience.
               </p>
@@ -288,7 +288,7 @@ export default function ApplyToBroadcastPage() {
         {step === 2 && (
           <div className="ap-fade">
             <div style={{ marginBottom:16 }}>
-              <h2 style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>
+              <h2 style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>
                 {village?.emoji} Your Show Concept
               </h2>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', lineHeight:1.5 }}>
@@ -429,7 +429,7 @@ export default function ApplyToBroadcastPage() {
         {step === 3 && (
           <div className="ap-fade">
             <div style={{ marginBottom:16 }}>
-              <h2 style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Choose Your Air Time</h2>
+              <h2 style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Choose Your Air Time</h2>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', lineHeight:1.5 }}>
                 Select your preferred daypart and days. The village schedule master will confirm your slot upon approval.
               </p>
@@ -455,7 +455,7 @@ export default function ApplyToBroadcastPage() {
                       }}
                     >
                       <div>
-                        <div style={{ fontSize:13, fontWeight:800, color: preferredTier === tier ? meta.color : '#f0f7f0', fontFamily:'Sora,sans-serif' }}>
+                        <div style={{ fontSize:13, fontWeight:800, color: preferredTier === tier ? meta.color : '#f0f7f0', fontFamily:'Sora, sans-serif' }}>
                           {meta.label}
                           {tier === 'PRIME' && <span style={{ marginLeft:6, fontSize:9, padding:'2px 6px', borderRadius:99, background:'#ef4444', color:'#fff', fontWeight:700 }}>PEAK</span>}
                         </div>
@@ -518,7 +518,7 @@ export default function ApplyToBroadcastPage() {
         {step === 4 && (
           <div className="ap-fade">
             <div style={{ marginBottom:16 }}>
-              <h2 style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Lock Your Slot with Cowrie</h2>
+              <h2 style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Lock Your Slot with Cowrie</h2>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', lineHeight:1.5 }}>
                 A {Math.round(DEPOSIT_PERCENT * 100)}% refundable deposit holds your application. The remainder is released from escrow on your first air date.
               </p>
@@ -548,7 +548,7 @@ export default function ApplyToBroadcastPage() {
               <div style={{ background:'rgba(26,124,62,.12)', border:'1px solid rgba(74,222,128,.2)', borderRadius:12, padding:'12px 14px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
                   <span style={{ fontSize:12, fontWeight:700, color:'#4ade80' }}>Deposit Now (20%)</span>
-                  <span style={{ fontSize:18, fontWeight:900, color:'#4ade80', fontFamily:'Sora,sans-serif' }}>🐚 {deposit.toLocaleString()}</span>
+                  <span style={{ fontSize:18, fontWeight:900, color:'#4ade80', fontFamily:'Sora, sans-serif' }}>🐚 {deposit.toLocaleString()}</span>
                 </div>
                 <div style={{ fontSize:10, color:'rgba(74,222,128,.5)' }}>Held in escrow · Returned if declined</div>
               </div>
@@ -603,7 +603,7 @@ export default function ApplyToBroadcastPage() {
         {step === 5 && (
           <div className="ap-fade">
             <div style={{ marginBottom:16 }}>
-              <h2 style={{ fontFamily:'Sora,sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Review Your Application</h2>
+              <h2 style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:800, color:'#f0f7f0', marginBottom:4 }}>Review Your Application</h2>
               <p style={{ fontSize:11, color:'rgba(255,255,255,.4)', lineHeight:1.5 }}>
                 Once submitted, the village elders will review your application within 3 market days.
               </p>
@@ -621,7 +621,7 @@ export default function ApplyToBroadcastPage() {
 
             {/* Concept */}
             <ReviewSection title="Show Concept">
-              <div style={{ fontSize:14, fontWeight:800, color:'#f0f7f0', marginBottom:4, fontFamily:'Sora,sans-serif' }}>{showTitle}</div>
+              <div style={{ fontSize:14, fontWeight:800, color:'#f0f7f0', marginBottom:4, fontFamily:'Sora, sans-serif' }}>{showTitle}</div>
               {showDesc && <div style={{ fontSize:11, color:'rgba(255,255,255,.45)', lineHeight:1.5, marginBottom:8 }}>{showDesc}</div>}
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 {category && <Pill label={SHOW_CATEGORY_META[category].emoji + ' ' + SHOW_CATEGORY_META[category].label} color='#1a7c3e' />}
@@ -667,7 +667,7 @@ export default function ApplyToBroadcastPage() {
               width:'100%', padding:'15px', borderRadius:14, border:'none', cursor: canProceed[step] ? 'pointer' : 'not-allowed',
               background: canProceed[step] ? 'linear-gradient(135deg,#1a7c3e,#0f5028)' : 'rgba(255,255,255,.06)',
               color: canProceed[step] ? '#fff' : 'rgba(255,255,255,.25)',
-              fontSize:14, fontWeight:800, fontFamily:'Sora,sans-serif', transition:'all .2s',
+              fontSize:14, fontWeight:800, fontFamily:'Sora, sans-serif', transition:'all .2s',
               boxShadow: canProceed[step] ? '0 4px 20px rgba(26,124,62,.3)' : 'none',
             }}
           >
@@ -681,7 +681,7 @@ export default function ApplyToBroadcastPage() {
             style={{
               width:'100%', padding:'15px', borderRadius:14, border:'none', cursor:'pointer',
               background:'linear-gradient(135deg,#1a7c3e,#0f5028)',
-              color:'#fff', fontSize:14, fontWeight:800, fontFamily:'Sora,sans-serif',
+              color:'#fff', fontSize:14, fontWeight:800, fontFamily:'Sora, sans-serif',
               boxShadow:'0 4px 24px rgba(26,124,62,.4)',
             }}
           >

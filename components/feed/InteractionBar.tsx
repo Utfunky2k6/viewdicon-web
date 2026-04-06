@@ -6,6 +6,7 @@
 import * as React from 'react'
 import type { Post } from './feedTypes'
 import { VOCAB } from '@/constants/vocabulary'
+import { sorosokeApi } from '@/lib/api'
 
 interface InteractionBarProps {
   post: Post
@@ -43,6 +44,9 @@ export function InteractionBar({
   const [tradeOpen, setTradeOpen] = React.useState(false)
   const [griotAsked, setGriotAsked] = React.useState(false)
   const [drummed, setDrummed] = React.useState(false)
+  const [sprayed, setSprayed] = React.useState(false)
+  const [localBookmarked, setLocalBookmarked] = React.useState(bookmarked)
+  const [commentCount, setCommentCount] = React.useState(post.commentCount)
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -158,14 +162,18 @@ export function InteractionBar({
 
         {/* 💸 Spray — voice + market */}
         {canSpray && (
-          <button onClick={onSpray} style={{
+          <button onClick={() => {
+            setSprayed(true)
+            if (onSpray) onSpray()
+            else sorosokeApi.spray(post.id, { amount: 50 }).catch(() => {})
+          }} style={{
             ...btnBase,
-            color: 'rgba(212,160,23,.7)',
-            background: 'rgba(212,160,23,.07)',
-            borderColor: 'rgba(212,160,23,.25)',
-            animation: 'ib-spray-shine 2s ease-in-out infinite',
+            color: sprayed ? '#fbbf24' : 'rgba(212,160,23,.7)',
+            background: sprayed ? 'rgba(212,160,23,.18)' : 'rgba(212,160,23,.07)',
+            borderColor: sprayed ? 'rgba(212,160,23,.5)' : 'rgba(212,160,23,.25)',
+            animation: sprayed ? 'none' : 'ib-spray-shine 2s ease-in-out infinite',
           }}>
-            {VOCAB.tip}
+            {sprayed ? '💸 Sprayed!' : VOCAB.tip}
           </button>
         )}
 
@@ -194,7 +202,10 @@ export function InteractionBar({
         {/* ── Second row: Comment · Share · Bookmark ── */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           {/* 💬 Comment */}
-          <button onClick={onComment} style={{
+          <button onClick={() => {
+            if (onComment) onComment()
+            else sorosokeApi.comments(post.id).catch(() => {})
+          }} style={{
             ...btnBase,
             color: 'rgba(255,255,255,.45)',
             background: 'rgba(255,255,255,.04)',
@@ -205,7 +216,10 @@ export function InteractionBar({
           </button>
 
           {/* ↗ Share */}
-          <button onClick={onShare} style={{
+          <button onClick={() => {
+            if (onShare) onShare()
+            else if (typeof navigator !== 'undefined' && navigator.share) navigator.share({ title: post.author ?? '', text: post.content ?? '', url: typeof window !== 'undefined' ? window.location.href : '' }).catch(() => {})
+          }} style={{
             ...btnBase,
             color: 'rgba(255,255,255,.35)',
             background: 'rgba(255,255,255,.03)',
@@ -216,14 +230,17 @@ export function InteractionBar({
           </button>
 
           {/* 🔖 Bookmark */}
-          <button onClick={onBookmark} style={{
+          <button onClick={() => {
+            setLocalBookmarked(b => !b)
+            if (onBookmark) onBookmark()
+          }} style={{
             ...btnBase,
-            color: bookmarked ? '#fbbf24' : 'rgba(255,255,255,.3)',
-            background: bookmarked ? 'rgba(251,191,36,.12)' : 'rgba(255,255,255,.03)',
-            borderColor: bookmarked ? 'rgba(251,191,36,.35)' : 'rgba(255,255,255,.08)',
+            color: localBookmarked ? '#fbbf24' : 'rgba(255,255,255,.3)',
+            background: localBookmarked ? 'rgba(251,191,36,.12)' : 'rgba(255,255,255,.03)',
+            borderColor: localBookmarked ? 'rgba(251,191,36,.35)' : 'rgba(255,255,255,.08)',
             padding: '5px 7px',
           }}>
-            {bookmarked ? '🔖' : '🏷'}
+            {localBookmarked ? '🔖' : '🏷'}
           </button>
         </div>
       </div>

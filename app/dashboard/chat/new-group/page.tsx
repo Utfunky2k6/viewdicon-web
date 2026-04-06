@@ -131,7 +131,7 @@ export default function NewGroupPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <button onClick={() => router.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>🏘 New Group</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>🏘 New Group</div>
             <div style={{ fontSize: 11, color: C.textDim }}>Select participants · {selected.size} selected</div>
           </div>
           {selected.size >= 2 && (
@@ -209,7 +209,7 @@ export default function NewGroupPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <button onClick={() => setStep(1)} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>Group Details</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>Group Details</div>
             <div style={{ fontSize: 11, color: C.textDim }}>{selected.size} participants selected</div>
           </div>
           {groupName.trim().length >= 3 && (
@@ -238,7 +238,7 @@ export default function NewGroupPage() {
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '.1em', display: 'block', marginBottom: 6 }}>Group Name *</label>
           <input value={groupName} onChange={e => setGroupName(e.target.value.slice(0, 50))} placeholder="e.g. Lagos Commerce Circle"
-            style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: `1.5px solid ${groupName.trim().length >= 3 ? 'rgba(74,222,128,.5)' : C.border}`, color: C.text, fontSize: 15, outline: 'none', fontFamily: 'Sora,sans-serif', fontWeight: 700, boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: `1.5px solid ${groupName.trim().length >= 3 ? 'rgba(74,222,128,.5)' : C.border}`, color: C.text, fontSize: 15, outline: 'none', fontFamily: 'Sora, sans-serif', fontWeight: 700, boxSizing: 'border-box' }} />
           <div style={{ fontSize: 10, color: C.textDim2, marginTop: 4, textAlign: 'right' }}>{groupName.length}/50</div>
         </div>
 
@@ -279,7 +279,7 @@ export default function NewGroupPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <button onClick={() => setStep(2)} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>Permissions</div>
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>Permissions</div>
             <div style={{ fontSize: 11, color: C.textDim }}>Who can do what in this group</div>
           </div>
           <button onClick={() => setStep(4)} style={{ padding: '8px 16px', borderRadius: 12, background: `linear-gradient(135deg, ${C.green}, #145f30)`, border: 'none', color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Review ›</button>
@@ -346,7 +346,7 @@ export default function NewGroupPage() {
       <div style={{ padding: '14px 18px 10px', borderBottom: `1px solid ${C.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <button onClick={() => setStep(3)} style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,.05)', border: `1px solid ${C.border}`, color: C.textDim, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>Review & Launch</div>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 17, fontWeight: 900, color: C.text }}>Review & Launch</div>
         </div>
         <ProgressBar />
       </div>
@@ -355,7 +355,7 @@ export default function NewGroupPage() {
         {/* Group preview card */}
         <div style={{ padding: 20, borderRadius: 20, background: 'rgba(255,255,255,.03)', border: `1px solid ${C.border}`, marginBottom: 20, textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(26,124,62,.15)', border: '2px solid rgba(26,124,62,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34, margin: '0 auto 12px' }}>{groupEmoji}</div>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 20, fontWeight: 900, color: C.text }}>{groupName || 'Unnamed Group'}</div>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 20, fontWeight: 900, color: C.text }}>{groupName || 'Unnamed Group'}</div>
           {groupDesc && <div style={{ fontSize: 12, color: C.textDim, marginTop: 6 }}>{groupDesc}</div>}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: 'rgba(26,124,62,.1)', border: '1px solid rgba(26,124,62,.2)', color: C.greenL }}>{GROUP_TYPES.find(g => g.id === groupType)?.label}</span>
@@ -397,7 +397,7 @@ export default function NewGroupPage() {
           background: `linear-gradient(135deg, ${C.green}, #145f30)`,
           border: '1px solid rgba(74,222,128,.3)',
           color: '#fff', fontSize: 15, fontWeight: 900,
-          fontFamily: 'Sora,sans-serif', cursor: launching ? 'wait' : 'pointer',
+          fontFamily: 'Sora, sans-serif', cursor: launching ? 'wait' : 'pointer',
           boxShadow: '0 8px 32px rgba(26,124,62,.3)', textTransform: 'uppercase', letterSpacing: '.06em',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           transition: 'all .3s',

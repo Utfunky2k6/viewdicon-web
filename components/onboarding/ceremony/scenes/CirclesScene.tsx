@@ -36,7 +36,7 @@ export function CirclesScene({ geoResult, geoLoading, onNext, theme }: CirclesSc
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, background: theme.bg }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 40, marginBottom: 16 }}>⚪</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>The Three Circles</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, color: theme.text, marginBottom: 6 }}>The Three Circles</div>
         <div style={{ fontSize: 13, color: theme.subText, lineHeight: 1.5 }}>Africa is more than a map; it is a lineage. Choose your point of entry.</div>
       </div>
 

@@ -1,5 +1,7 @@
+// DEPRECATED: Use PlantRootSheet.tsx — this component has inconsistent tier pricing
 'use client'
 import * as React from 'react'
+import { rootApi } from '@/lib/api'
 
 interface RootTier {
   id: 'FREE' | 'STRONG' | 'ELDER'
@@ -76,29 +78,57 @@ interface RootPlantingScreenProps {
   /** Creator being subscribed to */
   creatorHandle?: string
   creatorName?: string
+  /** Creator's AfroID — needed for the rootApi call */
+  creatorAfroId?: string
   /** Roots already planted in this creator */
   currentTier?: 'FREE' | 'STRONG' | 'ELDER' | null
   /** Total roots count */
   rootCount?: number
   onClose: () => void
+  onSuccess?: (tier: string) => void
 }
 
 export function RootPlantingScreen({
   creatorHandle = '@MarketKing',
   creatorName = 'Umoh Utibe',
+  creatorAfroId,
   currentTier = null,
   rootCount = 204,
   onClose,
+  onSuccess,
 }: RootPlantingScreenProps) {
   const [selected, setSelected] = React.useState<RootTier['id'] | null>(currentTier)
   const [confirming, setConfirming] = React.useState(false)
   const [planted, setPlanted] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
-  const handlePlant = () => {
+  // Map legacy tier IDs to rootApi tier IDs
+  const TIER_API_MAP: Record<string, 'FREE_ROOT' | 'PAID_ROOT' | 'ANCESTRAL_ROOT'> = {
+    FREE: 'FREE_ROOT',
+    STRONG: 'PAID_ROOT',
+    ELDER: 'ANCESTRAL_ROOT',
+  }
+
+  const handlePlant = async () => {
     if (!selected) return
     if (!confirming) { setConfirming(true); return }
-    setPlanted(true)
-    setTimeout(onClose, 1800)
+
+    setLoading(true)
+    setError(null)
+    try {
+      if (creatorAfroId) {
+        const tier = ROOT_TIERS.find(t => t.id === selected)
+        await rootApi.plant(creatorAfroId, TIER_API_MAP[selected], tier?.cowriePerMonth)
+      }
+      setPlanted(true)
+      onSuccess?.(selected)
+      setTimeout(onClose, 1800)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not plant root. Try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const selectedTier = ROOT_TIERS.find(t => t.id === selected)
@@ -198,6 +228,16 @@ export function RootPlantingScreen({
 
         {/* CTA */}
         <div style={{ padding: 14, marginTop: 6 }}>
+          {error && (
+            <div style={{
+              padding: '10px 14px', borderRadius: 12, fontSize: 12,
+              color: '#f87171', background: 'rgba(248,113,113,.08)',
+              border: '1px solid rgba(248,113,113,.2)', textAlign: 'center',
+              marginBottom: 10,
+            }}>
+              {error}
+            </div>
+          )}
           {planted ? (
             <div style={{ width: '100%', padding: 16, borderRadius: 16, background: 'linear-gradient(135deg, #0a2a16, #1a7c3e)', border: '1px solid #4ade80', textAlign: 'center' }}>
               <div style={{ fontSize: 28, marginBottom: 6 }}>🌳</div>
@@ -215,9 +255,9 @@ export function RootPlantingScreen({
                 )}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setConfirming(false)} style={{ flex: 1, padding: 14, borderRadius: 14, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.04)', color: 'rgba(255,255,255,.5)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Back</button>
-                <button onClick={handlePlant} style={{ flex: 2, padding: 14, borderRadius: 14, border: 'none', background: `linear-gradient(135deg, ${selectedTier.color}, ${selectedTier.color}aa)`, color: '#fff', fontSize: 14, fontWeight: 900, cursor: 'pointer' }}>
-                  {selectedTier.emoji} Confirm Root
+                <button onClick={() => { setConfirming(false); setError(null) }} style={{ flex: 1, padding: 14, borderRadius: 14, border: '1px solid rgba(255,255,255,.1)', background: 'rgba(255,255,255,.04)', color: 'rgba(255,255,255,.5)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Back</button>
+                <button onClick={handlePlant} disabled={loading} style={{ flex: 2, padding: 14, borderRadius: 14, border: 'none', background: loading ? `${selectedTier.color}55` : `linear-gradient(135deg, ${selectedTier.color}, ${selectedTier.color}aa)`, color: '#fff', fontSize: 14, fontWeight: 900, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                  {loading ? '🌱 Planting…' : `${selectedTier.emoji} Confirm Root`}
                 </button>
               </div>
             </div>

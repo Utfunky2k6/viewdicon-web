@@ -15,8 +15,8 @@ import {
 interface Tab { path: string; icon: React.ReactNode; label: string; exact?: boolean }
 
 const LEFT_TABS: Tab[] = [
-  { path: '/dashboard',          icon: <BaobabTree size={22} />,  label: 'Home',  exact: true },
-  { path: '/dashboard/feed',     icon: <DjembeIcon size={22} />,  label: 'Drum'               },
+  { path: '/dashboard',          icon: <BaobabTree size={22} />,  label: 'Home',    exact: true },
+  { path: '/dashboard/feed',     icon: <DjembeIcon size={22} />,  label: 'Drum'                 },
 ]
 
 const RIGHT_TABS: Tab[] = [
@@ -37,12 +37,14 @@ export function BottomNav() {
   const GOLD = '#fbbf24'
 
   const QUICK_ACTIONS = [
-    { icon: <ToolSigil   size={28} />, label: 'My Tools',      href: '/dashboard/villages'  },
-    { icon: <CouncilHut  size={28} />, label: 'Sessions',      href: '/dashboard/sessions'  },
-    { icon: <DjembeIcon  size={28} />, label: 'Text Drum',     href: '/dashboard/feed'      },
-    { icon: <FireCircle  size={28} />, label: 'Voice Circle',  href: '/dashboard/rooms'     },
-    { icon: <KowrieIcon  size={28} />, label: 'Cowrie',        href: '/dashboard/banking'   },
-    { icon: <UbuntuRing  size={28} />, label: 'Message',       href: '/dashboard/chat'      },
+    { icon: <DjembeIcon  size={28} />, label: 'New Post',      href: '/dashboard/feed',          color: '#1a7c3e' },
+    { icon: <KowrieIcon  size={28} />, label: 'UnionPay',     href: '/dashboard/banking',       color: '#d4a017' },
+    { icon: <span style={{ fontSize: 28 }}>💛</span>, label: 'Union Path', href: '/dashboard/love',       color: '#D4AF37' },
+    { icon: <span style={{ fontSize: 28 }}>🔥</span>, label: 'Kèréwà',    href: '/dashboard/kerawa',     color: '#FF3B30' },
+    { icon: <ToolSigil   size={28} />, label: 'Launch Tool',   href: '/dashboard/villages',      color: '#7c3aed' },
+    { icon: <CouncilHut  size={28} />, label: 'My Sessions',   href: '/dashboard/sessions',      color: '#374151' },
+    { icon: <NkisiShield size={28} />, label: 'Market Cry',    href: '/dashboard/ads',           color: '#c0392b' },
+    { icon: <span style={{ fontSize: 28 }}>🎟</span>, label: 'Create Event', href: '/dashboard/events/create', color: '#b45309' },
   ]
 
   const renderTab = (tab: Tab) => {
@@ -107,19 +109,20 @@ export function BottomNav() {
             background: '#111a0d', borderRadius: '28px 28px 0 0', padding: '16px 16px 40px',
           }}>
             <div style={{ width: 40, height: 4, borderRadius: 99, background: 'rgba(255,255,255,.2)', margin: '0 auto 16px' }} />
-            <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 18, fontWeight: 900, color: '#f0f5ee', marginBottom: 14, paddingLeft: 4 }}>
-              What do you want to create?
+            <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 16, fontWeight: 900, color: '#f0f5ee', marginBottom: 4, paddingLeft: 4 }}>
+              Quick Actions
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', paddingLeft: 4, marginBottom: 12, letterSpacing: '.04em' }}>WHAT WILL YOU DO?</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               {QUICK_ACTIONS.map(a => (
                 <button key={a.label} onClick={() => { setShowSheet(false); router.push(a.href) }} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-                  padding: '20px 10px', borderRadius: 20, cursor: 'pointer',
-                  background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.1)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                  padding: '16px 8px', borderRadius: 18, cursor: 'pointer',
+                  background: `${a.color}10`, border: `1px solid ${a.color}25`,
                   color: '#f0f5ee', transition: 'all .2s',
                 }}>
-                  <div style={{ color: TAB_COLOR }}>{a.icon}</div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.7)', letterSpacing: '.04em', textTransform: 'uppercase' }}>{a.label}</span>
+                  <div style={{ color: a.color }}>{a.icon}</div>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.6)', letterSpacing: '.04em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>{a.label}</span>
                 </button>
               ))}
             </div>

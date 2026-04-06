@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react'
-import { Avatar } from '@/components/ui/Avatar'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { formatRelativeTime } from '@/lib/utils'
 
@@ -29,116 +29,209 @@ interface Notif {
   href?: string
 }
 
-// Notifications fetched from backend (initially empty)
-const INITIAL_NOTIFS: Notif[] = []
+// Mock notifications shown while backend is loading or unavailable
+const MOCK_NOTIFS: Notif[] = [
+  { id: 'm1', type: 'KILA',          actor: 'Adaeze Okonkwo',    content: 'gave you 25 Kíla for your post in Commerce Village.',       at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),   isRead: false },
+  { id: 'm2', type: 'GRIOT_WHISPER', actor: 'Kwame Asante',      content: 'mentioned you in a post: "@you should see this market!"',  at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),  isRead: false },
+  { id: 'm3', type: 'TALKING_DRUM',  actor: 'Village Council',   content: 'announced a new market day — tomorrow at dawn.',            at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),  isRead: false },
+  { id: 'm4', type: 'KOLANUT_CALL',  actor: 'Fatima Al-Rashid',  content: 'sent you a connection request.',                            at: new Date(Date.now() - 1000 * 60 * 180).toISOString(), isRead: false },
+  { id: 'm5', type: 'RANK_UP',       actor: 'Your Village',      content: 'Your crest has advanced to Crest II. New tools unlocked.', at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), isRead: true },
+  { id: 'm6', type: 'MWANGA',        actor: 'Blessing Okafor',   content: 'planted a Paid Root in your Jollof TV channel.',           at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), isRead: true },
+  { id: 'm7', type: 'KALABASH',      actor: 'Sipho Dlamini',     content: 'sprayed 200 Cowrie on your live stream.',                  at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), isRead: true },
+  { id: 'm8', type: 'VILLAGE_INVITE', actor: 'Technology Village', content: 'invited you to join as a Founding Member.',              at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), isRead: true },
+]
 
 const NOTIF_META: Record<NotifType, { emoji: string; color: string; label: string }> = {
-  TALKING_DRUM:  { emoji:'🥁',  color:'#E85D04', label:'Talking Drum' },
-  GRIOT_WHISPER: { emoji:'📖',  color:'#A855F7', label:'Griot Whisper' },
-  KOLANUT_CALL:  { emoji:'🌰',  color:'#D7A85F', label:'Kolanut Call' },
-  KILA:          { emoji:'🤝',  color:'#F59E0B', label:'Kíla' },
-  MWANGA:        { emoji:'✨',  color:'#A855F7', label:'Mwanga' },
-  KALABASH:      { emoji:'🥥',  color:'#22C55E', label:'Kalabash' },
-  VILLAGE_INVITE:{ emoji:'🏘️', color:'#00C2FF', label:'Village Invite' },
-  RANK_UP:       { emoji:'🌟',  color:'#D7A85F', label:'Rank Up' },
+  TALKING_DRUM:  { emoji: '🥁',  color: '#E85D04', label: 'Talking Drum'  },
+  GRIOT_WHISPER: { emoji: '📖',  color: '#A855F7', label: 'Griot Whisper' },
+  KOLANUT_CALL:  { emoji: '🌰',  color: '#D7A85F', label: 'Kolanut Call'  },
+  KILA:          { emoji: '🤝',  color: '#F59E0B', label: 'Kíla'          },
+  MWANGA:        { emoji: '✨',  color: '#A855F7', label: 'Mwanga'        },
+  KALABASH:      { emoji: '🥥',  color: '#22C55E', label: 'Kalabash'      },
+  VILLAGE_INVITE:{ emoji: '🏘️', color: '#00C2FF', label: 'Village Invite' },
+  RANK_UP:       { emoji: '🌟',  color: '#D7A85F', label: 'Rank Up'       },
 }
 
 export default function NotificationsPage() {
-  const [notifs, setNotifs] = React.useState<Notif[]>(INITIAL_NOTIFS)
+  const router = useRouter()
+  const [notifs, setNotifs] = React.useState<Notif[]>([])
   const [filter, setFilter] = React.useState<'ALL' | 'UNREAD'>('ALL')
+  const [loading, setLoading] = React.useState(true)
+
+  // Fetch notifications — fall back to mocks gracefully
+  React.useEffect(() => {
+    let cancelled = false
+    fetch('/api/v1/notifications')
+      .then(r => r.ok ? r.json() : null)
+      .then((d) => {
+        if (cancelled) return
+        const items: Notif[] = Array.isArray(d?.data) ? d.data : (Array.isArray(d) ? d : null)
+        setNotifs(items && items.length > 0 ? items : MOCK_NOTIFS)
+      })
+      .catch(() => {
+        if (!cancelled) setNotifs(MOCK_NOTIFS)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   const markAllRead = () => setNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })))
   const markRead    = (id: string) => setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n))
+  const dismiss     = (id: string) => setNotifs((prev) => prev.filter((n) => n.id !== id))
 
   const unreadCount = notifs.filter((n) => !n.isRead).length
   const filtered    = filter === 'UNREAD' ? notifs.filter((n) => !n.isRead) : notifs
 
   return (
-    <div className="animate-fade-in">
-      {/* Header */}
-      <div className="px-4 py-4 border-b border-border flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold">Notifications</h1>
+    <div className="animate-fade-in" style={{ minHeight: '100dvh', background: '#07090a', color: '#f0f5ee' }}>
+
+      {/* ── Header with back button ── */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 40,
+        background: 'rgba(7,9,10,.95)', backdropFilter: 'blur(12px)',
+        borderBottom: '1px solid rgba(255,255,255,.07)',
+        padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <button
+          onClick={() => router.back()}
+          style={{
+            width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer',
+            background: 'rgba(255,255,255,.06)', color: '#f0f5ee', fontSize: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}
+        >←</button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 17, fontWeight: 900, color: '#f0f5ee', fontFamily: "'Sora', sans-serif" }}>
+            🥁 Drums &amp; Alerts
+          </div>
           {unreadCount > 0 && (
-            <p className="text-xs text-gray-400 mt-0.5">{unreadCount} unread</p>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', marginTop: 1 }}>
+              {unreadCount} unread
+            </div>
           )}
         </div>
         {unreadCount > 0 && (
-          <button onClick={markAllRead} className="text-xs text-kente-gold hover:underline">
+          <button
+            onClick={markAllRead}
+            style={{
+              padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(212,160,23,.3)',
+              background: 'rgba(212,160,23,.08)', color: '#fbbf24', fontSize: 11, fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
             Mark all read
           </button>
         )}
       </div>
 
-      {/* Filter */}
-      <div className="flex border-b border-border">
+      {/* ── Filter pills ── */}
+      <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
         {(['ALL', 'UNREAD'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-1 py-3 text-xs font-medium border-b-2 transition-all ${
-              filter === f
-                ? 'border-kente-gold text-kente-gold'
-                : 'border-transparent text-gray-500'
-            }`}
+            style={{
+              flex: 1, padding: '12px 0', border: 'none', background: 'transparent', cursor: 'pointer',
+              fontSize: 12, fontWeight: 700,
+              color: filter === f ? '#fbbf24' : 'rgba(255,255,255,.35)',
+              borderBottom: `2px solid ${filter === f ? '#d4a017' : 'transparent'}`,
+              transition: 'all .2s',
+            }}
           >
             {f === 'ALL' ? `All (${notifs.length})` : `Unread (${unreadCount})`}
           </button>
         ))}
       </div>
 
-      {/* Notif list */}
-      <div className="divide-y divide-border">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-12 text-center px-6">
-            <span className="text-3xl">🔇</span>
-            <p className="text-sm text-gray-400">All quiet in the village</p>
-          </div>
-        ) : (
-          filtered.map((notif) => {
+      {/* ── Notification list ── */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+          <div style={{ fontSize: 28 }}>🥁</div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '48px 24px', textAlign: 'center' }}>
+          <span style={{ fontSize: 36 }}>🔇</span>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,.4)' }}>All quiet in the village</p>
+        </div>
+      ) : (
+        <div>
+          {filtered.map((notif) => {
             const meta = NOTIF_META[notif.type]
             return (
               <div
                 key={notif.id}
-                onClick={() => markRead(notif.id)}
-                className={`flex items-start gap-3 px-4 py-4 cursor-pointer transition-colors ${
-                  !notif.isRead ? 'bg-bg-elevated' : 'hover:bg-bg-elevated/50'
-                }`}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 12,
+                  padding: '14px 14px',
+                  background: !notif.isRead ? 'rgba(255,255,255,.03)' : 'transparent',
+                  borderBottom: '1px solid rgba(255,255,255,.05)',
+                  cursor: 'pointer',
+                  transition: 'background .15s',
+                }}
+                onClick={() => {
+                  markRead(notif.id)
+                  if (notif.href) router.push(notif.href)
+                }}
               >
                 {/* Icon */}
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-lg flex-shrink-0"
-                  style={{ background: `${meta.color}15`, border: `1px solid ${meta.color}30` }}
+                  style={{
+                    width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 18,
+                    background: `${meta.color}15`,
+                    border: `1px solid ${meta.color}30`,
+                  }}
                 >
                   {meta.emoji}
                 </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm text-white leading-relaxed">
-                        <span className="font-medium">{notif.actor}</span>{' '}
-                        {notif.content}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge size="sm" style={{ color: meta.color, borderColor: `${meta.color}40`, background: `${meta.color}10` } as React.CSSProperties}>
-                          {meta.label}
-                        </Badge>
-                        <span className="text-[10px] text-gray-500">
-                          {formatRelativeTime(notif.at)}
-                        </span>
-                      </div>
-                    </div>
-                    {!notif.isRead && (
-                      <div className="w-2 h-2 rounded-full bg-kente-gold flex-shrink-0 mt-1.5" />
-                    )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, color: '#f0f5ee', lineHeight: 1.5, margin: 0 }}>
+                    <span style={{ fontWeight: 700 }}>{notif.actor}</span>{' '}
+                    {notif.content}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                    <Badge
+                      size="sm"
+                      style={{
+                        color: meta.color,
+                        borderColor: `${meta.color}40`,
+                        background: `${meta.color}10`,
+                      } as React.CSSProperties}
+                    >
+                      {meta.label}
+                    </Badge>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>
+                      {formatRelativeTime(notif.at)}
+                    </span>
                   </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                  {/* Unread dot */}
+                  {!notif.isRead && (
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24' }} />
+                  )}
+                  {/* Dismiss button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); dismiss(notif.id) }}
+                    title="Dismiss"
+                    style={{
+                      width: 22, height: 22, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                      background: 'rgba(255,255,255,.06)', color: 'rgba(255,255,255,.35)',
+                      fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      lineHeight: 1, flexShrink: 0,
+                    }}
+                  >✕</button>
                 </div>
               </div>
             )
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   )
 }

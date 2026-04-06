@@ -139,7 +139,7 @@ export default function OrderDashboard({ villageId, roleKey }: ToolProps) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 11, color: muted }}>📅 {o.time} today</div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button style={{ border: `1px solid ${border}`, background: 'transparent', color: muted, borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>View</button>
+                <button onClick={() => alert(`Order #${o.id}\n${o.buyer}\n${o.item} × ${o.qty}\n₡${o.amount.toLocaleString()}\nStatus: ${o.status}`)} style={{ border: `1px solid ${border}`, background: 'transparent', color: muted, borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>View</button>
                 {o.status === 'PENDING' && (
                   <button
                     onClick={() => accept(o.id)}
@@ -147,7 +147,7 @@ export default function OrderDashboard({ villageId, roleKey }: ToolProps) {
                   >Accept</button>
                 )}
                 {o.status === 'PROCESSING' && (
-                  <button style={{ border: 'none', background: blue, color: '#fff', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Dispatch</button>
+                  <button onClick={() => accept(o.id)} style={{ border: 'none', background: blue, color: '#fff', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Dispatch</button>
                 )}
               </div>
             </div>

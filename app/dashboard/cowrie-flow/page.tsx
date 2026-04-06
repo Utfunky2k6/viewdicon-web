@@ -8,6 +8,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { cowrieFlowApi, rootApi } from '@/lib/api'
 import { VOCAB } from '@/constants/vocabulary'
+import { useAuthStore } from '@/stores/authStore'
 
 // ── Mock summary data (replaced by live fetch when backend is up) ──
 const MOCK_SUMMARY = {
@@ -52,6 +53,8 @@ const STATUS_CONFIG = {
 // ════════════════════════════════════════════════════════════════════
 export default function CowrieFlowPage() {
   const router = useRouter()
+  const { user } = useAuthStore()
+  const afroId = (user as any)?.afroId || 'demo-user'
   const [stats, setStats] = React.useState(INITIAL_STATS)
   const [roots, setRoots] = React.useState(INITIAL_ROOTS)
   const [summary, setSummary] = React.useState(MOCK_SUMMARY)
@@ -62,7 +65,7 @@ export default function CowrieFlowPage() {
 
   // Fetch live data — fall back to mock gracefully
   React.useEffect(() => {
-    cowrieFlowApi.stats().then(res => {
+    cowrieFlowApi.stats(afroId).then(res => {
       if (res?.data) setStats(res.data as typeof INITIAL_STATS)
     }).catch(() => {/* use mock */})
 
@@ -162,7 +165,7 @@ export default function CowrieFlowPage() {
           </button>
         </div>
 
-        {/* ── Revenue Breakdown (2×2 grid) ─────────────────────── */}
+        {/* ── Revenue Breakdown (2×2 grid + ad row) ────────────── */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,.5)', letterSpacing: '.08em', marginBottom: 8 }}>
             THIS MONTH · REVENUE BREAKDOWN
@@ -190,6 +193,25 @@ export default function CowrieFlowPage() {
               </div>
             ))}
           </div>
+
+          {/* ── Ad Revenue CTA ── */}
+          <button
+            onClick={() => router.push('/dashboard/ads')}
+            style={{
+              marginTop: 10, width: '100%', padding: '14px 0',
+              borderRadius: 14, border: '1px solid rgba(212,160,23,.25)',
+              background: 'linear-gradient(135deg,rgba(212,160,23,.08),rgba(212,160,23,.02))',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🥁</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#fbbf24', fontFamily: "'Sora', sans-serif" }}>
+              Manage Market Cries
+            </span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>
+              {'\u2192'}
+            </span>
+          </button>
         </div>
 
         {/* ── Weekly Payout Timeline (div-based bar chart) ─────── */}

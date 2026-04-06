@@ -349,7 +349,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: bg, padding: 20 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>📷</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 18, fontWeight: 900, color: text, marginBottom: 8, textAlign: 'center' }}>Camera Not Available</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 18, fontWeight: 900, color: text, marginBottom: 8, textAlign: 'center' }}>Camera Not Available</div>
         <div style={{ fontSize: 12, color: subText, textAlign: 'center', lineHeight: 1.6, marginBottom: 24 }}>
           Camera access is needed for face verification.<br />
           You can continue without it — we&apos;ll verify your identity through other means.
@@ -373,7 +373,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: bg, padding: 20 }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 20, fontWeight: 900, color: '#4ade80', marginBottom: 8 }}>Face Verified</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 20, fontWeight: 900, color: '#4ade80', marginBottom: 8 }}>Face Verified</div>
         <div style={{ fontSize: 12, color: subText, textAlign: 'center' }}>Your spirit has been anchored to your physical form.</div>
       </div>
     )
@@ -386,7 +386,7 @@ export default function FaceLiveness({ onComplete, onSkip, theme }: Props) {
       <style>{`@keyframes scanLine { 0% { transform:translateY(-200%) } 100% { transform:translateY(500%) } }`}</style>
 
       {/* Header */}
-      <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 18, fontWeight: 900, color: text, marginBottom: 4, textAlign: 'center' }}>
+      <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 18, fontWeight: 900, color: text, marginBottom: 4, textAlign: 'center' }}>
         Face Verification
       </div>
       <div style={{ fontSize: 11, color: subText, marginBottom: 16, textAlign: 'center' }}>

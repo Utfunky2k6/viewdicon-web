@@ -550,7 +550,7 @@ export default function GoLivePage() {
                 background: 'rgba(34,197,94,.06)',
               }}>
                 <div style={{ fontSize: 22, fontWeight: 900, color: '#4ade80', fontFamily: 'Sora, sans-serif' }}>0</div>
-                <div style={{ fontSize: 10, color: 'rgba(240,247,240,.4)' }}>Kíla</div>
+                <div style={{ fontSize: 10, color: 'rgba(240,247,240,.4)' }}>Kila</div>
               </div>
             </div>
 

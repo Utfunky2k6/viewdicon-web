@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 
 interface ToolProps { villageId?: string; roleKey?: string }
-interface Staff { id: string; name: string; initials: string; role: string; status: 'ACTIVE' | 'BREAK' | 'OFF'; shift: string; phone: string; rating: number }
+interface Staff { id: string; name: string; initials: string; role: string; status: 'ACTIVE' | 'BREAK' | 'OFF'; shift: string; phone: string; rating: number; pay?: string }
 interface LeaveRequest { id: string; name: string; from: string; to: string; reason: string }
 
 const BG = '#060d07', CARD = '#0f1e11', BD = '#1e3a20', TX = '#f0f7f0', MT = '#7da882', GR = '#2e7d32', AM = '#e65100'
@@ -160,7 +160,7 @@ export default function StaffManager({ villageId: _v, roleKey: _r }: ToolProps) 
       )}
 
       {/* Payroll */}
-      <button style={{ width: '100%', padding: 11, background: CARD, border: `1px solid ${BD}`, borderRadius: 10, color: TX, fontSize: 13, cursor: 'pointer' }}>
+      <button onClick={() => { const csv = 'Name,Role,Status,Pay\n' + staff.map(s => `${s.name},${s.role},${s.status},${s.pay}`).join('\n'); const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'payroll-report.csv'; a.click() }} style={{ width: '100%', padding: 11, background: CARD, border: `1px solid ${BD}`, borderRadius: 10, color: TX, fontSize: 13, cursor: 'pointer' }}>
         💰 Export Payroll Report
       </button>
     </div>

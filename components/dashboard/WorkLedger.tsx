@@ -1,4 +1,5 @@
 'use client'
+import { useRouter } from 'next/navigation'
 import { ThemeMode, t, SectionLabel } from './shared'
 import * as React from 'react'
 
@@ -31,6 +32,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 export default function WorkLedger({ mode }: { mode: ThemeMode }) {
+  const router = useRouter()
   const [ledger, setLedger] = React.useState<LedgerEntry[]>([])
 
   React.useEffect(() => {
@@ -43,7 +45,7 @@ export default function WorkLedger({ mode }: { mode: ThemeMode }) {
   if (ledger.length === 0) {
     return (
       <>
-        <SectionLabel label="📜 Memory of Hands" more="Full ledger" mode={mode} />
+        <SectionLabel label="📜 Memory of Hands" more="Full ledger" onMore={() => router.push('/dashboard/cowrie-flow')} mode={mode} />
         <div style={{ padding: '12px 16px', color: t('sub', mode), fontSize: 12 }}>
           No recent activity yet.
         </div>
@@ -53,10 +55,10 @@ export default function WorkLedger({ mode }: { mode: ThemeMode }) {
 
   return (
     <>
-      <SectionLabel label="📜 Memory of Hands" more="Full ledger" mode={mode} />
+      <SectionLabel label="📜 Memory of Hands" more="Full ledger" onMore={() => router.push('/dashboard/cowrie-flow')} mode={mode} />
       <div style={{ display:'flex', gap:7, padding:'0 12px', overflowX:'auto', scrollbarWidth: 'none' }}>
         {ledger.map((item) => (
-          <div key={item.id} style={{ minWidth:118, borderRadius:12, padding:10, flexShrink:0, cursor:'pointer', position:'relative', background:t('card',mode), border:`1px solid ${t('border',mode)}` }}>
+          <div key={item.id} onClick={() => router.push('/dashboard/cowrie-flow')} style={{ minWidth:118, borderRadius:12, padding:10, flexShrink:0, cursor:'pointer', position:'relative', background:t('card',mode), border:`1px solid ${t('border',mode)}` }}>
             <div style={{ position:'absolute', top:8, right:8, width:7, height:7, borderRadius:'50%', background: STATUS_COLOR[item.status] ?? '#6b7280' }} />
             <span style={{ fontSize:20, marginBottom:5, display:'block' }}>{TYPE_ICON[item.type] ?? '📋'}</span>
             <div style={{ fontSize:11, fontWeight:700, color:t('text',mode), lineHeight:1.3, marginBottom:1 }}>{item.title}</div>

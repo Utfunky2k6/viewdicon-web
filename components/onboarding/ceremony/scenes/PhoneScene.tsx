@@ -27,7 +27,7 @@ export function PhoneScene({ onSendDrum, theme }: PhoneSceneProps) {
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, background: theme.bg }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🥁</div>
-        <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 24, fontWeight: 900, color: theme.text, marginBottom: 6 }}>Digital Talking Drum</div>
+        <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 24, fontWeight: 900, color: theme.text, marginBottom: 6 }}>Digital Talking Drum</div>
         <div style={{ fontSize: 14, color: theme.subText, lineHeight: 1.5 }}>Your phone number is your sacred link. No passwords needed.</div>
       </div>
 

@@ -140,6 +140,7 @@ export default function LiveSessionPage() {
   const [showRunnerTracker, setShowRunnerTracker] = React.useState(false)
   const [callingRunner, setCallingRunner] = React.useState(false)
   const [showEscrowExpanded, setShowEscrowExpanded] = React.useState(false)
+  const [playingMsg, setPlayingMsg] = React.useState<string | null>(null)
   const endRef = React.useRef<HTMLDivElement>(null)
 
   const fetchSession = async () => {
@@ -197,9 +198,9 @@ export default function LiveSessionPage() {
     if (!session) return
     addMessage({
       sessionId: session.id,
-      messageType: 'SYSTEM_EVENT', 
+      messageType: 'SYSTEM_EVENT',
       senderAfroId: 'system',
-      content, 
+      content,
       metadata: { eventType },
     })
   }
@@ -318,7 +319,7 @@ export default function LiveSessionPage() {
       // Simulate double verification signature for demo
       // In a real app, either the peer provides the code or signature is derived from local secret + fingerprint
       const deviceFingerprint = 'DEV-DEMO-123'
-      const signature = 'SIGNATURE_SIMULATED' 
+      const signature = 'SIGNATURE_SIMULATED'
 
       await fetch(`http://localhost:3006/sessions/${sessionId}/confirm-receipt`, {
         method: 'POST',
@@ -710,12 +711,12 @@ export default function LiveSessionPage() {
                 }}>
                   {msg.messageType === 'VOICE' ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <button style={{
+                      <button onClick={() => { setPlayingMsg(p => p === msg.id ? null : msg.id); if (playingMsg !== msg.id) setTimeout(() => setPlayingMsg(null), 8000) }} style={{
                         width: 28, height: 28, borderRadius: '50%', flexShrink: 0, border: 'none',
                         background: mine ? '#1a7c3e' : 'rgba(255,255,255,.1)',
                         color: '#fff', fontSize: 12, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>▶</button>
+                      }}>{playingMsg === msg.id ? '⏸' : '▶'}</button>
                       <div style={{
                         flex: 1, display: 'flex', alignItems: 'center', gap: 1, height: 20,
                       }}>

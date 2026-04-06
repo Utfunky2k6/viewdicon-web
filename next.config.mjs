@@ -24,16 +24,31 @@ const nextConfig = {
     const ogboUtuUrl        = process.env.NEXT_PUBLIC_OGBO_UTU_URL         || 'http://localhost:3051'
     const eventEngineUrl    = process.env.NEXT_PUBLIC_EVENT_ENGINE_URL     || 'http://localhost:3058'
     const gateGuardianUrl   = process.env.NEXT_PUBLIC_GATE_GUARDIAN_URL    || 'http://localhost:3059'
+    const loveWorldUrl      = process.env.NEXT_PUBLIC_LOVE_WORLD_URL      || 'http://localhost:3070'
+    const kerawaUrl         = process.env.NEXT_PUBLIC_KERAWA_URL         || 'http://localhost:3071'
     return [
       // ── Banking services (all before generic /api catch-all) ──
+      // Specific banking sub-routes MUST come before the catch-all /api/bank/:path*
+      { source: '/api/bank/ledger/:path*',           destination: `${bankingGatewayUrl}/bank/ledger/:path*`           },
+      { source: '/api/bank/transfer-direct',         destination: `${bankingGatewayUrl}/bank/transfer`                },
+      { source: '/api/bank/corridor-banks/:path*',   destination: `${bankingGatewayUrl}/bank/corridor-banks/:path*`   },
+      { source: '/api/bank/esusu-clock/:path*',      destination: `${bankingGatewayUrl}/bank/esusu-clock/:path*`      },
+      { source: '/api/bank/ancestral-buffer/:path*', destination: `${bankingGatewayUrl}/bank/ancestral-buffer/:path*` },
+      { source: '/api/bank/griot-credit/:path*',     destination: `${bankingGatewayUrl}/bank/griot-credit/:path*`     },
+      { source: '/api/bank/wallets/:path*',          destination: 'http://localhost:9000/api/bank/wallets/:path*'       },
+      { source: '/api/bank/subscriptions/:path*',    destination: 'http://localhost:9000/api/bank/subscriptions/:path*' },
       { source: '/api/bank/:path*',         destination: `${bankingGatewayUrl}/bank/:path*`  },
       { source: '/api/cowrie/:path*',       destination: `${cowrieUnionUrl}/v1/:path*`       },
+      { source: '/api/cowrie-flow/:path*',  destination: `${cowrieUnionUrl}/cowrie-flow/:path*` },
       { source: '/api/wallet/:path*',       destination: `${walletBffUrl}/wallet/:path*`     },
       { source: '/api/ogbo/:path*',         destination: `${ogboUtuUrl}/:path*`              },
       // ── Jollof TV ─────────────────────────────────────────────
       { source: '/api/jollof/:path*',       destination: `${jollofUrl}/:path*`               },
+      // ── Love World ──────────────────────────────────────────────
+      { source: '/api/love/:path*',         destination: `${loveWorldUrl}/love/:path*`       },
+      { source: '/api/kerawa/:path*',       destination: `${kerawaUrl}/kerawa/:path*`     },
       // ── Seso Chat ─────────────────────────────────────────────
-      { source: '/api/seso/:path*',         destination: `${sesoUrl}/:path*`                 },
+      { source: '/api/seso/:path*',         destination: `${sesoUrl}/api/v1/:path*`            },
       // ── Spirit Voice ──────────────────────────────────────────
       { source: '/api/spirit-voice/:path*', destination: `${spiritVoiceUrl}/:path*`          },
       // ── Sòrò Sókè Feed ───────────────────────────────────────
@@ -57,7 +72,7 @@ const nextConfig = {
       // ── Rings service (bonds, invitations) ────────────────────
       {
         source: '/api/rings/:path*',
-        destination: `${process.env.RINGS_SERVICE_URL || 'http://localhost:3060'}/:path*`,
+        destination: `${process.env.RINGS_SERVICE_URL || 'http://localhost:3060'}/rings/:path*`,
       },
       // ── Gate Guardian (port 3059) ─────────────────────────────
       { source: '/api/gate-guardian/:path*',destination: `${gateGuardianUrl}/:path*`          },

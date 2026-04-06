@@ -172,7 +172,7 @@ export default function FlightLog({ villageId: _v, roleKey: _r }: ToolProps) {
         ))}
       </div>
 
-      <button style={{ width: '100%', padding: 11, background: CARD, border: `1px solid ${BD}`, borderRadius: 10, color: TX, fontSize: 13, cursor: 'pointer' }}>
+      <button onClick={() => { const csv = 'Date,Route,Duration,Aircraft,Status\n' + flights.map(f => `${f.date},${f.route},${f.duration},${f.aircraft},${f.status}`).join('\n'); const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv); a.download = 'flight-log.csv'; a.click() }} style={{ width: '100%', padding: 11, background: CARD, border: `1px solid ${BD}`, borderRadius: 10, color: TX, fontSize: 13, cursor: 'pointer' }}>
         📄 Generate Logbook PDF
       </button>
     </div>

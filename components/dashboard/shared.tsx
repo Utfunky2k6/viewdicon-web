@@ -17,7 +17,7 @@ export function SectionLabel({ label, more, onMore, mode }: { label:string; more
   return (
     <div style={{ padding:'10px 14px 5px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
       <span style={{ fontSize:10, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:t('sub',mode) }}>{label}</span>
-      {more && <span onClick={onMore} style={{ fontSize:10, fontWeight:700, color:'#1a7c3e', cursor:'pointer' }}>{more} →</span>}
+      {more && <span onClick={onMore} style={{ fontSize:10, fontWeight:700, color:'#1a7c3e', cursor: onMore ? 'pointer' : 'default' }}>{more} →</span>}
     </div>
   );
 }

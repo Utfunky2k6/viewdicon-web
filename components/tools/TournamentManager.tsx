@@ -89,7 +89,7 @@ export default function TournamentManager({ villageId: _v, roleKey: _r }: ToolPr
             </select>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ color: MT, fontSize: 12 }}>Prize pool: ₡</span>
+            <span style={{ color: MT, fontSize: 12 }}>Ògbó Pot: ₡</span>
             <input value={prize} onChange={e => setPrize(e.target.value)} style={{ width: 80, background: '#050e06', border: `1px solid ${BD}`, borderRadius: 6, padding: '4px 8px', color: '#a5d6a7', fontSize: 12 }} />
           </div>
         </div>

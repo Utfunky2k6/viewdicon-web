@@ -28,6 +28,7 @@ export function MotionActionStrip({ post, onInteract }: MotionActionStripProps) 
   const [kilaed, setKilaed] = React.useState(false)
   const [stirred, setStirred] = React.useState(false)
   const [ubuntud, setUbuntud] = React.useState(false)
+  const [followed, setFollowed] = React.useState(false)
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return
@@ -98,12 +99,14 @@ export function MotionActionStrip({ post, onInteract }: MotionActionStripProps) 
       }}>
         {post.village ? post.villageEmoji : '👤'}
         {/* + follow badge */}
-        <div style={{
+        <div
+          onClick={(e) => { e.stopPropagation(); setFollowed(f => !f) }}
+          style={{
           position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
           width: 18, height: 18, borderRadius: '50%',
-          background: '#b22222', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 900, color: '#fff',
-        }}>+</div>
+          background: followed ? '#4ade80' : '#b22222', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 11, fontWeight: 900, color: '#fff', cursor: 'pointer',
+        }}>{followed ? '✓' : '+'}</div>
       </div>
 
       {/* Kila */}

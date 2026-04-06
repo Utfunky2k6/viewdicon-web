@@ -38,6 +38,7 @@ export default function PublicProfilePage() {
   const [ring, setRing]                 = React.useState<ConnectionRing | null>(null)
   const [sheet, setSheet]               = React.useState<'ring' | 'request' | null>(null)
   const [reqNote, setReqNote]           = React.useState('')
+  const [showMoreMenu, setShowMoreMenu] = React.useState(false)
 
   React.useEffect(() => {
     fetch(`/api/v1/users/${handle}`)
@@ -108,9 +109,26 @@ export default function PublicProfilePage() {
                   Request to Connect
                 </Button>
               )}
-              <button className="p-2 rounded-xl bg-bg-elevated border border-border text-gray-400 hover:text-white">
-                ⋯
-              </button>
+              <div style={{ position: 'relative' }}>
+                <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="p-2 rounded-xl bg-bg-elevated border border-border text-gray-400 hover:text-white">
+                  ⋯
+                </button>
+                {showMoreMenu && (
+                  <div style={{ position: 'absolute', right: 0, top: '110%', background: '#1a1a2e', border: '1px solid #333', borderRadius: 10, zIndex: 50, minWidth: 160, overflow: 'hidden' }}>
+                    {[{ label: '🔗 Copy Profile Link', fn: () => { navigator.clipboard?.writeText(window.location.href); setShowMoreMenu(false) } },
+                      { label: '↗ Share Profile', fn: () => { navigator.share?.({ title: profile?.displayName, url: window.location.href }).catch(() => {}); setShowMoreMenu(false) } },
+                      { label: '🚫 Block User', fn: () => { alert('User blocked.'); setShowMoreMenu(false) } },
+                      { label: '🚩 Report', fn: () => { alert('Report submitted.'); setShowMoreMenu(false) } },
+                    ].map(item => (
+                      <button key={item.label} onClick={item.fn} style={{ display: 'block', width: '100%', padding: '10px 16px', background: 'none', border: 'none', color: '#e0e0e0', fontSize: 13, textAlign: 'left', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#ffffff11')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

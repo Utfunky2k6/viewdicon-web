@@ -6,7 +6,7 @@
 import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { AddToPotSheet } from '@/components/jollof/stream-viewer/AddToPotSheet'
-import { jollofTvApi } from '@/lib/api'
+import { jollofTvApi, sesoChatApi } from '@/lib/api'
 
 // ── Types ─────────────────────────────────────────────────────────
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
@@ -251,6 +251,8 @@ export default function JollofStreamViewer() {
   const [hearts, setHearts] = React.useState<Array<{ id: number; x: number }>>([])
   const [agreeVote, setAgreeVote] = React.useState<'agree' | 'disagree' | null>(null)
   const [handRaised, setHandRaised] = React.useState(false)
+  const [stirred, setStirred] = React.useState(false)
+  const [questionAsked, setQuestionAsked] = React.useState(false)
   const [addToPotOpen, setAddToPotOpen] = React.useState(false)
   const [addToPotProduct, setAddToPotProduct] = React.useState<{id:string; name:string; price:number} | null>(null)
   const [oracleAgree, setOracleAgree] = React.useState(67)
@@ -350,6 +352,13 @@ export default function JollofStreamViewer() {
     jollofTvApi.kila(streamId).catch(() => {})
   }
 
+  const handleStir = () => {
+    if (stirred) return
+    setStirred(true)
+    setStream(prev => prev ? { ...prev, stirCount: prev.stirCount + 1 } : prev)
+    jollofTvApi.kila(streamId).catch(() => {})
+  }
+
   const handleAddToPotFromRail = (productId: string, productName: string, price: number) => {
     setAddToPotProduct({ id: productId, name: productName, price })
     setAddToPotOpen(true)
@@ -426,7 +435,9 @@ export default function JollofStreamViewer() {
               }} />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-              <button style={{
+              <button
+                onClick={() => router.push('/dashboard/villages/arts')}
+                style={{
                 flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
                 background: 'rgba(124,58,237,.15)', color: '#a78bfa', fontSize: 11, fontWeight: 700,
               }}>
@@ -440,7 +451,7 @@ export default function JollofStreamViewer() {
                   color: kilaed ? '#d4a017' : 'rgba(240,247,240,.6)', fontSize: 11, fontWeight: 700,
                 }}
               >
-                ⭐ Kíla
+                ⭐ Kila
               </button>
             </div>
           </div>
@@ -490,12 +501,14 @@ export default function JollofStreamViewer() {
                   color: '#f0f7f0', fontSize: 12, outline: 'none', fontFamily: 'inherit',
                 }}
               />
-              <button style={{
+              <button
+                onClick={() => setHandRaised(true)}
+                style={{
                 padding: '8px 20px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, #1a7c3e, #22c55e)',
+                background: handRaised ? 'rgba(34,197,94,.3)' : 'linear-gradient(135deg, #1a7c3e, #22c55e)',
                 color: '#fff', fontWeight: 800, fontSize: 12,
               }}>
-                🗣 Raise Voice
+                {handRaised ? '✋ Hand Raised' : '🗣 Raise Voice'}
               </button>
             </div>
           </div>
@@ -577,12 +590,15 @@ export default function JollofStreamViewer() {
                 <div style={{ fontSize: 9, color: 'rgba(240,247,240,.4)' }}>Appointments</div>
               </div>
             </div>
-            <button style={{
+            <button
+              onClick={() => setQuestionAsked(true)}
+              style={{
               width: '100%', padding: '8px 0', marginTop: 10, borderRadius: 10,
-              background: 'rgba(3,105,161,.15)', border: '1px solid rgba(3,105,161,.3)',
-              color: '#38bdf8', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+              background: questionAsked ? 'rgba(34,197,94,.15)' : 'rgba(3,105,161,.15)',
+              border: `1px solid ${questionAsked ? 'rgba(34,197,94,.3)' : 'rgba(3,105,161,.3)'}`,
+              color: questionAsked ? '#4ade80' : '#38bdf8', fontSize: 12, fontWeight: 700, cursor: 'pointer',
             }}>
-              ❓ Ask a Question
+              {questionAsked ? '✅ Question Submitted' : '❓ Ask a Question'}
             </button>
           </div>
         )
@@ -679,9 +695,9 @@ export default function JollofStreamViewer() {
                 <span style={{ fontSize: 16 }}>⭐</span>
                 <span style={{ fontSize: 7, fontWeight: 700, color: kilaed ? '#d4a017' : 'rgba(255,255,255,.5)' }}>{stream.kilaCount}</span>
               </button>
-              <button style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <button onClick={handleStir} style={{ width: 42, height: 42, borderRadius: '50%', background: stirred ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 16 }}>🔥</span>
-                <span style={{ fontSize: 7, fontWeight: 700, color: 'rgba(255,255,255,.5)' }}>{stream.stirCount}</span>
+                <span style={{ fontSize: 7, fontWeight: 700, color: stirred ? '#ef4444' : 'rgba(255,255,255,.5)' }}>{stream.stirCount}</span>
               </button>
               <button onClick={() => setShowSpraySheet(true)} style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(212,160,23,.2)', backdropFilter: 'blur(8px)', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 16 }}>🐚</span>
@@ -882,7 +898,7 @@ export default function JollofStreamViewer() {
         position: 'absolute', right: 12, bottom: showChat ? 360 : 200,
         display: 'flex', flexDirection: 'column', gap: 14, alignItems: 'center', zIndex: 10,
       }}>
-        {/* Kíla */}
+        {/* Kila */}
         <button
           onClick={handleKila}
           style={{
@@ -899,14 +915,16 @@ export default function JollofStreamViewer() {
         </button>
 
         {/* Stir */}
-        <button style={{
+        <button
+          onClick={handleStir}
+          style={{
           width: 44, height: 44, borderRadius: '50%',
-          background: 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)',
+          background: stirred ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.1)', backdropFilter: 'blur(8px)',
           border: 'none', cursor: 'pointer',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         }}>
           <span style={{ fontSize: 18 }}>🔥</span>
-          <span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,.6)' }}>{stream.stirCount}</span>
+          <span style={{ fontSize: 8, fontWeight: 700, color: stirred ? '#ef4444' : 'rgba(255,255,255,.6)' }}>{stream.stirCount}</span>
         </button>
 
         {/* Spray */}
@@ -935,6 +953,28 @@ export default function JollofStreamViewer() {
           }}
         >
           💬
+        </button>
+
+        {/* Book This Person */}
+        <button
+          onClick={async () => {
+            try {
+              const res = await sesoChatApi.startBusiness(stream.id, `Booking: ${stream.streamerName} — ${stream.title}`)
+              const chatId = (res as any)?.chatId ?? (res as any)?.data?.chatId ?? `b-${stream.id}`
+              router.push(`/dashboard/chat/${chatId}`)
+            } catch {
+              router.push(`/dashboard/chat/b-${stream.id}`)
+            }
+          }}
+          style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'rgba(212,160,23,.2)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(212,160,23,.3)', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <span style={{ fontSize: 16 }}>📋</span>
+          <span style={{ fontSize: 7, fontWeight: 700, color: '#d4a017' }}>Book</span>
         </button>
       </div>
 
@@ -995,6 +1035,26 @@ export default function JollofStreamViewer() {
               }}
             >
               ↑
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await sesoChatApi.startBusiness(stream.id, `Booking: ${stream.streamerName} — ${stream.title}`)
+                  const chatId = (res as any)?.chatId ?? (res as any)?.data?.chatId ?? `b-${stream.id}`
+                  router.push(`/dashboard/chat/${chatId}`)
+                } catch {
+                  router.push(`/dashboard/chat/b-${stream.id}`)
+                }
+              }}
+              style={{
+                padding: '10px 16px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, rgba(212,160,23,.3), rgba(212,160,23,.15))',
+                outline: '1px solid rgba(212,160,23,.3)',
+                color: '#d4a017', fontSize: 11, fontWeight: 800,
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              📋 Book
             </button>
           </div>
         </div>

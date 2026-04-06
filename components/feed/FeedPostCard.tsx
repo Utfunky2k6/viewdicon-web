@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { CommentSheet } from '@/components/feed/CommentSheet'
 import { sorosokeApi } from '@/lib/api'
 import type { Post as CanonicalPost } from '@/components/feed/feedTypes'
@@ -7,9 +8,9 @@ import type { Post as CanonicalPost } from '@/components/feed/feedTypes'
 /* ── shared skin config ── */
 export type Skin = 'ise' | 'egbe' | 'idile'
 export const SKINS = {
-  ise:   { label:'⚒ ISE',    color:'#1a7c3e', light:'#4ade80', bg:'rgba(26,124,62,.15)',  border:'rgba(26,124,62,.4)',  pill:'⚒ ISE',    pillBg:'rgba(26,124,62,.2)',  pillC:'#4ade80', pillBorder:'rgba(26,124,62,.35)' },
-  egbe:  { label:'⭕ EGBE',   color:'#e07b00', light:'#fb923c', bg:'rgba(224,123,0,.15)',  border:'rgba(224,123,0,.4)',  pill:'⭕ EGBE',   pillBg:'rgba(224,123,0,.2)',  pillC:'#fb923c', pillBorder:'rgba(224,123,0,.35)' },
-  idile: { label:'🌳 ÌDÍLÉ', color:'#7c3aed', light:'#c084fc', bg:'rgba(124,58,237,.15)', border:'rgba(124,58,237,.4)', pill:'🌳 ÌDÍLÉ', pillBg:'rgba(124,58,237,.2)', pillC:'#c084fc', pillBorder:'rgba(124,58,237,.35)' },
+  ise:   { label:'⚒ KAZI',   color:'#1a7c3e', light:'#4ade80', bg:'rgba(26,124,62,.15)',  border:'rgba(26,124,62,.4)',  pill:'⚒ KAZI',   pillBg:'rgba(26,124,62,.2)',  pillC:'#4ade80', pillBorder:'rgba(26,124,62,.35)' },
+  egbe:  { label:'⭕ UMOJA',  color:'#e07b00', light:'#fb923c', bg:'rgba(224,123,0,.15)',  border:'rgba(224,123,0,.4)',  pill:'⭕ UMOJA',  pillBg:'rgba(224,123,0,.2)',  pillC:'#fb923c', pillBorder:'rgba(224,123,0,.35)' },
+  idile: { label:'🌳 UKOO',  color:'#7c3aed', light:'#c084fc', bg:'rgba(124,58,237,.15)', border:'rgba(124,58,237,.4)', pill:'🌳 UKOO',  pillBg:'rgba(124,58,237,.2)', pillC:'#c084fc', pillBorder:'rgba(124,58,237,.35)' },
 }
 
 /* ── local display type (PostCard rendering) ── */
@@ -17,7 +18,7 @@ type PostT = 'text'|'voice'|'market'|'proverb'|'oracle'|'proof'|'notice'|'event'
 export type ViewMode = 'default'|'gallery'|'voice'|'spotlight'|'discover'
 export interface DisplayPost {
   id:string; type:PostT; skin:Skin
-  authorName:string; village:string; av:string; avBg:string; avBorder:string
+  authorId:string; authorName:string; village:string; av:string; avBg:string; avBorder:string
   crest?:string; verified?:boolean; time:string; heat:number
   content?:string; duration?:string; translation?:string
   productName?:string; price?:string; priceNum?:number; productEmoji?:string; pricePos?:number
@@ -49,6 +50,7 @@ export function toDisplay(p: CanonicalPost): DisplayPost {
         : p.type === 'EVENT_DRUM'     ? 'event'
         : 'text',
     skin: p.skinContext,
+    authorId: p.afroId || '',
     authorName: p.author,
     village: `${p.villageEmoji} ${p.village}`,
     av: p.villageEmoji,
@@ -167,7 +169,7 @@ export function VillageSquare() {
     <div style={{ margin:'8px 12px',borderRadius:14,overflow:'hidden',border:'1px solid rgba(26,124,62,.2)' }}>
       <div style={{ background:'linear-gradient(135deg,#0e2a14,#162810)',padding:'10px 14px',display:'flex',alignItems:'center',gap:8 }}>
         <span style={{ fontSize:18 }}>🏛</span>
-        <span style={{ fontFamily:'Sora,sans-serif',fontSize:13,fontWeight:800,color:'#4ade80',flex:1 }}>Village Square · Ìlú Oníṣòwò</span>
+        <span style={{ fontFamily:'Sora, sans-serif',fontSize:13,fontWeight:800,color:'#4ade80',flex:1 }}>Village Square · Ìlú Oníṣòwò</span>
         <span style={{ fontSize:9,color:'rgba(74,222,128,.5)' }}>● Live</span>
       </div>
       <div style={{ display:'flex',background:'rgba(0,0,0,.3)' }}>
@@ -203,7 +205,7 @@ export function GriotCard() {
       <div style={{ display:'flex',alignItems:'center',gap:10,padding:'12px 14px',borderBottom:'1px solid rgba(212,160,23,.1)' }}>
         <div style={{ width:40,height:40,borderRadius:'50%',background:'rgba(212,160,23,.15)',border:'1.5px solid rgba(212,160,23,.35)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22 }}>🦅</div>
         <div style={{ flex:1 }}>
-          <div style={{ fontFamily:'Sora,sans-serif',fontSize:13,fontWeight:800,color:'#fbbf24' }}>Griot Orunmila · Village Elder AI</div>
+          <div style={{ fontFamily:'Sora, sans-serif',fontSize:13,fontWeight:800,color:'#fbbf24' }}>Griot Orunmila · Village Elder AI</div>
           <div style={{ fontSize:9,color:'rgba(212,160,23,.5)',marginTop:2 }}>🤖 AI-generated · Position 1 in Discover</div>
         </div>
       </div>
@@ -312,6 +314,7 @@ function HighlightedContent({ text }: { text: string }) {
 }
 
 export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost; viewMode?: ViewMode }) {
+  const router = useRouter()
   const [kilaLit, setKilaLit] = React.useState(false)
   const [kilaN, setKilaN] = React.useState(post.kila)
   const [playing, setPlaying] = React.useState(false)
@@ -322,6 +325,9 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
   const [agree, setAgree] = React.useState(post.oracleAgree ?? 65)
   const [toast, setToast] = React.useState<string | null>(null)
   const [shellPos, setShellPos] = React.useState<{ x:number; y:number } | null>(null)
+  const [menuOpen, setMenuOpen] = React.useState(false)
+  const [chainInput, setChainInput] = React.useState('')
+  const [chainOpen, setChainOpen] = React.useState(false)
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
 
   const showToast = (msg: string) => {
@@ -374,7 +380,7 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
       {isSpotlight && (
         <div style={{ background:'linear-gradient(90deg,rgba(255,69,0,.12),rgba(255,215,0,.1))', padding:'5px 14px', display:'flex', alignItems:'center', gap:8, borderBottom:'1px solid rgba(255,215,0,.12)' }}>
           <span style={{ fontSize:15 }}>🔥</span>
-          <span style={{ fontFamily:'Sora,sans-serif', fontSize:10, fontWeight:900, color:'#fbbf24', letterSpacing:'.06em' }}>SPOTLIGHT · ON FIRE</span>
+          <span style={{ fontFamily:'Sora, sans-serif', fontSize:10, fontWeight:900, color:'#fbbf24', letterSpacing:'.06em' }}>SPOTLIGHT · ON FIRE</span>
           <span style={{ flex:1 }} />
           <span style={{ fontSize:9, fontWeight:700, color:'rgba(255,215,0,.45)', border:'1px solid rgba(255,215,0,.2)', borderRadius:6, padding:'1px 6px' }}>FEAST</span>
         </div>
@@ -396,24 +402,40 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
 
       {/* header */}
       <div style={{ padding:'11px 14px 0',display:'flex',alignItems:'flex-start',gap:10 }}>
-        <div style={{ width:42,height:42,borderRadius:'50%',background:post.avBg,border:`2px solid ${post.avBorder}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:19,flexShrink:0,position:'relative' }}>
-          {post.av}
-          {post.crest && <div style={{ position:'absolute',bottom:-2,right:-2,fontSize:9,background:'#0c1009',borderRadius:'50%',width:16,height:16,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(255,255,255,.1)' }}>{post.crest}</div>}
-        </div>
-        <div style={{ flex:1,minWidth:0 }}>
-          <div style={{ fontFamily:'Sora,sans-serif',fontSize:13,fontWeight:700,color:'#f0f5ee',display:'flex',alignItems:'center',gap:5,flexWrap:'wrap',lineHeight:1.3 }}>
-            {post.authorName}
-            {post.verified && <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(74,222,128,.1)',color:'#4ade80',border:'1px solid rgba(74,222,128,.2)' }}>🛡 GREEN</span>}
-            {typeTag[post.type] && <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(212,160,23,.1)',color:'#fbbf24',border:'1px solid rgba(212,160,23,.2)' }}>👑 {typeTag[post.type]}</span>}
-            {post.type === 'proof' && <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(74,222,128,.1)',color:'#4ade80',border:'1px solid rgba(74,222,128,.2)' }}>✓ SEALED</span>}
+        <button onClick={() => router.push(post.authorId ? `/profile/${encodeURIComponent(post.authorId)}` : '/dashboard/profile')} style={{ background:'transparent',border:'none',cursor:'pointer',display:'flex',alignItems:'flex-start',gap:10,padding:0,textAlign:'left',flex:1,minWidth:0 }}>
+          <div style={{ width:42,height:42,borderRadius:'50%',background:post.avBg,border:`2px solid ${post.avBorder}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:19,flexShrink:0,position:'relative' }}>
+            {post.av}
+            {post.crest && <div style={{ position:'absolute',bottom:-2,right:-2,fontSize:9,background:'#0c1009',borderRadius:'50%',width:16,height:16,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(255,255,255,.1)' }}>{post.crest}</div>}
           </div>
-          <div style={{ fontSize:10,color:'rgba(240,245,238,.45)',marginTop:3,display:'flex',alignItems:'center',gap:5 }}>
-            <span>{post.village}</span><span>·</span><span>{post.time}</span>
-            <span>·</span>
-            <span style={{ fontSize:9,fontWeight:700,color:accentColor,opacity:.7 }}>{geoReachLabel[post.geoMin]}</span>
+          <div style={{ flex:1,minWidth:0 }}>
+            <div style={{ fontFamily:'Sora, sans-serif',fontSize:13,fontWeight:700,color:'#f0f5ee',display:'flex',alignItems:'center',gap:5,flexWrap:'wrap',lineHeight:1.3 }}>
+              {post.authorName}
+              {post.verified && <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(74,222,128,.1)',color:'#4ade80',border:'1px solid rgba(74,222,128,.2)' }}>🛡 GREEN</span>}
+              {typeTag[post.type] && <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(212,160,23,.1)',color:'#fbbf24',border:'1px solid rgba(212,160,23,.2)' }}>👑 {typeTag[post.type]}</span>}
+              {post.type === 'proof' && <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(74,222,128,.1)',color:'#4ade80',border:'1px solid rgba(74,222,128,.2)' }}>✓ SEALED</span>}
+            </div>
+            <div style={{ fontSize:10,color:'rgba(240,245,238,.45)',marginTop:3,display:'flex',alignItems:'center',gap:5 }}>
+              <span>{post.village}</span><span>·</span><span>{post.time}</span>
+              <span>·</span>
+              <span style={{ fontSize:9,fontWeight:700,color:accentColor,opacity:.7 }}>{geoReachLabel[post.geoMin]}</span>
+            </div>
           </div>
+        </button>
+        <div style={{ position:'relative',flexShrink:0 }}>
+          <div onClick={() => setMenuOpen(m => !m)} style={{ fontSize:18,color:'rgba(255,255,255,.3)',cursor:'pointer',padding:'0 4px' }}>⋮</div>
+          {menuOpen && (
+            <div style={{ position:'absolute',right:0,top:28,zIndex:60,background:'#181f14',border:'1px solid rgba(255,255,255,.12)',borderRadius:12,padding:'4px 0',minWidth:160,boxShadow:'0 4px 20px rgba(0,0,0,.5)' }}>
+              {[
+                { label:'🔖 Save post', action:() => { setBookmarked(b => !b); showToast(bookmarked ? '🏷 Removed' : '🔖 Saved'); setMenuOpen(false) } },
+                { label:'↗ Share', action:() => { handleShare(); setMenuOpen(false) } },
+                { label:'🚩 Report', action:() => { showToast('🚩 Report submitted to village elders'); setMenuOpen(false) } },
+                { label:'🔇 Mute author', action:() => { showToast('🔇 Author muted — you won\'t see their posts'); setMenuOpen(false) } },
+              ].map(({ label, action }, i) => (
+                <div key={i} onClick={action} style={{ padding:'9px 14px',fontSize:11,fontWeight:600,color:'rgba(255,255,255,.7)',cursor:'pointer',borderBottom:i < 3 ? '1px solid rgba(255,255,255,.06)' : 'none' }}>{label}</div>
+              ))}
+            </div>
+          )}
         </div>
-        <div style={{ fontSize:18,color:'rgba(255,255,255,.3)',cursor:'pointer',padding:'0 4px',flexShrink:0 }}>⋮</div>
       </div>
 
       {/* TEXT */}
@@ -513,7 +535,7 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
             {post.productEmoji}
             <div style={{ position:'absolute',bottom:0,left:0,right:0,padding:'8px 12px',background:'linear-gradient(transparent,rgba(0,0,0,.8))' }}>
               <span style={{ fontSize:8,fontWeight:700,borderRadius:99,padding:'2px 7px',background:'rgba(224,123,0,.2)',color:'#fb923c',border:'1px solid rgba(224,123,0,.3)' }}>🧺 {post.location}</span>
-              <div style={{ fontFamily:'Sora,sans-serif',fontSize:22,fontWeight:900,color:'#fbbf24',marginTop:2 }}>₡ {post.price?.replace('₡ ', '')}</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:22,fontWeight:900,color:'#fbbf24',marginTop:2 }}>₡ {post.price?.replace('₡ ', '')}</div>
               <div style={{ fontSize:10,color:'rgba(212,160,23,.6)' }}>{post.productName}</div>
             </div>
           </div>
@@ -532,8 +554,8 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
             </div>
           </div>
           <div style={{ display:'flex',gap:6,padding:'0 14px 10px' }}>
-            <button onClick={() => showToast('🤝 Opening Trade Session...')} style={{ flex:1,padding:11,borderRadius:11,background:'#1a7c3e',border:'none',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Sora,sans-serif' }}>🤝 Open Trade Session</button>
-            <button onClick={() => showToast('🦅 Griot is reading this post...')} style={{ flex:1,padding:11,borderRadius:11,background:'rgba(212,160,23,.15)',border:'1px solid rgba(212,160,23,.25)',color:'#fbbf24',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Sora,sans-serif' }}>🦅 Ask Griot</button>
+            <button onClick={() => router.push(`/dashboard/tools/trade_session?product=${encodeURIComponent(post.productName ?? '')}&seller=${encodeURIComponent(post.authorId)}`)} style={{ flex:1,padding:11,borderRadius:11,background:'#1a7c3e',border:'none',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif' }}>🤝 Open Trade Session</button>
+            <button onClick={() => router.push(`/dashboard/tools/griot_advisor?context=${encodeURIComponent(post.productName ?? '')}&price=${post.priceNum ?? 0}`)} style={{ flex:1,padding:11,borderRadius:11,background:'rgba(212,160,23,.15)',border:'1px solid rgba(212,160,23,.25)',color:'#fbbf24',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif' }}>🦅 Ask Griot</button>
           </div>
         </div>
       )}
@@ -559,9 +581,38 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
                 </div>
               </div>
             ))}
-            <div onClick={() => showToast('📿 Adding your proverb to the chain...')} style={{ padding:'9px 14px',background:'rgba(212,160,23,.08)',border:'1px dashed rgba(212,160,23,.2)',borderRadius:10,textAlign:'center',fontSize:11,fontWeight:700,color:'rgba(212,160,23,.6)',cursor:'pointer',marginBottom:8 }}>
-              + Chain Your Wisdom
-            </div>
+            {chainOpen ? (
+              <div style={{ marginBottom:8 }}>
+                <textarea
+                  value={chainInput}
+                  onChange={e => setChainInput(e.target.value)}
+                  placeholder="Add your proverb in any African language..."
+                  style={{ width:'100%',boxSizing:'border-box',background:'rgba(212,160,23,.05)',border:'1.5px solid rgba(212,160,23,.2)',borderRadius:10,padding:'10px 14px',fontSize:12,color:'#f0f5ee',outline:'none',resize:'none',minHeight:60,lineHeight:1.5,fontFamily:'DM Sans,sans-serif' }}
+                />
+                <div style={{ display:'flex',gap:6,marginTop:6 }}>
+                  <button
+                    disabled={chainInput.trim().length < 5}
+                    onClick={() => {
+                      const villageId = (() => { try { const vs = localStorage.getItem('afk-village'); return vs ? JSON.parse(vs)?.state?.activeVillageId ?? null : null } catch { return null } })()
+                      if (villageId && chainInput.trim()) {
+                        sorosokeApi.createPost({ body: chainInput.trim(), villageId, skinContext: post.skin, type: 'PROVERB_CHAIN' }).catch(() => {})
+                      }
+                      showToast('📿 Your proverb has been added to the chain!')
+                      setChainInput('')
+                      setChainOpen(false)
+                    }}
+                    style={{ flex:1,padding:9,borderRadius:10,background:chainInput.trim().length < 5 ? 'rgba(212,160,23,.1)' : 'rgba(212,160,23,.2)',border:'1px solid rgba(212,160,23,.3)',color:'#fbbf24',fontSize:11,fontWeight:700,cursor:chainInput.trim().length < 5 ? 'not-allowed' : 'pointer' }}
+                  >
+                    📿 Submit Proverb
+                  </button>
+                  <button onClick={() => { setChainOpen(false); setChainInput('') }} style={{ padding:'9px 14px',borderRadius:10,border:'1px solid rgba(255,255,255,.08)',background:'transparent',color:'rgba(255,255,255,.4)',fontSize:11,fontWeight:700,cursor:'pointer' }}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div onClick={() => setChainOpen(true)} style={{ padding:'9px 14px',background:'rgba(212,160,23,.08)',border:'1px dashed rgba(212,160,23,.2)',borderRadius:10,textAlign:'center',fontSize:11,fontWeight:700,color:'rgba(212,160,23,.6)',cursor:'pointer',marginBottom:8 }}>
+                + Chain Your Wisdom
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -589,7 +640,7 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
           </div>
           <div style={{ display:'flex',gap:6,marginBottom:8 }}>
             {[['🤚 Raise Hand','rgba(26,124,62,.2)','#4ade80','rgba(26,124,62,.3)'],['✓ Agree','rgba(212,160,23,.15)','#fbbf24','rgba(212,160,23,.25)'],['✗ Disagree','rgba(224,123,0,.15)','#fb923c','rgba(224,123,0,.25)']].map(([l, bg, c, b], i) => (
-              <button key={i} onClick={() => { if (i === 1) setAgree(a => Math.min(95, a+2)); if (i === 2) setAgree(a => Math.max(5, a-2)); showToast(i === 0 ? '🤚 Hand raised — queue: 4' : i === 1 ? `✓ Agree — ${agree+2}%` : `✗ Disagree — ${agree-2}% agree`) }} style={{ flex:1,padding:9,borderRadius:10,border:`1px solid ${b}`,background:bg,color:c,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif' }}>{l}</button>
+              <button key={i} onClick={() => { if (i === 1) { setAgree(a => Math.min(95, a+2)); sorosokeApi.kila(post.id).catch(()=>{}) } if (i === 2) { setAgree(a => Math.max(5, a-2)); sorosokeApi.stir(post.id).catch(()=>{}) } if (i === 0) { sorosokeApi.ubuntu(post.id).catch(()=>{}); } showToast(i === 0 ? '🤚 Hand raised — queue: 4' : i === 1 ? `✓ Agree — ${agree+2}%` : `✗ Disagree — ${agree-2}% agree`) }} style={{ flex:1,padding:9,borderRadius:10,border:`1px solid ${b}`,background:bg,color:c,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'DM Sans,sans-serif' }}>{l}</button>
             ))}
           </div>
         </div>
@@ -599,9 +650,9 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
       {post.type === 'proof' && (
         <div style={{ padding:'12px 14px',textAlign:'center' }}>
           <div style={{ fontSize:36,marginBottom:6 }}>🎉</div>
-          <div style={{ fontFamily:'Sora,sans-serif',fontSize:15,fontWeight:800,color:'#4ade80',marginBottom:4 }}>Trade Sealed Successfully!</div>
+          <div style={{ fontFamily:'Sora, sans-serif',fontSize:15,fontWeight:800,color:'#4ade80',marginBottom:4 }}>Trade Sealed Successfully!</div>
           <div style={{ fontSize:12,color:'rgba(255,255,255,.6)',lineHeight:1.6 }}>{post.tradeProduct} · {post.tradeLocation}</div>
-          <div style={{ fontFamily:'Sora,sans-serif',fontSize:20,fontWeight:900,color:'#fbbf24',margin:'6px 0' }}>₡ {post.tradeAmount} ✓</div>
+          <div style={{ fontFamily:'Sora, sans-serif',fontSize:20,fontWeight:900,color:'#fbbf24',margin:'6px 0' }}>₡ {post.tradeAmount} ✓</div>
           <div style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:16,marginTop:8 }}>
             <div style={{ textAlign:'center' }}><div style={{ fontSize:20 }}>🧺</div><div style={{ fontSize:11,fontWeight:700,color:'#f0f5ee' }}>{post.tradeBuyer}</div><div style={{ fontSize:9,color:'rgba(255,255,255,.4)' }}>Buyer</div></div>
             <span style={{ fontSize:20,color:'rgba(74,222,128,.4)' }}>→</span>
@@ -616,7 +667,7 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
           <div style={{ background:'linear-gradient(135deg,#2a2000,#1a1800)',padding:'10px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:'1px solid rgba(212,160,23,.15)' }}>
             <span style={{ fontSize:22 }}>📯</span>
             <div>
-              <div style={{ fontFamily:'Sora,sans-serif',fontSize:11,fontWeight:700,color:'#fbbf24',textTransform:'uppercase',letterSpacing:'.06em' }}>Village Notice</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:11,fontWeight:700,color:'#fbbf24',textTransform:'uppercase',letterSpacing:'.06em' }}>Village Notice</div>
               <div style={{ fontSize:10,color:'rgba(212,160,23,.6)',marginTop:1 }}>From {post.authorName} · Crest {post.crest}</div>
             </div>
           </div>
@@ -646,7 +697,7 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
               {ev.drumScope === 'NATION' && <div style={{ position:'absolute',top:9,right:11,padding:'3px 8px',borderRadius:99,fontSize:9,fontWeight:700,background:'rgba(74,222,128,.12)',color:'#4ade80',border:'1px solid rgba(74,222,128,.2)' }}>🌍 Nation-wide</div>}
             </div>
             <div style={{ padding:'12px 14px 6px' }}>
-              <div style={{ fontFamily:'Sora,sans-serif',fontSize:15,fontWeight:900,color:'#f0f7f0',marginBottom:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{ev.title as string}</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:15,fontWeight:900,color:'#f0f7f0',marginBottom:4,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{ev.title as string}</div>
               <div style={{ display:'flex',gap:8,fontSize:10,color:'rgba(255,255,255,.4)',marginBottom:8,flexWrap:'wrap' }}>
                 <span>📅 {dateObj.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>
                 <span style={{ color:'rgba(255,255,255,.2)' }}>·</span>
@@ -662,10 +713,10 @@ export function FeedPostCard({ post, viewMode = 'default' }: { post:DisplayPost;
                 ))}
               </div>
               <div style={{ display:'flex',gap:7,marginBottom:4 }}>
-                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = `/dashboard/events/${ev.eventId}` }} style={{ flex:2,padding:'10px',borderRadius:11,border:'none',cursor:'pointer',background:isSoldOut ? 'rgba(107,114,128,.15)' : `linear-gradient(135deg,${vcol}cc,${vcol}88)`,color:isSoldOut ? '#6b7280' : '#fff',fontSize:11,fontWeight:800,fontFamily:'Sora,sans-serif' }}>
+                <button onClick={() => router.push(`/dashboard/events/${ev.eventId}`)} style={{ flex:2,padding:'10px',borderRadius:11,border:'none',cursor:'pointer',background:isSoldOut ? 'rgba(107,114,128,.15)' : `linear-gradient(135deg,${vcol}cc,${vcol}88)`,color:isSoldOut ? '#6b7280' : '#fff',fontSize:11,fontWeight:800,fontFamily:'Sora, sans-serif' }}>
                   {isSoldOut ? '⏳ Join Waiting Compound' : `🎟 Get Tickets — ${lowestPrice === 0 ? 'FREE' : `from 🐚 ${lowestPrice.toLocaleString()}`}`}
                 </button>
-                <button onClick={() => { if (typeof window !== 'undefined') window.location.href = `/dashboard/events/${ev.eventId}` }} style={{ flex:1,padding:'10px',borderRadius:11,border:`1px solid ${vcol}35`,background:'none',color:vcol,fontSize:11,fontWeight:700,cursor:'pointer' }}>Info →</button>
+                <button onClick={() => router.push(`/dashboard/events/${ev.eventId}`)} style={{ flex:1,padding:'10px',borderRadius:11,border:`1px solid ${vcol}35`,background:'none',color:vcol,fontSize:11,fontWeight:700,cursor:'pointer' }}>Info →</button>
               </div>
             </div>
           </div>

@@ -193,14 +193,7 @@ export const connectionApi = {
 
 // ── Feed (legacy — removed, use sorosokeApi instead) ────────
 
-// ── Banking ───────────────────────────────────────────────────
-export const bankingApi = {
-  balance:  () => api.get('/api/banking/balance'),
-  transfer: (data: unknown) => api.post('/api/banking/transfer', data),
-  history:  (cursor?: string) =>
-    api.get(`/api/banking/transactions${cursor ? `?cursor=${cursor}` : ''}`),
-  rates:    () => api.get('/api/banking/rates'),
-}
+// ── Banking (use bankingExtApi + cowrieApi instead) ─────────
 
 // ── Villages ──────────────────────────────────────────────────
 export const villageApi = {
@@ -216,22 +209,9 @@ export const villageApi = {
     ),
 }
 
-// ── TV/Streaming ──────────────────────────────────────────────
-export const tvApi = {
-  channels: () => api.get('/api/tv/channels'),
-  live:     () => api.get('/api/tv/live'),
-  schedule: () => api.get('/api/tv/schedule'),
-  startStream: (data: unknown) => api.post('/api/tv/stream/start', data),
-}
+// ── TV/Streaming (use jollofTvApi instead) ──────────────────
 
-// ── AfriChat ──────────────────────────────────────────────────
-export const chatApi = {
-  inbox:    () => api.get('/api/chat/inbox'),
-  thread:   (threadId: string) => api.get(`/api/chat/threads/${threadId}`),
-  send:     (data: unknown) => api.post('/api/chat/messages', data),
-  consent:  (requestId: string, accept: boolean) =>
-    api.post(`/api/chat/consent/${requestId}`, { accept }),
-}
+// ── AfriChat (use sesoChatApi instead) ──────────────────────
 
 // ── Masquerade Protocol ───────────────────────────────────────
 export const masqueradeApi = {
@@ -293,10 +273,23 @@ export const sorosokeApi = {
   },
 }
 
-// ── AI Advisors (Orisha) ──────────────────────────────────────
+// ── AI Gods API ──────────────────────────────────────────────
+export const aiGodsApi = {
+  list:        ()                                                  => api.get('/api/ai/gods'),
+  get:         (godId: string)                                     => api.get(`/api/ai/gods/${godId}`),
+  query:       (godId: string, message: string, context?: unknown) =>
+    api.post('/api/ai/gods/query', { godId, message, context }),
+  powers:      (godId: string)                                     => api.get(`/api/ai/gods/${godId}/powers`),
+  invoke:      (godId: string, powerId: string, params?: unknown)  =>
+    api.post('/api/ai/gods/power/invoke', { godId, powerId, params }),
+  orchestrate: (message: string, context?: unknown)               =>
+    api.post('/api/ai/gods/zeus/orchestrate', { message, context }),
+}
+
+// ── AI Advisors (Orisha) — now delegates to AI Gods ──────────
 export const orishaApi = {
   query: (advisor: string, prompt: string, context?: unknown) =>
-    api.post('/api/ai/orisha', { advisor, prompt, context }),
+    aiGodsApi.query(advisor, prompt, context),
 }
 
 // ── Jollof TV (Streaming) ────────────────────────────────────
@@ -315,9 +308,9 @@ export const jollofTvApi = {
   spray:       (streamId: string, amount: number) =>
     api.post(`/api/jollof/streams/${streamId}/spray`, { amount }),
   kila:        (streamId: string) =>
-    api.post(`/api/jollof/streams/${streamId}/kila`, {}),
+    api.patch(`/api/jollof/streams/${streamId}/kila`, {}),
   endStream:   (streamId: string) =>
-    api.post(`/api/jollof/streams/${streamId}/end`, {}),
+    api.patch(`/api/jollof/streams/${streamId}/end`, {}),
 
   // Channels
   channels:        () => api.get<{ channels: any[] }>('/api/jollof/channels'),
@@ -342,7 +335,7 @@ export const jollofTvApi = {
     api.get<{ shows: any[] }>(`/api/jollof/reality-shows${params?.isActive !== undefined ? `?isActive=${params.isActive}` : ''}`),
   realityShow:        (id: string) => api.get<any>(`/api/jollof/reality-shows/${id}`),
   realityLeaderboard: (id: string) => api.get<{ leaderboard: any[] }>(`/api/jollof/reality-shows/${id}/leaderboard`),
-  realityVote:        (showId: string, data: { contestantId: string; voterId: string; amountPaid?: number }) =>
+  realityVote:        (showId: string, data: { contestantId: string; voterId: string; amountPaid?: number; votes?: number }) =>
     api.post<any>(`/api/jollof/reality-shows/${showId}/vote`, data),
 
   // Audio Rooms
@@ -382,22 +375,22 @@ export const jollofTvApi = {
 // ── Plant Your Root (Subscriptions) ──────────────────────────
 export const rootApi = {
   plant:      (creatorId: string, tier: 'FREE_ROOT' | 'PAID_ROOT' | 'ANCESTRAL_ROOT', cowriePerMonth?: number) =>
-    api.post('/api/jollof/subscriptions/root/plant', { creatorId, tier, cowriePerMonth }),
+    api.post('/api/jollof/roots/plant', { creatorId, tier, cowriePerMonth }),
   lift:       (creatorId: string) =>
-    api.delete(`/api/jollof/subscriptions/root/lift/${creatorId}`),
+    api.delete(`/api/jollof/roots/lift`),
   myRoots:    () =>
-    api.get<{ ok: boolean; data: unknown[] }>('/api/jollof/subscriptions/root/my-roots'),
+    api.get<{ ok: boolean; data: unknown[] }>('/api/jollof/roots/mine'),
   rootsInMe:  () =>
     api.get<{ ok: boolean; data: { free: number; paid: number; ancestral: number; planters: unknown[] } }>(
-      '/api/jollof/subscriptions/root/roots-in-me'
+      '/api/jollof/roots/in-me'
     ),
 }
 
 // ── Cowrie Flow (Creator Monetization Dashboard) ─────────────
 export const cowrieFlowApi = {
-  stats:      () =>
+  stats:      (afroId: string) =>
     api.get<{ ok: boolean; data: { spraysToday: number; rootCommission: number; activeRoots: number; channelAds: number; balance: number } }>(
-      '/api/jollof/creator/cowrie-flow'
+      `/api/cowrie-flow/summary/${afroId}`
     ),
   withdraw:   (amount: number) =>
     api.post('/api/jollof/creator/withdraw', { amount }),
@@ -430,6 +423,16 @@ export const sesoChatApi = {
   listConnections:  () => api.get('/api/seso/connections'),
   startBusiness:    (participantId: string, subject: string) =>
     api.post('/api/seso/business', { participantId, subject }),
+  markRead:         (chatId: string) =>
+    api.post(`/api/seso/chats/${chatId}/read`, {}),
+  createChat:       (data: { participantIds: string[]; type?: string }) =>
+    api.post('/api/seso/chats', data),
+  deleteChat:       (chatId: string) =>
+    api.delete(`/api/seso/chats/${chatId}`),
+  updateTrust:      (chatId: string, tier: string) =>
+    api.post(`/api/seso/chats/${chatId}/trust`, { tier }),
+  blockUser:        (userId: string) =>
+    api.post(`/api/seso/connections/${userId}/block`, {}),
 }
 
 // ── Ajo 3.0 (Rotating Savings Circles) ───────────────────────
@@ -486,6 +489,36 @@ export const tlpApi = {
   myLocks:       () => api.get<{ ok: boolean; data: unknown[] }>('/api/bank/tlp/my-locks'),
 }
 
+// ── Harambee Community Pools ──────────────────────────────────
+export const harambeeApi = {
+  list:       (villageId?: string) =>
+    api.get<{ ok: boolean; data: unknown[] }>(
+      `/api/bank/harambee/pools${villageId ? `?villageId=${villageId}` : ''}`
+    ),
+  create:     (data: { title: string; goalCowrie: number; organiser?: string; scope?: string; villageId?: string; emoji?: string; description?: string }) =>
+    api.post('/api/bank/harambee/create', data),
+  contribute: (poolId: string, afroId: string, amountCowrie: number) =>
+    api.post(`/api/bank/harambee/${poolId}/contribute`, { afroId, amountCowrie }),
+}
+
+// ── Virtual & Physical Cards ──────────────────────────────────
+export const cardApi = {
+  list:      () =>
+    api.get<{ ok: boolean; data: unknown[] }>('/api/bank/cards'),
+  create:    (data: { accountId: string; tier: string; currency?: string }) =>
+    api.post('/api/bank/cards/create', data),
+  topUp:     (cardId: string, amount: number, fromAccountId: string) =>
+    api.post(`/api/bank/cards/${cardId}/topup`, { amount, fromAccountId }),
+  freeze:    (cardId: string) =>
+    api.post(`/api/bank/cards/${cardId}/freeze`, {}),
+  unfreeze:  (cardId: string) =>
+    api.post(`/api/bank/cards/${cardId}/unfreeze`, {}),
+  setLimit:  (cardId: string, dailyLimit: number, monthlyLimit: number) =>
+    api.post(`/api/bank/cards/${cardId}/limit`, { dailyLimit, monthlyLimit }),
+  details:   (cardId: string) =>
+    api.get(`/api/bank/cards/${cardId}`),
+}
+
 // ── CowrieChain L2 Bridge ─────────────────────────────────────
 export const chainApi = {
   bridgeIn:      (amount: number, fromCurrency: string) =>
@@ -504,16 +537,94 @@ export const bankingExtApi = {
       `/api/bank/account${accountId ? `/${accountId}/balance` : '/balance'}`
     ),
   transfer:      (data: { toHandle: string; amount: number; currency: string; memo?: string; rail?: string }) =>
-    api.post('/api/bank/transfer', data),
+    api.post('/api/bank/transfer-direct', data),
   history:       (cursor?: string, type?: string) =>
     api.get<{ ok: boolean; data: unknown[]; cursor: string | null }>(
-      `/api/bank/transactions?${new URLSearchParams({ ...(cursor ? { cursor } : {}), ...(type ? { type } : {}) })}`
+      `/api/bank/ledger/transactions?${new URLSearchParams({ ...(cursor ? { cursor } : {}), ...(type ? { type } : {}) })}`
     ),
-  rates:         () => api.get<Record<string, number>>('/api/bank/rates'),
-  kowe:          (txId: string) => api.get(`/api/bank/kowe/${txId}`),
-  corridors:     () => api.get<{ ok: boolean; data: unknown[] }>('/api/bank/corridors'),
+  rates:         () => api.get<Record<string, number>>('/api/bank/ledger/rates'),
+  kowe:          (txId: string) => api.get(`/api/bank/ledger/kowe/${txId}`),
+  corridors:     () => api.get<{ ok: boolean; data: unknown[] }>('/api/bank/reserve/corridors'),
   openAccount:   (data: { accountType: 'CHECKING' | 'SAVINGS' | 'ESCROW'; kycTier: string; currency: string; idempotencyKey: string }) =>
     api.post('/api/bank/account/open', data),
+}
+
+// ── Cowrie Union (dual-currency wallet) ──────────────────────
+export const cowrieApi = {
+  balance: (afroId: string) =>
+    fetch(`/api/cowrie/balance?afroId=${encodeURIComponent(afroId)}`).then(r => r.json()),
+  transfer: (from: string, to: string, amount: number, currency: string, reason: string, pocket?: string) =>
+    fetch('/api/cowrie/transfer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromAfroId: from, toAfroId: to, amount, currency, reason, pocket }),
+    }).then(r => r.json()),
+  ledger: (afroId: string, limit = 50) =>
+    fetch(`/api/cowrie/ledger?afroId=${encodeURIComponent(afroId)}&limit=${limit}`).then(r => r.json()),
+  claimDrop: (code: string, claimerAfroId: string) =>
+    fetch('/api/cowrie/claim-drop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, claimerAfroId }),
+    }).then(r => r.json()),
+  generateDrop: (afroId: string, amount: number, currency: string, note: string) =>
+    fetch('/api/cowrie/generate-drop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ afroId, amount, currency, note }),
+    }).then(r => r.json()),
+}
+
+// ── Ogbo Ụtụ Pot Engine ───────────────────────────────────────
+export const ogboApi = {
+  create: (data: { title: string; amount: number; currency: string; buyerAfroId: string; sellerAfroId: string; terms: string }) =>
+    fetch('/api/ogbo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then(r => r.json()),
+  get: (potId: string) => fetch(`/api/ogbo?potId=${potId}`).then(r => r.json()),
+  submitProof: (potId: string, proofType: string, proofData: string) =>
+    fetch(`/api/ogbo/${potId}/proof`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proofType, proofData }),
+    }).then(r => r.json()),
+}
+
+// ── Corridor Banks (Interbank Transfers) ──────────────────────
+export const corridorBanksApi = {
+  allBanks: () => api.get('/api/bank/corridor-banks/banks'),
+  banksByCountry: (countryCode: string) => api.get(`/api/bank/corridor-banks/banks/${countryCode}`),
+  interbankTransfer: (data: {
+    fromAfroId: string; toBank: string; toBankAccount: string; toAccountName: string;
+    amount: number; currency: string; reason: string; rail?: string
+  }) => api.post('/api/bank/corridor-banks/interbank-transfer', data),
+}
+
+// ── Esusu Clock (Rotating Savings) ────────────────────────────
+export const esusuClockApi = {
+  cycles: () => api.get('/api/bank/esusu-clock/cycles'),
+  myCycles: () => api.get('/api/bank/esusu-clock/my-cycles'),
+  join: (cycleKey: string, afroId: string, contributionAmount: number) =>
+    api.post('/api/bank/esusu-clock/join', { cycleKey, afroId, contributionAmount }),
+  contribute: (cycleId: string, afroId: string, amount: number) =>
+    api.post(`/api/bank/esusu-clock/contribute/${cycleId}`, { afroId, amount }),
+}
+
+// ── Ancestral Buffer (Emergency Reserve) ──────────────────────
+export const ancestralBufferApi = {
+  status: () => api.get('/api/bank/ancestral-buffer/status'),
+  history: () => api.get('/api/bank/ancestral-buffer/history'),
+  tap: (afroId: string, amount: number, reason: string, tier: string) =>
+    api.post('/api/bank/ancestral-buffer/tap', { afroId, amount, reason, tier }),
+}
+
+// ── Griot Credit Score ────────────────────────────────────────
+export const griotCreditApi = {
+  score: (afroId: string) => api.get(`/api/bank/griot-credit/score?afroId=${encodeURIComponent(afroId)}`),
+  factors: () => api.get('/api/bank/griot-credit/factors'),
+  share: (afroId: string) => api.post('/api/bank/griot-credit/share', { afroId }),
 }
 
 // ── Village Applications (Circle 3 Friend/Ally access) ────────
@@ -532,8 +643,8 @@ export const honorApi = {
     api.get<any>(`/api/honor/${afroId}`),
   getTiers: () =>
     api.get<any>('/api/honor/tiers'),
-  getUnlocks: (afroId: string) =>
-    api.get<any>(`/api/honor/unlocks/${afroId}`),
+  getUnlocks: (tier?: number) =>
+    api.get<any>(`/api/honor/unlocks${tier ? `?tier=${tier}` : ''}`),
   getVillageLife: (afroId: string, villageId: string) =>
     api.get<any>(`/api/honor/village-life/${afroId}/${villageId}`),
   getStreamEligibility: (afroId: string, villageId: string, streamType: string) =>
@@ -543,13 +654,13 @@ export const honorApi = {
 // ── Rings (Social Bonds) ───────────────────────────────────────
 export const ringsApi = {
   getBonds: (userId: string) =>
-    api.get<any>(`/api/rings/bonds/${userId}`),
-  sendInvite: (to: string) =>
-    api.post<any>('/api/rings/invite', { to }),
+    api.get<any>(`/api/rings/${userId}`),
+  sendInvite: (data: { fromAfroId: string; toAfroId: string; proposedLevel: string; message?: string } | string) =>
+    api.post<any>('/api/rings/invite', typeof data === 'string' ? { fromAfroId: data, toAfroId: data, proposedLevel: 'IJOBA' } : data),
   getInvites: () =>
     api.get<any>('/api/rings/invites'),
-  acceptBond: (bondId: string) =>
-    api.patch<any>(`/api/rings/bonds/${bondId}/accept`, {}),
+  acceptBond: (invitationId: string) =>
+    api.post<any>('/api/rings/accept', { invitationId }),
 }
 
 // ── Business Sessions ─────────────────────────────────────────
@@ -557,6 +668,228 @@ export const sessionsApi = {
   myActive:    () => api.get<{ sessions: unknown[]; count: number }>('/api/sessions/my/active'),
   myCompleted: () => api.get<{ sessions: unknown[]; count: number; summary?: { totalSealed: number } }>('/api/sessions/my/completed'),
   getById:     (id: string) => api.get<unknown>(`/api/sessions/${id}`),
+}
+
+// ── Events (Event-Engine on port 3058) ─────────────────────────
+export const eventsApi = {
+  // Listing & CRUD
+  list: (params?: { villageId?: string; category?: string; tierLevel?: string; status?: string; limit?: number }) => {
+    const q = params ? '?' + new URLSearchParams(Object.entries(params).filter(([,v]) => v != null).map(([k,v]) => [k, String(v)])) : ''
+    return api.get<{ success: boolean; events: unknown[] }>(`/api/events${q}`)
+  },
+  get: (eventId: string) =>
+    api.get<{ success: boolean; event: unknown }>(`/api/events/${eventId}`),
+  create: (data: unknown) =>
+    api.post<{ success: boolean; eventId: string; id?: string }>('/api/events', data),
+  update: (eventId: string, data: unknown) =>
+    api.patch<{ success: boolean }>(`/api/events/${eventId}`, data),
+  publish: (eventId: string) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/publish`, {}),
+  cancel: (eventId: string, reason: string) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/cancel`, { reason }),
+
+  // Tickets
+  buyTicket: (eventId: string, data: { tierId?: string; tierName?: string; quantity: number; buyerAfroId: string; paymentMethod?: string }) =>
+    api.post<{ success: boolean; tickets: unknown[]; ticketHash?: string; escrowId?: string; totalCharged?: number; platformFee?: number }>(`/api/events/${eventId}/ticket/buy`, data),
+  myTickets: () =>
+    api.get<{ success: boolean; tickets: unknown[] }>('/api/tickets/mine'),
+  getTicket: (ticketId: string) =>
+    api.get<{ success: boolean; ticket: unknown }>(`/api/tickets/${ticketId}`),
+  transferTicket: (ticketId: string, toAfroId: string) =>
+    api.post<{ success: boolean }>(`/api/tickets/${ticketId}/transfer`, { toAfroId }),
+  listForResale: (ticketId: string, askingPrice: number) =>
+    api.post<{ success: boolean }>(`/api/tickets/${ticketId}/resale/list`, { askingPrice }),
+  buyResale: (ticketId: string, buyerAfroId: string) =>
+    api.post<{ success: boolean; ticket: unknown; platformFee?: number }>(`/api/tickets/${ticketId}/resale/buy`, { buyerAfroId }),
+  reportFraud: (ticketId: string, reason: string) =>
+    api.post<{ success: boolean }>(`/api/tickets/${ticketId}/fraud`, { reason }),
+
+  // Gate Guardian
+  verify: (eventId: string, data: { ticketCode: string; gateId?: string; coords?: { lat: number; lng: number }; deviceId?: string; nfc?: boolean }) =>
+    api.post<{ success: boolean; result: string; ticket?: unknown; message?: string }>(`/api/events/${eventId}/verify`, data),
+  syncGate: (eventId: string) =>
+    api.get<{ success: boolean; event: unknown; tierCount: number; totalTickets: number }>(`/api/events/${eventId}`),
+
+  // Organizer
+  analytics: (eventId: string) =>
+    api.get<{ success: boolean; analytics: unknown }>(`/api/events/${eventId}/analytics`),
+  releaseEscrow: (eventId: string) =>
+    api.post<{ success: boolean; amountReleased: number }>(`/api/events/${eventId}/escrow/release`, {}),
+  exportAttendees: (eventId: string) =>
+    api.get<unknown>(`/api/events/${eventId}/attendees/export`),
+  addStaff: (eventId: string, staff: { afroId: string; role: string; name: string }) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/staff`, staff),
+  addSponsor: (eventId: string, sponsor: { name: string; tier: string }) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/sponsors`, sponsor),
+
+  // Social
+  boost: (eventId: string, data: { budget: number; durationDays: number }) =>
+    api.post<{ success: boolean; boostId: string }>(`/api/events/${eventId}/boost`, data),
+  drumToFeed: (eventId: string) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/drum`, {}),
+  donate: (eventId: string, amount: number) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/donate`, { amount }),
+  rsvp: (eventId: string) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/rsvp`, {}),
+
+  // Vendors
+  registerVendor: (eventId: string, data: { businessName: string; boothType: string; description: string }) =>
+    api.post<{ success: boolean; vendorId: string; fee: number }>(`/api/events/${eventId}/vendors`, data),
+
+  // Streaming (Advanced tier)
+  startStream: (eventId: string, data: { rtmpUrl?: string; title: string }) =>
+    api.post<{ success: boolean; streamId: string; rtmpIngest?: string }>(`/api/events/${eventId}/stream/start`, data),
+  endStream: (eventId: string) =>
+    api.post<{ success: boolean }>(`/api/events/${eventId}/stream/end`, {}),
+
+  // Waiting compound
+  joinWaiting: (eventId: string, tierId: string) =>
+    api.post<{ success: boolean; position: number }>(`/api/events/${eventId}/waiting`, { tierId }),
+}
+
+// ── Love World API ────────────────────────────────────────────
+export const loveWorldApi = {
+  // Profiles
+  createProfile: (data: any) => api.post<any>('/api/love/profiles', data),
+  getMyProfile: () => api.get<any>('/api/love/profiles/me'),
+  updateProfile: (data: any) => api.patch<any>('/api/love/profiles/me', data),
+  getProfile: (afroId: string) => api.get<any>(`/api/love/profiles/${afroId}`),
+  pauseProfile: () => api.post<any>('/api/love/profiles/me/pause', {}),
+  resumeProfile: () => api.post<any>('/api/love/profiles/me/resume', {}),
+
+  // Genotype
+  getGenotype: () => api.get<any>('/api/love/genotype/me'),
+  submitGenotype: (data: { genotype: string; verification?: string; labDocUrl?: string }) =>
+    api.post<any>('/api/love/genotype', data),
+  updateGenotype: (data: any) => api.patch<any>('/api/love/genotype', data),
+
+  // Verification
+  getVerification: () => api.get<any>('/api/love/verification/me'),
+  verifyPhoto: (photoUrl: string) => api.post<any>('/api/love/verification/photo', { photoUrl }),
+  verifyVideo: () => api.post<any>('/api/love/verification/video', {}),
+  verifyVillageVouch: () => api.post<any>('/api/love/verification/village-vouch', {}),
+
+  // Matching
+  getMatchQueue: () => api.get<any>('/api/love/matches/queue'),
+  getMatches: (status?: string) => api.get<any>(`/api/love/matches${status ? `?status=${status}` : ''}`),
+  getMatch: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}`),
+  acceptMatch: (candidateId: string) => api.post<any>(`/api/love/matches/${candidateId}/accept`, {}),
+  declineMatch: (matchId: string) => api.post<any>(`/api/love/matches/${matchId}/decline`, {}),
+  refreshQueue: () => api.post<any>('/api/love/matches/refresh', {}),
+
+  // Cultural Wall (Station 1)
+  getWallPosts: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/wall`),
+  createWallPost: (matchId: string, data: { mediaType?: string; content?: string; mediaUrl?: string; promptId?: string }) =>
+    api.post<any>(`/api/love/matches/${matchId}/wall`, data),
+  kilaWallPost: (matchId: string, postId: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/wall/${postId}/kila`, {}),
+  getWallPrompts: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/wall/prompts`),
+
+  // Guided Chat (Station 2)
+  getChatMessages: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/chat`),
+  sendChatMessage: (matchId: string, data: { content: string; isIcebreaker?: boolean; icebreakerPrompt?: string }) =>
+    api.post<any>(`/api/love/matches/${matchId}/chat`, data),
+  getIcebreakers: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/chat/icebreakers`),
+
+  // Virtual Dates (Station 3)
+  getDates: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/dates`),
+  scheduleDate: (matchId: string, data: { dateType?: string; scheduledAt: string }) =>
+    api.post<any>(`/api/love/matches/${matchId}/dates`, data),
+  updateDate: (matchId: string, dateId: string, action: 'start' | 'end') =>
+    api.patch<any>(`/api/love/matches/${matchId}/dates/${dateId}`, { action }),
+  rateDate: (matchId: string, dateId: string, data: { rating: number; reflection?: string }) =>
+    api.post<any>(`/api/love/matches/${matchId}/dates/${dateId}/rate`, data),
+
+  // Stations
+  getStationStatus: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/station`),
+  getStationChecklist: (matchId: string) => api.get<any>(`/api/love/matches/${matchId}/station/checklist`),
+  advanceStation: (matchId: string) => api.post<any>(`/api/love/matches/${matchId}/station/advance`, {}),
+
+  // Reports
+  fileReport: (data: { targetAfroId: string; matchId?: string; flagType: string; description?: string }) =>
+    api.post<any>('/api/love/report', data),
+
+  // Question Engine (200-Question System)
+  getStationQuestionData: (matchId: string, station: number) =>
+    api.get<any>(`/api/love/questions/${matchId}/station/${station}`),
+  submitAnswer: (matchId: string, data: { questionId: string; station: number; answerType: string; mcqChoice?: string; textAnswer?: string; scaleValue?: number; explanation?: string }) =>
+    api.post<any>(`/api/love/questions/${matchId}/answer`, data),
+  getRevealedAnswers: (matchId: string, station?: number) =>
+    api.get<any>(`/api/love/questions/${matchId}/answers${station ? `?station=${station}` : ''}`),
+  getQuestionProgress: (matchId: string) =>
+    api.get<any>(`/api/love/questions/${matchId}/progress`),
+  startDailySession: (matchId: string, station: number) =>
+    api.post<any>(`/api/love/questions/${matchId}/session`, { station }),
+
+  // Journey (Treasure Map + Wedding + Counselor)
+  getTreasureMap: (matchId: string) =>
+    api.get<any>(`/api/love/journey/${matchId}/map`),
+  addMilestone: (matchId: string, data: { milestone: string; title: string; description?: string; photoUrl?: string; locationName?: string }) =>
+    api.post<any>(`/api/love/journey/${matchId}/map`, data),
+  getWeddingPlan: (matchId: string) =>
+    api.get<any>(`/api/love/journey/${matchId}/wedding`),
+  updateWeddingPlan: (matchId: string, data: any) =>
+    api.patch<any>(`/api/love/journey/${matchId}/wedding`, data),
+  getCounselorLogs: (matchId: string) =>
+    api.get<any>(`/api/love/journey/${matchId}/counselor`),
+  requestCounselor: (matchId: string, type: string) =>
+    api.post<any>(`/api/love/journey/${matchId}/counselor/request`, { type }),
+}
+
+// ── Kerawa Zone API ────────────────────────────────────────────
+export const kerawaApi = {
+  // Profiles
+  createProfile: (data: any) => api.post<any>('/api/kerawa/profiles', data),
+  getMyProfile: () => api.get<any>('/api/kerawa/profiles/me'),
+  updateProfile: (data: any) => api.patch<any>('/api/kerawa/profiles/me', data),
+  getProfile: (afroId: string) => api.get<any>(`/api/kerawa/profiles/${afroId}`),
+
+  // Matching
+  discover: (params?: { zone?: string; mood?: string }) => api.get<any>(`/api/kerawa/matches/discover${params?.zone ? `?zone=${params.zone}` : ''}${params?.mood ? `${params?.zone ? '&' : '?'}mood=${params.mood}` : ''}`),
+  connect: (targetAfroId: string) => api.post<any>(`/api/kerawa/matches/${targetAfroId}/connect`, {}),
+  extendMatch: (matchId: string) => api.post<any>(`/api/kerawa/matches/${matchId}/extend`, {}),
+  getMatches: () => api.get<any>('/api/kerawa/matches'),
+  getMatch: (matchId: string) => api.get<any>(`/api/kerawa/matches/${matchId}`),
+
+  // Messages
+  sendMessage: (matchId: string, data: { content: string; mediaUrl?: string; mediaType?: string; isViewOnce?: boolean }) => api.post<any>(`/api/kerawa/matches/${matchId}/messages`, data),
+  getMessages: (matchId: string) => api.get<any>(`/api/kerawa/matches/${matchId}/messages`),
+  viewMessage: (messageId: string) => api.post<any>(`/api/kerawa/messages/${messageId}/view`, {}),
+
+  // Escrow
+  depositEscrow: (data: { matchId: string; amount: number; meetupLocation?: string; scheduledAt?: string }) => api.post<any>('/api/kerawa/escrow/deposit', data),
+  acceptEscrow: (escrowId: string) => api.post<any>(`/api/kerawa/escrow/${escrowId}/accept`, {}),
+  checkinEscrow: (escrowId: string, data: { lat: number; lng: number }) => api.post<any>(`/api/kerawa/escrow/${escrowId}/checkin`, data),
+  disputeEscrow: (escrowId: string) => api.post<any>(`/api/kerawa/escrow/${escrowId}/dispute`, {}),
+  getMyEscrows: () => api.get<any>('/api/kerawa/escrow/my'),
+
+  // Consent
+  giveConsent: (data: { matchId: string; type: string }) => api.post<any>('/api/kerawa/consent', data),
+  revokeConsent: (consentId: string) => api.post<any>(`/api/kerawa/consent/${consentId}/revoke`, {}),
+  getMatchConsents: (matchId: string) => api.get<any>(`/api/kerawa/consent/match/${matchId}`),
+
+  // Content
+  uploadContent: (data: { type: string; mediaUrl: string; price?: number }) => api.post<any>('/api/kerawa/content', data),
+  getMyContent: () => api.get<any>('/api/kerawa/content/my'),
+  getContent: (contentId: string) => api.get<any>(`/api/kerawa/content/${contentId}`),
+  unlockContent: (contentId: string) => api.post<any>(`/api/kerawa/content/${contentId}/unlock`, {}),
+  tipContent: (contentId: string, data: { amount: number }) => api.post<any>(`/api/kerawa/content/${contentId}/tip`, data),
+
+  // Rooms
+  createRoom: (data: { type: string; title: string; entryPrice?: number }) => api.post<any>('/api/kerawa/rooms', data),
+  getRooms: () => api.get<any>('/api/kerawa/rooms'),
+  joinRoom: (roomId: string) => api.post<any>(`/api/kerawa/rooms/${roomId}/join`, {}),
+  endRoom: (roomId: string) => api.post<any>(`/api/kerawa/rooms/${roomId}/end`, {}),
+
+  // Safety
+  panic: (data: { lat: number; lng: number; matchId?: string }) => api.post<any>('/api/kerawa/panic', data),
+  report: (data: { targetAfroId: string; flagType: string; description?: string }) => api.post<any>('/api/kerawa/report', data),
+  getTrustScore: (afroId: string) => api.get<any>(`/api/kerawa/trust/${afroId}`),
+
+  // Zones
+  getZones: () => api.get<any>('/api/kerawa/zones'),
+  getHeatmap: () => api.get<any>('/api/kerawa/zones/heatmap'),
+  getSafeSpots: () => api.get<any>('/api/kerawa/zones/safe-spots'),
 }
 
 export { ApiError }

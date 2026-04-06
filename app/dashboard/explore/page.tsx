@@ -144,11 +144,16 @@ export default function ExplorePage() {
   ]
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#07090a', color: '#f0f5ee', fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ minHeight: '100dvh', background: '#07090a', color: '#f0f5ee', fontFamily: 'DM Sans, sans-serif', position: 'relative' }}>
+      {/* ── Adinkra Gye Nyame overlay ── */}
+      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.022, backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%231a7c3e' stroke-linecap='round'%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3C/g%3E%3C/svg%3E")`, backgroundSize: '100px 100px', backgroundRepeat: 'repeat' }} />
+      {/* ── Pan-African Kente top stripe ── */}
+      <div aria-hidden="true" style={{ height: 3, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)', flexShrink: 0, position: 'relative', zIndex: 1 }} />
+
       {/* ── Header ── */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 40, background: '#0c1009' }}>
+      <div style={{ position: 'sticky', top: 3, zIndex: 40, background: '#0c1009' }}>
         <div style={{ padding: '14px 16px 8px' }}>
-          <div style={{ fontFamily: 'Sora,sans-serif', fontSize: 22, fontWeight: 900, background: 'linear-gradient(135deg,#4ade80,#d4a017)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <div style={{ fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900, background: 'linear-gradient(135deg,#4ade80,#d4a017)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Explore
           </div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginTop: -1, fontStyle: 'italic' }}>
@@ -285,10 +290,10 @@ export default function ExplorePage() {
                 }}>
                   <div style={{ fontSize: 32, marginBottom: 8 }}>{v.emoji}</div>
                   {v.ancientName && <div style={{ fontSize: 8, fontWeight: 900, color: `${v.color}99`, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 2 }}>{v.ancientName}</div>}
-                  <div style={{ fontSize: 13, fontWeight: 800, color: v.color, fontFamily: 'Sora,sans-serif' }}>{v.name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: v.color, fontFamily: 'Sora, sans-serif' }}>{v.name}</div>
                   {v.meaning && <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', marginTop: 1, fontStyle: 'italic' }}>{v.meaning}</div>}
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>{v.members} members</div>
-                  <button style={{
+                  <button onClick={e => { e.stopPropagation(); router.push(`/dashboard/villages/${v.id}`) }} style={{
                     marginTop: 8, padding: '5px 12px', borderRadius: 99, fontSize: 9, fontWeight: 700,
                     background: `${v.color}15`, border: `1px solid ${v.color}30`, color: v.color, cursor: 'pointer',
                   }}>
@@ -333,7 +338,7 @@ export default function ExplorePage() {
             {/* Go Live CTA */}
             <div style={{ padding: '20px', textAlign: 'center', borderRadius: 16, border: '1px dashed rgba(239,68,68,.2)', background: 'rgba(239,68,68,.03)', marginTop: 8 }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🔥</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#f87171', fontFamily: 'Sora,sans-serif', marginBottom: 4 }}>Light Your Fire</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#f87171', fontFamily: 'Sora, sans-serif', marginBottom: 4 }}>Light Your Fire</div>
               <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginBottom: 12 }}>Go live to your village — share your craft, trade, teach</div>
               <button onClick={() => router.push('/dashboard/jollof')} style={{
                 padding: '10px 24px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer',
@@ -364,7 +369,7 @@ export default function ExplorePage() {
                   {i + 1}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#4ade80', fontFamily: 'Sora,sans-serif' }}>{t.tag}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#4ade80', fontFamily: 'Sora, sans-serif' }}>{t.tag}</div>
                   <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>{t.posts.toLocaleString()} posts</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

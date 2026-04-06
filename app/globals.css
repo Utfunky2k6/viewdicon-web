@@ -175,25 +175,138 @@
 }
 
 /* ============================================================
-   ADINKRA PATTERNS
+   AFRICAN VISUAL PATTERNS — Adinkra · Kente · Ndebele · Bogolan
+   Applied throughout the app at very low opacity for texture.
    ============================================================ */
 
-/* Gye Nyame symbol — supremacy of God, used sparingly at 4% opacity */
+/* ── GYE NYAME (Akan / Adinkra — "Except God, I fear none") ─────
+   Repeating pattern: outer diamond, inner cross, central eye.
+   Used as page background texture at 3% opacity.
+*/
 .bg-adinkra {
-  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 20 L40 60 L80 60 Z M40 80 L60 100 L80 80 Z' fill='none' stroke='%231a7c3e' stroke-width='0.5'/%3E%3Ccircle cx='60' cy='60' r='10' fill='none' stroke='%231a7c3e' stroke-width='0.5'/%3E%3C/svg%3E");
-  background-size: 120px 120px;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg opacity='1' stroke='%231a7c3e' fill='none' stroke-linecap='round'%3E%3C!-- outer diamond --%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3C!-- inner diamond --%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3C!-- cross arms --%3E%3Cline x1='50' y1='8' x2='50' y2='22' stroke-width='1.2'/%3E%3Cline x1='50' y1='78' x2='50' y2='92' stroke-width='1.2'/%3E%3Cline x1='8' y1='50' x2='22' y2='50' stroke-width='1.2'/%3E%3Cline x1='78' y1='50' x2='92' y2='50' stroke-width='1.2'/%3E%3C!-- centre eye --%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1' transform='rotate(90 50 50)'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3C!-- corner hooks --%3E%3Cpath d='M22 22 Q14 14 14 22' stroke-width='0.9'/%3E%3Cpath d='M78 22 Q86 14 86 22' stroke-width='0.9'/%3E%3Cpath d='M22 78 Q14 86 14 78' stroke-width='0.9'/%3E%3Cpath d='M78 78 Q86 86 86 78' stroke-width='0.9'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100px 100px;
   background-repeat: repeat;
 }
+
+/* ── SANKOFA BIRD REPEAT (Akan Adinkra — "Go back and fetch it") ─
+   Used on ancestry / heritage sections.
+*/
+.bg-sankofa {
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%23d4a017' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3C!-- body circle --%3E%3Ccircle cx='40' cy='44' r='16' stroke-width='1'/%3E%3C!-- neck/head --%3E%3Cpath d='M40 28 Q32 16 26 18 Q20 22 26 28 Q32 24 40 28' stroke-width='1'/%3E%3C!-- egg / seed --%3E%3Ccircle cx='40' cy='22' r='4' stroke-width='1.2' fill='%23d4a017' fill-opacity='0.2'/%3E%3C!-- tail sweep --%3E%3Cpath d='M56 44 Q68 36 66 28 Q62 22 56 28' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 80px 80px;
+  background-repeat: repeat;
+}
+
+/* ── KENTE STRIP WEAVE (Ashanti / Akan — Ghana) ─────────────────
+   Authentic interlocking strip pattern using CSS gradients only.
+   Gold + forest green + kola red.
+*/
+.bg-kente {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 10px,
+      rgba(215,168,95,.18) 10px, rgba(215,168,95,.18) 12px,
+      transparent 12px, transparent 22px,
+      rgba(45,106,79,.14) 22px, rgba(45,106,79,.14) 24px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 10px,
+      rgba(193,68,14,.12) 10px, rgba(193,68,14,.12) 12px,
+      transparent 12px, transparent 22px,
+      rgba(215,168,95,.10) 22px, rgba(215,168,95,.10) 24px
+    );
+  background-size: 24px 24px;
+}
+
+/* ── NDEBELE GEOMETRIC (Zimbabwe · South Africa) ─────────────────
+   Bold stepped rectangles — signature Ndebele house-painting pattern.
+*/
+.bg-ndebele {
+  background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='0' y='0' width='64' height='64' fill='none'/%3E%3C!-- stepped outer frame --%3E%3Crect x='2' y='2' width='60' height='6' fill='%23d4a017' fill-opacity='.25'/%3E%3Crect x='2' y='56' width='60' height='6' fill='%23d4a017' fill-opacity='.25'/%3E%3Crect x='2' y='2' width='6' height='60' fill='%231a7c3e' fill-opacity='.2'/%3E%3Crect x='56' y='2' width='6' height='60' fill='%231a7c3e' fill-opacity='.2'/%3E%3C!-- inner accent bars --%3E%3Crect x='10' y='10' width='44' height='4' fill='%23b22222' fill-opacity='.2'/%3E%3Crect x='10' y='50' width='44' height='4' fill='%23b22222' fill-opacity='.2'/%3E%3C!-- central diamond motif --%3E%3Cpath d='M32 22 L42 32 L32 42 L22 32 Z' fill='none' stroke='%23d4a017' stroke-width='1' stroke-opacity='.4'/%3E%3Ccircle cx='32' cy='32' r='3' fill='%231a7c3e' fill-opacity='.3'/%3E%3C/svg%3E");
+  background-size: 64px 64px;
+  background-repeat: repeat;
+}
+
+/* ── BOGOLAN (Malian Mudcloth) ───────────────────────────────────
+   Earthy crosshatch + symbol blocks.
+*/
 .bg-mudcloth {
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 20 L20 0 M20 40 L40 20 M10 10 L15 15 M25 25 L30 30' stroke='%231a7c3e' stroke-width='0.5' fill='none'/%3E%3C/svg%3E");
-  background-size: 40px 40px;
+  background-image: url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='48' height='48' fill='none'/%3E%3C!-- horizontal bands --%3E%3Crect y='0' width='48' height='3' fill='%238B6914' fill-opacity='.18'/%3E%3Crect y='22' width='48' height='3' fill='%238B6914' fill-opacity='.14'/%3E%3Crect y='44' width='48' height='3' fill='%238B6914' fill-opacity='.18'/%3E%3C!-- vertical cross-marks --%3E%3Cline x1='12' y1='6' x2='12' y2='20' stroke='%238B6914' stroke-width='1.2' stroke-opacity='.2'/%3E%3Cline x1='36' y1='6' x2='36' y2='20' stroke='%238B6914' stroke-width='1.2' stroke-opacity='.2'/%3E%3Cline x1='12' y1='28' x2='12' y2='42' stroke='%238B6914' stroke-width='1.2' stroke-opacity='.2'/%3E%3Cline x1='36' y1='28' x2='36' y2='42' stroke='%238B6914' stroke-width='1.2' stroke-opacity='.2'/%3E%3C!-- symbol blocks --%3E%3Crect x='8' y='8' width='8' height='8' fill='none' stroke='%238B6914' stroke-width='.8' stroke-opacity='.25'/%3E%3Crect x='32' y='8' width='8' height='8' fill='none' stroke='%238B6914' stroke-width='.8' stroke-opacity='.25'/%3E%3Crect x='20' y='18' width='8' height='8' fill='none' stroke='%238B6914' stroke-width='.8' stroke-opacity='.25'/%3E%3C/svg%3E");
+  background-size: 48px 48px;
   background-repeat: repeat;
 }
+
+/* ── ADINKRAHENE (Akan — "Chief of all Adinkra") ─────────────────
+   Concentric circles — greatness, leadership, charisma.
+   Used on hero / coronation screens.
+*/
+.bg-adinkrahene {
+  background-image: url("data:image/svg+xml,%3Csvg width='90' height='90' viewBox='0 0 90 90' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='45' cy='45' r='40' fill='none' stroke='%231a7c3e' stroke-width='0.8' stroke-opacity='.6'/%3E%3Ccircle cx='45' cy='45' r='30' fill='none' stroke='%231a7c3e' stroke-width='0.8' stroke-opacity='.5'/%3E%3Ccircle cx='45' cy='45' r='20' fill='none' stroke='%231a7c3e' stroke-width='0.8' stroke-opacity='.4'/%3E%3Ccircle cx='45' cy='45' r='10' fill='none' stroke='%231a7c3e' stroke-width='0.8' stroke-opacity='.3'/%3E%3Ccircle cx='45' cy='45' r='4' fill='%231a7c3e' fill-opacity='.4'/%3E%3C/svg%3E");
+  background-size: 90px 90px;
+  background-repeat: repeat;
+}
+
+/* ── SOVEREIGN OVERLAY — Applied as body-level texture ──────────
+   Usage: <div class="bg-adinkra sovereign-overlay" />
+*/
 .bg-sovereign-overlay {
   position: fixed;
   inset: 0;
   pointer-events: none;
   opacity: 0.03;
+  z-index: 0;
+}
+
+/* ── KENTE DIVIDER — 4-color horizontal strip ────────────────────
+   Usage: <div class="kente-divider" />
+*/
+.kente-divider {
+  height: 4px;
+  background: linear-gradient(90deg,
+    #1a7c3e 0%, #1a7c3e 25%,
+    #d4a017 25%, #d4a017 50%,
+    #b22222 50%, #b22222 75%,
+    #1a1a1a 75%, #1a1a1a 100%
+  );
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+/* ── PAN-AFRICAN HEADER BANNER ───────────────────────────────────
+   Thick top-border with Kente stripe + deep forest bg.
+*/
+.pan-african-header {
+  border-top: 4px solid transparent;
+  border-image: repeating-linear-gradient(
+    90deg,
+    #1a7c3e 0px, #1a7c3e 20px,
+    #d4a017 20px, #d4a017 40px,
+    #b22222 40px, #b22222 60px,
+    #1a1a1a 60px, #1a1a1a 80px
+  ) 1;
+}
+
+/* ── NSIBIDI DOTS — Ekpe society markings (Cross River, Nigeria) ─
+   Dotted rhythm pattern for chat / messages background.
+*/
+.bg-nsibidi {
+  background-image: radial-gradient(
+    circle, rgba(26,124,62,.15) 1px, transparent 1px
+  );
+  background-size: 18px 18px;
+}
+
+/* ── ADINKRA BG-OVERLAY COMPANION ───────────────────────────────
+   Backward-compat alias for existing code that uses both classes.
+*/
+.bg-adinkra-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
   z-index: 0;
 }
 
