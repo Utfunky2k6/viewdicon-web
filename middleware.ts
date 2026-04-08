@@ -11,7 +11,6 @@ const RATE_LIMIT = 120   // requests per window
 const RATE_WINDOW = 60_000 // 1 minute
 
 // Lazy cleanup: prune expired entries every ~100 requests
-// NOTE: setInterval is not available in Edge Runtime — use counter-based approach
 let reqCount = 0
 function pruneRateMap() {
   if (++reqCount % 100 !== 0) return
@@ -39,31 +38,115 @@ const SUSPICIOUS_PATTERNS = [
   /javascript:/i,
   /on\w+\s*=/i,        // onerror=, onclick= etc
   /data:text\/html/i,
-  /\.\.\//,             // path traversal (no g flag — prevents alternating bypass)
+  /\.\.\//,             // path traversal
   /%3cscript/i,         // URL-encoded <script
   /union\s+select/i,    // SQL injection
   /;\s*drop\s+/i,       // SQL drop
 ]
 
 function isSuspicious(url: string): boolean {
-  const decoded = decodeURIComponent(url)
-  return SUSPICIOUS_PATTERNS.some(p => p.test(decoded))
+  try {
+    const decoded = decodeURIComponent(url)
+    return SUSPICIOUS_PATTERNS.some(p => p.test(decoded))
+  } catch {
+    return true // malformed URL encoding is suspicious
+  }
+}
+
+// ── JWT validation with HMAC-SHA256 signature verification (Edge Runtime) ──
+const JWT_SECRET = process.env.JWT_ACCESS_SECRET || ''
+let cachedKey: CryptoKey | null = null
+
+async function getSigningKey(): Promise<CryptoKey | null> {
+  if (cachedKey) return cachedKey
+  if (!JWT_SECRET) return null
+  try {
+    cachedKey = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(JWT_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    )
+    return cachedKey
+  } catch { return null }
+}
+
+function base64UrlDecode(str: string): Uint8Array {
+  const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+async function verifyJwt(token: string): Promise<{ valid: boolean; payload?: Record<string, unknown> }> {
+  const parts = token.split('.')
+  if (parts.length !== 3) return { valid: false }
+
+  try {
+    const payloadStr = new TextDecoder().decode(base64UrlDecode(parts[1]))
+    const payload = JSON.parse(payloadStr) as Record<string, unknown>
+
+    // Check expiry
+    if (typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()) {
+      return { valid: false }
+    }
+
+    // Verify HMAC signature if we have a secret
+    const key = await getSigningKey()
+    if (key) {
+      const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+      const signature = base64UrlDecode(parts[2])
+      const isValid = await crypto.subtle.verify('HMAC', key, signature.buffer as ArrayBuffer, data)
+      return { valid: isValid, payload: isValid ? payload : undefined }
+    }
+
+    // Fallback: no secret available (dev mode) — accept based on expiry only
+    return { valid: true, payload }
+  } catch {
+    return { valid: false }
+  }
+}
+
+// Lightweight sync check for page routing (non-API paths)
+// Full verification happens on API calls via backend
+function isTokenPresentAndNotExpired(t: string | undefined): boolean {
+  if (!t) return false
+  const parts = t.split('.')
+  if (parts.length !== 3) return false
+  try {
+    const pad = (s: string) => s + '='.repeat((4 - s.length % 4) % 4)
+    const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, '+').replace(/_/g, '/'))))
+    if (typeof payload.exp === 'number') {
+      return payload.exp * 1000 > Date.now()
+    }
+    return false // tokens without exp are invalid
+  } catch {
+    return false
+  }
 }
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || req.headers.get('x-real-ip')
-    || 'unknown'
 
-  // ── Rate limiting (API routes only — skip for localhost/internal) ──
-  const isLocalhost = ip === '127.0.0.1' || ip === '::1' || ip === 'unknown'
-  if (pathname.startsWith('/api/') && !isLocalhost) {
-    if (!checkRateLimit(ip)) {
-      return new NextResponse(JSON.stringify({ error: 'Too many requests. Slow down.' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
-      })
+  // ── Get client IP (handle missing x-forwarded-for safely) ──
+  const forwardedFor = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  const realIp = req.headers.get('x-real-ip')
+  const ip = forwardedFor || realIp || 'unknown'
+
+  // ── Rate limiting (API routes only) ──
+  // Rate-limit ALL IPs including unknown (fixes bypass via stripped headers)
+  if (pathname.startsWith('/api/')) {
+    const isActualLocalhost = ip === '127.0.0.1' || ip === '::1'
+    if (!isActualLocalhost) {
+      if (!checkRateLimit(ip)) {
+        return new NextResponse(JSON.stringify({ error: 'Too many requests. Slow down.' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+        })
+      }
     }
   }
 
@@ -72,7 +155,7 @@ export function middleware(req: NextRequest) {
     return new NextResponse('Blocked', { status: 403 })
   }
 
-  // ── Block large request bodies on API mutations ──
+  // ── Block oversized request bodies ──
   const contentLength = parseInt(req.headers.get('content-length') || '0', 10)
   if (contentLength > 5_000_000) { // 5MB max
     return new NextResponse(JSON.stringify({ error: 'Request too large' }), {
@@ -84,31 +167,7 @@ export function middleware(req: NextRequest) {
   const rawToken = req.cookies.get('afk_token')?.value
     || req.headers.get('authorization')?.replace('Bearer ', '')
 
-  // ── JWT expiry check (no secret needed — just decode payload) ──
-  function isTokenValid(t: string | undefined): boolean {
-    if (!t) return false
-    // Local/synthetic tokens (generated when backend is offline) are always valid
-    if (t.startsWith('local_')) return true
-    // Standard JWT: base64url-encoded header.payload.signature
-    const parts = t.split('.')
-    if (parts.length !== 3) return false
-    try {
-      // base64url → base64 → JSON
-      const pad = (s: string) => s + '='.repeat((4 - s.length % 4) % 4)
-      const payload = JSON.parse(atob(pad(parts[1].replace(/-/g, '+').replace(/_/g, '/'))))
-      // If exp claim is present, check it against current time
-      if (typeof payload.exp === 'number') {
-        return payload.exp * 1000 > Date.now()
-      }
-      // No exp claim — treat as valid
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  const token = rawToken
-  const tokenValid = isTokenValid(token)
+  const tokenValid = isTokenPresentAndNotExpired(rawToken)
 
   const isProtected  = PROTECTED.some((p) => pathname.startsWith(p))
   const isAuthRoute  = AUTH_ROUTES.some((p) => pathname.startsWith(p))
@@ -116,13 +175,11 @@ export function middleware(req: NextRequest) {
   if (isProtected && !tokenValid) {
     const url = req.nextUrl.clone()
     url.pathname = '/login'
-    // Preserve full path + search so login can redirect back
     const nextPath = pathname + (req.nextUrl.search || '')
     url.searchParams.set('next', nextPath)
     return NextResponse.redirect(url)
   }
 
-  // Fix 2: Accept both 'true' and '1' for legacy support
   const ceremonyCookie = req.cookies.get('afk_ceremony_done')?.value
   const ceremonyDone = ceremonyCookie === 'true' || ceremonyCookie === '1'
   const isCeremony   = pathname.startsWith('/ceremony')

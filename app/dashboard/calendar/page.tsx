@@ -139,11 +139,11 @@ const MOON_ACTIVITIES: Record<string, string[]> = {
 // ─────────────────────────────────────────────────────────────
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return '2026-04-08'
 }
 
 function dateOffset(days: number) {
-  const d = new Date()
+  const d = new Date('2026-04-08T00:00:00Z')
   d.setDate(d.getDate() + days)
   return d.toISOString().slice(0, 10)
 }
@@ -437,14 +437,20 @@ export default function CalendarPage() {
   }, [])
 
   // Calendar state
-  const now = new Date()
-  const [year,  setYear]  = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth())
+  const [year,  setYear]  = useState(2026)
+  const [month, setMonth] = useState(3)
   const [view,  setView]  = useState<CalView>('month')
   const [selectedDate, setSelectedDate] = useState(today())
   const [events, setEvents] = useState<CalEvent[]>(INITIAL_EVENTS)
   const [showAdd, setShowAdd] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<CalEvent | null>(null)
+
+  // Hydrate real date after mount to avoid SSR mismatch
+  useEffect(() => {
+    const n = new Date()
+    setYear(n.getFullYear())
+    setMonth(n.getMonth())
+  }, [])
 
   // New event form state
   const [newTitle, setNewTitle]         = useState('')

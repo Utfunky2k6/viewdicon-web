@@ -15,6 +15,7 @@ import { StreamerControlPanel } from '@/components/jollof/creator/StreamerContro
 import { MultiBoxLayout, type SpeakerSlot } from '@/components/jollof/stream-viewer/MultiBoxLayout'
 import { VOCAB } from '@/constants/vocabulary'
 import { jollofTvApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
 
@@ -95,7 +96,8 @@ export default function LiveStreamerPage() {
         setStreamData(data as LiveStreamData)
         setViewerCount((data as any).viewerCount ?? 0)
         setSprayTotal((data as any).sprayTotal ?? 0)
-      } catch {
+      } catch (e) {
+        logApiFailure('jollof/live/stream.get', e)
         // Stream not in DB yet (just created) — use URL-based defaults
         setStreamData({
           id:          streamId,
@@ -122,7 +124,7 @@ export default function LiveStreamerPage() {
         const data = (res as any)?.data ?? res
         setViewerCount((data as any).viewerCount ?? 0)
         setSprayTotal((data as any).sprayTotal ?? 0)
-      } catch { /* non-fatal */ }
+      } catch (e) { logApiFailure('jollof/live/stream.poll', e) }
     }, 15_000)
     return () => clearInterval(t)
   }, [streamId])
@@ -131,7 +133,7 @@ export default function LiveStreamerPage() {
     setIsEnding(true)
     try {
       await jollofTvApi.endStream(streamId)
-    } catch { /* non-fatal */ }
+    } catch (e) { logApiFailure('jollof/live/endStream', e) }
     setEnded(true)
     setTimeout(() => router.push('/dashboard/jollof'), 2500)
   }
@@ -144,7 +146,7 @@ export default function LiveStreamerPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ from: streamData?.hostId ?? 'me', to: toAfroId }),
       })
-    } catch { /* non-fatal */ }
+    } catch (e) { logApiFailure('jollof/live/passStick', e) }
   }
 
   // ── Ended screen ─────────────────────────────────────────────

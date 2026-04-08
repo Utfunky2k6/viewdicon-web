@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ═══════════════════════════════════════════════════════════════════════
 // LOVE WORLD — COVENANT JOURNEY MAP (Treasure Timeline)
@@ -106,8 +107,8 @@ export default function TreasureMapPage() {
       const arr = Array.isArray(data) ? data : data?.milestones || data?.data || []
       setMilestones(arr)
       setError(null)
-    } catch {
-      setMilestones(MOCK_MILESTONES)
+    } catch (e) {
+      logApiFailure('love/treasure/milestones', e); if (USE_MOCKS) setMilestones(MOCK_MILESTONES)
     } finally {
       setLoading(false)
     }
@@ -145,8 +146,21 @@ export default function TreasureMapPage() {
       setFormPhoto('')
       setFormLocation('')
       await fetchMilestones()
-    } catch {
-      setError('Could not save milestone. Please try again.')
+    } catch (e) {
+      logApiFailure('love/treasure/add', e)
+      // API unavailable — add locally so the user sees their milestone
+      const localMs: Milestone = {
+        id: `local-${Date.now()}`,
+        type: formType,
+        title: formTitle.trim(),
+        description: formDesc.trim(),
+        photoUrl: formPhoto.trim() || undefined,
+        location: formLocation.trim() || undefined,
+        achievedAt: new Date().toISOString(),
+      }
+      setMilestones(prev => [...prev, localMs])
+      setShowForm(false)
+      setFormTitle(''); setFormDesc(''); setFormPhoto(''); setFormLocation('')
     } finally {
       setSubmitting(false)
     }

@@ -2,6 +2,7 @@
 import * as React from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { TOOL_REGISTRY } from '@/constants/tools'
+import { logApiFailure } from '@/lib/flags'
 import dynamic from 'next/dynamic'
 
 // ── Existing tool microapps ───────────────────────────────────────────────────
@@ -342,7 +343,7 @@ export default function ToolPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'COMPLETED', cowrieEarned }),
-      }).catch(() => {})
+      }).catch((e) => logApiFailure('tools/saveSession', e))
       showToast(`✓ Session saved · +₡${cowrieEarned}`)
     }
     setTimeout(() => {

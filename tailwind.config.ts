@@ -83,7 +83,8 @@ const config: Config = {
 
       fontFamily: {
         body:    ['Ubuntu', 'Noto Sans', 'system-ui', 'sans-serif'],
-        display: ['Ubuntu', 'Georgia', 'serif'],
+        display: ['Sora', 'Ubuntu', 'system-ui', 'sans-serif'],
+        utility: ['DM Sans', 'Ubuntu', 'system-ui', 'sans-serif'],
         mono:    ['Courier New', 'monospace'],
       },
 

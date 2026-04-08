@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { jollofTvApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 
 const CSS_ID = 'create-show-css'
 const CSS = `
@@ -132,7 +133,7 @@ export default function CreateRealityShow() {
         creatorId: (user as any)?.id ?? 'guest',
         amountPaid: totalCost,
       })
-    } catch { /* mock fallback */ }
+    } catch (e) { logApiFailure('jollof/reality/create', e) }
     setSubmitting(false)
     setStep('DONE')
   }

@@ -1,146 +1,230 @@
+/**
+ * UFÈ — Settings
+ * Every setting wired to a real action or sheet.
+ */
 'use client'
+
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { COLOR, TYPE, SPACE, RADIUS, DURATION, EASE, REALM } from '@/components/love-world/tokens'
+import { RealmProvider, LWNav, LWText, LWCard, LWButton, LWSheet, LWInput, LWDivider } from '@/components/love-world/primitives'
 import { loveWorldApi } from '@/lib/api'
-import { useAuthStore } from '@/stores/authStore'
+import { logApiFailure } from '@/lib/flags'
 
-const FAMILY_PLANS = ['Want children', 'Open to children', 'Do not want children', 'Already have children', 'Prefer not to say']
-const EDUCATION = ['High school', 'Undergraduate', 'Graduate', 'Postgraduate', 'Trade/Vocational', 'Self-taught']
-const DIETARY = ['No preference', 'Halal', 'Vegetarian', 'Vegan', 'Pescatarian', 'Kosher']
-const LIFESTYLE = ['Homebody', 'Adventurer', 'Balanced', 'Night owl', 'Early riser', 'Traveler']
-const LOVE_LANGS = ['Words of Affirmation', 'Quality Time', 'Acts of Service', 'Physical Touch', 'Receiving Gifts']
+const T = REALM.ufe
 
-export default function LoveSettingsPage() {
+interface SettingRow {
+  label: string
+  description?: string
+  action: () => void
+  destructive?: boolean
+  toggle?: boolean
+  toggleValue?: boolean
+}
+
+export default function UfeSettings() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const [pauseSheet, setPauseSheet] = React.useState(false)
+  const [deleteSheet, setDeleteSheet] = React.useState(false)
+  const [prefsSheet, setPrefsSheet] = React.useState(false)
   const [paused, setPaused] = React.useState(false)
-  const [ageMin, setAgeMin] = React.useState(21)
-  const [ageMax, setAgeMax] = React.useState(40)
-  const [faith, setFaith] = React.useState(50)
-  const [familyPlan, setFamilyPlan] = React.useState(FAMILY_PLANS[0])
-  const [education, setEducation] = React.useState(EDUCATION[0])
-  const [dietary, setDietary] = React.useState(DIETARY[0])
-  const [lifestyle, setLifestyle] = React.useState(LIFESTYLE[0])
-  const [loveLang, setLoveLang] = React.useState(LOVE_LANGS[0])
-  const [saving, setSaving] = React.useState(false)
-  const [saved, setSaved] = React.useState(false)
-  const [showDeactivate, setShowDeactivate] = React.useState(false)
-  const [loading, setLoading] = React.useState(true)
+  const [deleting, setDeleting] = React.useState(false)
+  const [pauseLoading, setPauseLoading] = React.useState(false)
 
-  React.useEffect(() => {
-    loveWorldApi.getMyProfile().then(p => {
-      if (!p) return
-      setPaused(p.paused || false)
-      if (p.ageMin) setAgeMin(p.ageMin)
-      if (p.ageMax) setAgeMax(p.ageMax)
-      if (p.faithImportance != null) setFaith(p.faithImportance)
-      if (p.familyPlan) setFamilyPlan(p.familyPlan)
-      if (p.education) setEducation(p.education)
-      if (p.dietary) setDietary(p.dietary)
-      if (p.lifestyle) setLifestyle(p.lifestyle)
-      if (p.loveLang) setLoveLang(p.loveLang)
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+  // Preference state
+  const [ageMin, setAgeMin] = React.useState('21')
+  const [ageMax, setAgeMax] = React.useState('40')
+  const [prefReligion, setPrefReligion] = React.useState('No preference')
+  const [savingPrefs, setSavingPrefs] = React.useState(false)
 
-  const togglePause = async () => {
+  async function handlePause() {
+    setPauseLoading(true)
     try {
-      if (paused) await loveWorldApi.resumeProfile()
-      else await loveWorldApi.pauseProfile()
-      setPaused(!paused)
-    } catch {}
+      if (paused) {
+        await loveWorldApi.resumeProfile()
+        setPaused(false)
+      } else {
+        await loveWorldApi.pauseProfile()
+        setPaused(true)
+      }
+    } catch (e) { logApiFailure('love/settings/pause', e) }
+    setPauseLoading(false)
+    setPauseSheet(false)
   }
 
-  const save = async () => {
-    setSaving(true); setSaved(false)
+  async function handleDelete() {
+    setDeleting(true)
     try {
-      await loveWorldApi.updateProfile({ ageMin, ageMax, faithImportance: faith, familyPlan, education, dietary, lifestyle, loveLang })
-      setSaved(true); setTimeout(() => setSaved(false), 2000)
-    } catch {}
-    setSaving(false)
+      await loveWorldApi.updateProfile({ deleted: true })
+      router.push('/dashboard/love')
+    } catch (e) { logApiFailure('love/settings/delete', e) }
+    setDeleting(false)
   }
 
-  const box: React.CSSProperties = { background: '#111118', borderRadius: 12, padding: 16, marginBottom: 14 }
-  const label: React.CSSProperties = { fontSize: 13, color: '#aaa', marginBottom: 6, display: 'block' }
-  const sel: React.CSSProperties = { width: '100%', padding: 10, borderRadius: 8, border: '1px solid #333', background: '#1A1A25', color: '#fff', fontFamily: 'monospace', fontSize: 13, boxSizing: 'border-box' as const }
+  async function handleSavePrefs() {
+    setSavingPrefs(true)
+    try {
+      await loveWorldApi.updateProfile({
+        preferences: {
+          ageMin: parseInt(ageMin),
+          ageMax: parseInt(ageMax),
+          religion: prefReligion === 'No preference' ? null : prefReligion,
+        },
+      })
+    } catch (e) { logApiFailure('love/settings/prefs', e) }
+    setSavingPrefs(false)
+    setPrefsSheet(false)
+  }
 
-  if (loading) return <div style={{ background: '#0A0A0F', minHeight: '100vh', color: '#fff', fontFamily: 'monospace', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>
+  const selectStyle: React.CSSProperties = {
+    height: 44,
+    padding: `0 ${SPACE[4]}px`,
+    background: COLOR.elevated,
+    border: `1px solid ${COLOR.border}`,
+    borderRadius: RADIUS.lg,
+    color: COLOR.textPrimary,
+    fontSize: TYPE.body.fontSize,
+    fontFamily: 'inherit',
+    width: '100%',
+  }
+
+  const sections: { title: string; rows: SettingRow[] }[] = [
+    {
+      title: 'Profile',
+      rows: [
+        { label: 'Edit Profile', description: 'Update your information', action: () => router.push('/dashboard/love/create') },
+        { label: 'Verification', description: 'Complete identity checks', action: () => router.push('/dashboard/love/verification') },
+      ],
+    },
+    {
+      title: 'Matching',
+      rows: [
+        { label: 'Match Preferences', description: 'Age, religion, values filters', action: () => setPrefsSheet(true) },
+        { label: 'Blocked Users', description: 'Manage blocked profiles', action: () => router.push('/dashboard/love/settings/blocked') },
+      ],
+    },
+    {
+      title: 'Account',
+      rows: [
+        { label: 'Subscription', description: 'Manage your UFÈ Premium plan', action: () => router.push('/dashboard/upgrade') },
+        { label: paused ? 'Resume Profile' : 'Pause Profile', description: paused ? 'Make your profile visible again' : 'Temporarily hide from matches', action: () => setPauseSheet(true) },
+        { label: 'Delete Account', description: 'Permanently remove your Love World data', action: () => setDeleteSheet(true), destructive: true },
+      ],
+    },
+  ]
 
   return (
-    <div style={{ background: '#0A0A0F', minHeight: '100vh', color: '#fff', fontFamily: 'monospace', padding: '16px 16px 100px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <button onClick={() => router.push('/dashboard/love')} style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: 22, cursor: 'pointer' }}>&#8592;</button>
-        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Love Settings</h1>
+    <RealmProvider realm="ufe">
+      <LWNav title="Settings" backHref="/dashboard/love/ufe" backLabel="UFÈ" />
+
+      <div style={{ padding: `${SPACE[4]}px ${SPACE[4]}px ${SPACE[12]}px`, display: 'flex', flexDirection: 'column', gap: SPACE[5] }}>
+        {sections.map(section => (
+          <section key={section.title}>
+            <LWText scale="micro" color="muted" as="h3" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: SPACE[3], padding: `0 ${SPACE[1]}px` }}>
+              {section.title}
+            </LWText>
+            <LWCard padding={0}>
+              {section.rows.map((row, i) => (
+                <React.Fragment key={row.label}>
+                  {i > 0 && <hr style={{ border: 'none', borderTop: `1px solid ${COLOR.border}`, margin: `0 ${SPACE[4]}px` }} />}
+                  <button
+                    onClick={row.action}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: `${SPACE[3]}px ${SPACE[4]}px`,
+                      background: 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      minHeight: 48,
+                    }}
+                  >
+                    <div>
+                      <LWText scale="body" as="span" style={{ fontWeight: 400, color: row.destructive ? COLOR.danger : COLOR.textPrimary }}>
+                        {row.label}
+                      </LWText>
+                      {row.description && (
+                        <LWText scale="caption" color="muted" as="div" style={{ marginTop: 1 }}>
+                          {row.description}
+                        </LWText>
+                      )}
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: COLOR.textMuted, flexShrink: 0 }}>
+                      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </React.Fragment>
+              ))}
+            </LWCard>
+          </section>
+        ))}
       </div>
 
-      {/* Visibility toggle */}
-      <div style={{ ...box, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontWeight: 700 }}>Profile Visibility</div>
-          <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{paused ? 'Paused — hidden from matches' : 'Active — visible to matches'}</div>
-        </div>
-        <button onClick={togglePause} style={{ padding: '8px 16px', borderRadius: 20, border: 'none', background: paused ? '#FF3B30' : '#00C853', color: '#fff', fontFamily: 'monospace', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-          {paused ? 'Resume' : 'Pause'}
-        </button>
-      </div>
-
-      {/* Age range */}
-      <div style={box}>
-        <span style={label}>Age Range: {ageMin} — {ageMax}</span>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <input type="range" min={18} max={60} value={ageMin} onChange={e => setAgeMin(Math.min(+e.target.value, ageMax - 1))} style={{ flex: 1, accentColor: '#D4AF37' }} />
-          <input type="range" min={18} max={60} value={ageMax} onChange={e => setAgeMax(Math.max(+e.target.value, ageMin + 1))} style={{ flex: 1, accentColor: '#D4AF37' }} />
-        </div>
-      </div>
-
-      {/* Faith importance */}
-      <div style={box}>
-        <span style={label}>Faith Importance: {faith}%</span>
-        <input type="range" min={0} max={100} value={faith} onChange={e => setFaith(+e.target.value)} style={{ width: '100%', accentColor: '#D4AF37' }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#666', marginTop: 4 }}>
-          <span>Not important</span><span>Very important</span>
-        </div>
-      </div>
-
-      {/* Dropdowns */}
-      {[
-        { lbl: 'Family Plan', val: familyPlan, set: setFamilyPlan, opts: FAMILY_PLANS },
-        { lbl: 'Education', val: education, set: setEducation, opts: EDUCATION },
-        { lbl: 'Dietary', val: dietary, set: setDietary, opts: DIETARY },
-        { lbl: 'Lifestyle', val: lifestyle, set: setLifestyle, opts: LIFESTYLE },
-        { lbl: 'Love Language', val: loveLang, set: setLoveLang, opts: LOVE_LANGS },
-      ].map(d => (
-        <div key={d.lbl} style={box}>
-          <span style={label}>{d.lbl}</span>
-          <select value={d.val} onChange={e => d.set(e.target.value)} style={sel}>
-            {d.opts.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        </div>
-      ))}
-
-      {/* Save */}
-      <button onClick={save} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', background: '#D4AF37', color: '#0A0A0F', fontFamily: 'monospace', fontWeight: 800, fontSize: 15, cursor: 'pointer', marginBottom: 20 }}>
-        {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Preferences'}
-      </button>
-
-      {/* Danger zone */}
-      <div style={{ ...box, border: '1px solid #FF3B3044' }}>
-        <div style={{ fontWeight: 700, color: '#FF3B30', marginBottom: 8 }}>Danger Zone</div>
-        {!showDeactivate ? (
-          <button onClick={() => setShowDeactivate(true)} style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #FF3B30', background: 'transparent', color: '#FF3B30', fontFamily: 'monospace', fontWeight: 700, cursor: 'pointer' }}>Deactivate Profile</button>
-        ) : (
-          <div>
-            <p style={{ fontSize: 13, color: '#FF3B30', marginBottom: 10 }}>This will hide your profile and remove you from all match queues. You can re-activate later.</p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { loveWorldApi.pauseProfile(); router.push('/dashboard/love') }} style={{ flex: 1, padding: 10, borderRadius: 8, border: 'none', background: '#FF3B30', color: '#fff', fontFamily: 'monospace', fontWeight: 700, cursor: 'pointer' }}>Confirm</button>
-              <button onClick={() => setShowDeactivate(false)} style={{ flex: 1, padding: 10, borderRadius: 8, border: '1px solid #333', background: 'transparent', color: '#fff', fontFamily: 'monospace', cursor: 'pointer' }}>Cancel</button>
+      {/* Match Preferences Sheet */}
+      <LWSheet open={prefsSheet} onClose={() => setPrefsSheet(false)} title="Match Preferences">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[4] }}>
+          <div style={{ display: 'flex', gap: SPACE[3] }}>
+            <div style={{ flex: 1 }}>
+              <LWText scale="caption" color="secondary" as="label" style={{ marginBottom: SPACE[1], display: 'block' }}>Min Age</LWText>
+              <LWInput type="number" value={ageMin} onChange={e => setAgeMin(e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <LWText scale="caption" color="secondary" as="label" style={{ marginBottom: SPACE[1], display: 'block' }}>Max Age</LWText>
+              <LWInput type="number" value={ageMax} onChange={e => setAgeMax(e.target.value)} />
             </div>
           </div>
-        )}
-      </div>
+          <div>
+            <LWText scale="caption" color="secondary" as="label" style={{ marginBottom: SPACE[1], display: 'block' }}>Preferred Religion</LWText>
+            <select value={prefReligion} onChange={e => setPrefReligion(e.target.value)} style={selectStyle}>
+              <option>No preference</option>
+              <option>Christianity</option>
+              <option>Islam</option>
+              <option>Traditional</option>
+              <option>Hindu</option>
+              <option>Buddhist</option>
+              <option>Jewish</option>
+              <option>Spiritual</option>
+            </select>
+          </div>
+          <LWButton fullWidth loading={savingPrefs} onClick={handleSavePrefs}>
+            Save Preferences
+          </LWButton>
+        </div>
+      </LWSheet>
 
-      {/* Back link */}
-      <button onClick={() => router.push('/dashboard/love')} style={{ background: 'none', border: 'none', color: '#D4AF37', fontFamily: 'monospace', fontSize: 14, cursor: 'pointer', marginTop: 10, padding: 0 }}>&#8592; Back to Love World</button>
-    </div>
+      {/* Pause Profile Sheet */}
+      <LWSheet open={pauseSheet} onClose={() => setPauseSheet(false)} title={paused ? 'Resume Profile' : 'Pause Profile'}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[4] }}>
+          <LWText scale="body" color="secondary">
+            {paused
+              ? 'Your profile is currently hidden. Resume to start receiving matches again.'
+              : 'Pausing your profile will hide you from all match queues. Your existing matches and conversations will be preserved.'
+            }
+          </LWText>
+          <LWButton fullWidth variant={paused ? 'primary' : 'secondary'} loading={pauseLoading} onClick={handlePause}>
+            {paused ? 'Resume Profile' : 'Pause My Profile'}
+          </LWButton>
+        </div>
+      </LWSheet>
+
+      {/* Delete Account Sheet */}
+      <LWSheet open={deleteSheet} onClose={() => setDeleteSheet(false)} title="Delete Account">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[4] }}>
+          <LWText scale="body" color="secondary">
+            This will permanently delete your Love World profile, all matches, conversations, and history. This action cannot be undone.
+          </LWText>
+          <LWButton fullWidth variant="danger" loading={deleting} onClick={handleDelete}>
+            Delete My Account Permanently
+          </LWButton>
+          <LWButton fullWidth variant="ghost" onClick={() => setDeleteSheet(false)}>
+            Cancel
+          </LWButton>
+        </div>
+      </LWSheet>
+    </RealmProvider>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { logApiFailure } from '@/lib/flags'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -38,7 +39,7 @@ export default function MarketplacePage() {
     fetch('/api/feed/posts?type=MARKET_LISTING')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setListings(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch((e) => logApiFailure('marketplace/listings', e))
   }, [])
 
   const filtered = listings.filter((l) => {

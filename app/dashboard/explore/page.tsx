@@ -1,55 +1,36 @@
 'use client'
 // ════════════════════════════════════════════════════════════════
-// EXPLORE — Discover people, villages, trending content
-// Search · Trending · People · Villages · Tags
+// EXPLORE — Discover people, villages, trending content, spotlight
+// Search · Trending · People · Villages · Live · Tags · Spotlight · Hall of Fame
 // ════════════════════════════════════════════════════════════════
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { sorosokeApi, jollofTvApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 const CSS_ID = 'explore-css'
 const CSS = `
 @keyframes exFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes exPulse{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes goldGlow{0%,100%{box-shadow:0 0 8px rgba(255,215,0,.3)}50%{box-shadow:0 0 20px rgba(255,215,0,.6)}}
 .ex-fade{animation:exFade .35s ease both}
 .ex-pulse{animation:exPulse 2s ease-in-out infinite}
+.gold-glow{animation:goldGlow 2.5s ease-in-out infinite}
 `
 
-// ── Mock Data ──────────────────────────────────────
-const TRENDING_TAGS = [
-  { tag: '#TomatoPrice', posts: 1240, heat: 94 },
-  { tag: '#NightMarket', posts: 890, heat: 88 },
-  { tag: '#KenteWeave', posts: 672, heat: 82 },
-  { tag: '#JollofWars', posts: 2100, heat: 97 },
-  { tag: '#CowrieFlow', posts: 445, heat: 71 },
-  { tag: '#PlantYourRoot', posts: 334, heat: 68 },
-  { tag: '#VillageDrum', posts: 1567, heat: 91 },
-  { tag: '#AfroTech', posts: 987, heat: 85 },
+// ── Fallback mock data (shown only when API returns nothing) ──
+const MOCK_TRENDING = [
+  { id: 't1', authorName: 'Kofi Mensah', villageIcon: '🧺', villageName: 'Commerce', body: 'Lagos-to-Accra trade completed — escrow closed in 4 minutes!', kilaCount: 234, stirCount: 45, heatScore: 94, villageColor: '#1a7c3e' },
+  { id: 't2', authorName: 'Amara Okafor', villageIcon: '🎨', villageName: 'Arts', body: 'New voice story — 92 seconds on proverbs for business 🎙', kilaCount: 178, stirCount: 31, heatScore: 88, villageColor: '#7c3aed' },
+  { id: 't3', authorName: 'Elder Ade', villageIcon: '⚕', villageName: 'Health', body: '"Àgbà kì í wà lọ́jà kí orí ọmọ títún wọ́" — An elder does not stand in the market...', kilaCount: 445, stirCount: 12, heatScore: 91, villageColor: '#0369a1' },
+  { id: 't4', authorName: 'Tech Council', villageIcon: '💰', villageName: 'Finance', body: 'Sprint complete! Hackathon — 12 teams, ₵50K prize. Results inside 🏆', kilaCount: 567, stirCount: 89, heatScore: 96, villageColor: '#16a34a' },
 ]
 
-const TRENDING_POSTS = [
-  { id: 't1', author: 'Kofi Mensah', avatar: '👨🏾‍💼', village: 'Commerce', preview: 'Lagos-to-Accra trade completed — escrow closed in 4 minutes!', kila: 234, stir: 45, heat: 94, bg: 'linear-gradient(135deg,#1a7c3e,#0f2d14)' },
-  { id: 't2', author: 'Amara Okafor', avatar: '👩🏾‍🎤', village: 'Arts', preview: 'New voice story — 92 seconds on Yoruba proverbs for business 🎙', kila: 178, stir: 31, heat: 88, bg: 'linear-gradient(135deg,#7c3aed,#4c1d95)' },
-  { id: 't3', author: 'Elder Ade', avatar: '👴🏾', village: 'Spirituality', preview: '"Àgbà kì í wà lọ́jà kí orí ọmọ títún wọ́" — An elder does not stand in the market...', kila: 445, stir: 12, heat: 91, bg: 'linear-gradient(135deg,#0369a1,#0c4a6e)' },
-  { id: 't4', author: 'Tech Council', avatar: '💻', village: 'Technology', preview: 'Sprint complete! Hackathon — 12 teams, ₵50K prize. Results inside 🏆', kila: 567, stir: 89, heat: 96, bg: 'linear-gradient(135deg,#16a34a,#15803d)' },
-  { id: 't5', author: 'Zara Mensah', avatar: '👩🏾‍🎨', village: 'Fashion', preview: 'Hand-woven Kente · 50 yards. Trust escrow accepted ₵15,000', kila: 122, stir: 18, heat: 79, bg: 'linear-gradient(135deg,#e07b00,#92400e)' },
-  { id: 't6', author: 'Mama Ngozi', avatar: '🧺', village: 'Commerce', preview: 'Tomato price alert: ₡3,200/bag at Mile 12. Farm gate ₡2,400 — move fast!', kila: 312, stir: 67, heat: 92, bg: 'linear-gradient(135deg,#d4a017,#8b6914)' },
-]
-
-const SUGGESTED_PEOPLE = [
-  { id: 'p1', name: 'Kofi Mensah', handle: '@kofi.akn', avatar: '👨🏾‍💼', village: 'Commerce', crest: 'III', ring: '🏘 Ìlú' },
-  { id: 'p2', name: 'Amara Okafor', handle: '@amara.yor', avatar: '👩🏾‍🎤', village: 'Arts', crest: 'II', ring: '🤝 Ẹgbẹ́' },
-  { id: 'p3', name: 'Elder Adewale', handle: '@elder.ade', avatar: '👴🏾', village: 'Spirituality', crest: 'V', ring: '🌍 Ìjọba' },
-  { id: 'p4', name: 'Zara Mensah', handle: '@zara.ewe', avatar: '👩🏾‍🎨', village: 'Fashion', crest: 'I', ring: '🌍 Ìjọba' },
-  { id: 'p5', name: 'Tunde Bakare', handle: '@tunde.tech', avatar: '👨🏾‍💻', village: 'Technology', crest: 'IV', ring: '🏘 Ìlú' },
-  { id: 'p6', name: 'Adaeze Obi', handle: '@adaeze.hlth', avatar: '👩🏾‍⚕️', village: 'Health', crest: 'III', ring: '🤝 Ẹgbẹ́' },
-  { id: 'p7', name: 'Kwame Asante', handle: '@kwame.agr', avatar: '👨🏾‍🌾', village: 'Agriculture', crest: 'II', ring: '🏘 Ìlú' },
-  { id: 'p8', name: 'Fatima Hassan', handle: '@fatima.edu', avatar: '👩🏾‍🏫', village: 'Education', crest: 'III', ring: '🌍 Ìjọba' },
-]
-
-const LIVE_STREAMS = [
-  { id: 'l1', title: 'Night Market Live — Trade Floor', host: 'Mama Ngozi', avatar: '🧺', viewers: 342, village: 'Commerce' },
-  { id: 'l2', title: 'Kente Weaving Masterclass', host: 'Zara Mensah', avatar: '👩🏾‍🎨', viewers: 128, village: 'Fashion' },
-  { id: 'l3', title: 'Tech Village Hackathon Day 2', host: 'Tech Council', avatar: '💻', viewers: 891, village: 'Technology' },
+const MOCK_PEOPLE = [
+  { authorId: 'p1', authorName: 'Kofi Mensah', authorHandle: 'village.kofi', latestVillageId: 'commerce', latestCrestTier: 3, postCount: 24 },
+  { authorId: 'p2', authorName: 'Amara Okafor', authorHandle: 'village.amara', latestVillageId: 'arts', latestCrestTier: 2, postCount: 18 },
+  { authorId: 'p3', authorName: 'Elder Adewale', authorHandle: 'village.elder', latestVillageId: 'health', latestCrestTier: 5, postCount: 12 },
+  { authorId: 'p4', authorName: 'Zara Mensah', authorHandle: 'village.zara', latestVillageId: 'finance', latestCrestTier: 1, postCount: 9 },
 ]
 
 const VILLAGES_PREVIEW = [
@@ -63,7 +44,21 @@ const VILLAGES_PREVIEW = [
   { id: 'agriculture', name: 'Agriculture', emoji: '🌾', members: '3.1k', color: '#84cc16' },
 ]
 
-type ExploreTab = 'trending' | 'people' | 'villages' | 'live' | 'tags'
+const TRENDING_TAGS = [
+  { tag: '#TomatoPrice', posts: 1240, heat: 94 },
+  { tag: '#NightMarket', posts: 890, heat: 88 },
+  { tag: '#KenteWeave', posts: 672, heat: 82 },
+  { tag: '#JollofWars', posts: 2100, heat: 97 },
+  { tag: '#CowrieFlow', posts: 445, heat: 71 },
+  { tag: '#PlantYourRoot', posts: 334, heat: 68 },
+  { tag: '#VillageDrum', posts: 1567, heat: 91 },
+  { tag: '#AfroTech', posts: 987, heat: 85 },
+]
+
+const CREST_LABELS: Record<number, string> = { 0: '—', 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V' }
+const VILLAGE_EMOJI: Record<string, string> = { commerce: '🛒', technology: '💻', family: '🏡', health: '🏥', arts: '🎨', finance: '₵', education: '📚', agriculture: '🌾', builders: '🏗', media: '📰' }
+
+type ExploreTab = 'trending' | 'people' | 'villages' | 'live' | 'tags' | 'spotlight' | 'fame'
 
 interface LiveVillage {
   id: string; name: string; emoji: string; members: string; color: string
@@ -79,13 +74,54 @@ export default function ExplorePage() {
   const [liveVillages, setLiveVillages] = React.useState<LiveVillage[]>([])
   const [liveTags, setLiveTags] = React.useState<LiveTag[]>([])
 
+  // ── Real API data ──────────────────────────────
+  const [trendingPosts, setTrendingPosts] = React.useState<any[]>([])
+  const [spotlightPosts, setSpotlightPosts] = React.useState<any[]>([])
+  const [peopleSuggestions, setPeopleSuggestions] = React.useState<any[]>([])
+  const [liveData, setLiveData] = React.useState<{ oracles: any[]; stories: any[] }>({ oracles: [], stories: [] })
+  const [hallOfFame, setHallOfFame] = React.useState<any>(null)
+  const [liveStreams, setLiveStreams] = React.useState<any[]>([])
+
   React.useEffect(() => {
     if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return
     const s = document.createElement('style'); s.id = CSS_ID; s.textContent = CSS
     document.head.appendChild(s)
   }, [])
 
-  // ── Fetch real villages from village-registry ────────────
+  // ── Fetch real data from backend ─────────────────
+  React.useEffect(() => {
+    // Trending posts
+    sorosokeApi.discoverTrending()
+      .then((r: any) => { if (r?.data?.length) setTrendingPosts(r.data) })
+      .catch((e) => logApiFailure('explore/trending', e))
+
+    // Spotlight (FEAST posts)
+    sorosokeApi.discoverSpotlight()
+      .then((r: any) => { if (r?.data?.length) setSpotlightPosts(r.data) })
+      .catch((e) => logApiFailure('explore/spotlight', e))
+
+    // People suggestions
+    sorosokeApi.discoverPeople()
+      .then((r: any) => { if (r?.data?.length) setPeopleSuggestions(r.data) })
+      .catch((e) => logApiFailure('explore/people', e))
+
+    // Live sessions
+    sorosokeApi.discoverLive()
+      .then((r: any) => { if (r?.data) setLiveData(r.data) })
+      .catch((e) => logApiFailure('explore/live', e))
+
+    // Hall of Fame (current month)
+    sorosokeApi.hallOfFame()
+      .then((r: any) => { if (r?.data) setHallOfFame(r.data) })
+      .catch((e) => logApiFailure('explore/hallOfFame', e))
+
+    // Live Jollof TV streams
+    jollofTvApi.list({ isLive: 'true' })
+      .then((r: any) => { if (r?.data?.length) setLiveStreams(r.data) })
+      .catch((e) => logApiFailure('explore/liveStreams', e))
+  }, [])
+
+  // ── Fetch real villages from village-registry ────
   React.useEffect(() => {
     fetch('/api/v1/villages?limit=20')
       .then(r => r.ok ? r.json() : null)
@@ -102,29 +138,22 @@ export default function ExplorePage() {
           meaning: v.meaning ?? undefined,
         })))
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('explore/villages', e))
   }, [])
 
-  // ── Fetch trending hashtags from soro-soke ───────────────
+  // ── Fetch trending hashtags from soro-soke ───────
   React.useEffect(() => {
-    let token: string | null = null
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('afk-auth') : null
-      token = stored ? JSON.parse(stored)?.state?.accessToken ?? null : null
-    } catch {}
-    if (!token) return
-    fetch('/api/posts/hashtags/trending', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
+    sorosokeApi.trending()
+      .then((d: any) => {
         const list = d?.data ?? d?.tags ?? (Array.isArray(d) ? d : null)
         if (!list || list.length === 0) return
         setLiveTags(list.map((t: any) => ({
-          tag: t.tag ?? `#${t.name}`,
+          tag: t.tag?.startsWith('#') ? t.tag : `#${t.tag}`,
           posts: t.postCount ?? t.posts ?? 0,
           heat: Math.min(99, Math.round((t.postCount ?? t.posts ?? 0) / 30)),
         })))
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('explore/trendingTags', e))
   }, [])
 
   const toggleInvite = (id: string) => {
@@ -135,12 +164,19 @@ export default function ExplorePage() {
     })
   }
 
+  // Use real data with mock fallbacks (only when USE_MOCKS enabled)
+  const trending = trendingPosts.length > 0 ? trendingPosts : (USE_MOCKS ? MOCK_TRENDING : [])
+  const people = peopleSuggestions.length > 0 ? peopleSuggestions : (USE_MOCKS ? MOCK_PEOPLE : [])
+  const displayTags = liveTags.length > 0 ? liveTags : (USE_MOCKS ? TRENDING_TAGS : [])
+
   const TABS: { key: ExploreTab; emoji: string; label: string }[] = [
     { key: 'trending', emoji: '🔥', label: 'Trending' },
+    { key: 'spotlight', emoji: '⭐', label: 'Spotlight' },
     { key: 'people', emoji: '👥', label: 'People' },
     { key: 'villages', emoji: '🏘', label: 'Villages' },
     { key: 'live', emoji: '🔴', label: 'Live Now' },
     { key: 'tags', emoji: '#', label: 'Tags' },
+    { key: 'fame', emoji: '🏆', label: 'Hall of Fame' },
   ]
 
   return (
@@ -196,37 +232,119 @@ export default function ExplorePage() {
         {/* ── TRENDING TAB ── */}
         {tab === 'trending' && (
           <div>
-            {/* Trending grid — staggered cards */}
+            {/* ── Africa-First Features Row ── */}
+            <div style={{ padding: '8px 14px 4px' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 8 }}>
+                ✨ Africa-First Features
+              </div>
+              <div style={{ display: 'flex', overflowX: 'auto', gap: 8, paddingBottom: 4 }}>
+                {[
+                  { icon: '⚔️', label: 'Proverb Battle', desc: '12 languages', color: '#d4a017', href: '/dashboard/discover/proverb-battle' },
+                  { icon: '🎙', label: 'Voice Burst', desc: '90s voices', color: '#7c3aed', href: '/dashboard/feed/voice-burst' },
+                  { icon: '🏺', label: 'Nkisi Trust', desc: 'Fact-checking', color: '#0369a1', href: '/dashboard/discover/nkisi-trust' },
+                  { icon: '🟡', label: 'Market Day', desc: 'Eke · Orie · Afo · Nkwo', color: '#d4a017', href: '/dashboard/feed' },
+                  { icon: '🏆', label: 'Hall of Fame', desc: 'Best of Month', color: '#ffd700', href: undefined as undefined },
+                ].map((f, i) => (
+                  <div
+                    key={f.label}
+                    onClick={() => f.href ? router.push(f.href) : setTab('fame')}
+                    className="ex-fade"
+                    style={{
+                      flexShrink: 0, width: 100, padding: '10px 12px', borderRadius: 14, cursor: 'pointer',
+                      background: `linear-gradient(135deg, ${f.color}18, ${f.color}08)`,
+                      border: `1px solid ${f.color}25`, animationDelay: `${i * 0.05}s`,
+                    }}
+                  >
+                    <div style={{ fontSize: 22, marginBottom: 5 }}>{f.icon}</div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: f.color, fontFamily: 'Sora, sans-serif', lineHeight: 1.3 }}>{f.label}</div>
+                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,.3)', marginTop: 2 }}>{f.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div style={{ padding: '8px 14px' }}>
               <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
                 🔥 Heating up right now
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {TRENDING_POSTS.map((p, i) => (
-                  <div key={p.id} className="ex-fade" style={{
-                    borderRadius: 16, overflow: 'hidden', cursor: 'pointer',
-                    background: p.bg, position: 'relative', minHeight: i % 3 === 0 ? 200 : 160,
-                    animationDelay: `${i * 0.08}s`,
-                    display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                {trending.filter((p: any) => !search || p.body?.toLowerCase().includes(search.toLowerCase()) || p.authorName?.toLowerCase().includes(search.toLowerCase())).map((p: any, i: number) => {
+                  const color = p.villageColor || '#1a7c3e'
+                  return (
+                    <div key={p.id} className="ex-fade" style={{
+                      borderRadius: 16, overflow: 'hidden', cursor: 'pointer',
+                      background: `linear-gradient(135deg, ${color}30, ${color}10)`,
+                      border: `1px solid ${color}25`,
+                      position: 'relative', minHeight: i % 3 === 0 ? 200 : 160,
+                      animationDelay: `${i * 0.08}s`,
+                      display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+                    }}>
+                      <div style={{ padding: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                          <span style={{ fontSize: 16 }}>{p.villageIcon || VILLAGE_EMOJI[p.villageId] || '🏘'}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.9)' }}>{p.authorName}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,.8)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                          {p.body || p.preview}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 10, color: 'rgba(255,255,255,.5)' }}>
+                          <span>⭐ {p.kilaCount ?? p.kila}</span>
+                          <span>🫧 {p.stirCount ?? p.stir}</span>
+                          <span style={{ marginLeft: 'auto', fontSize: 9, padding: '1px 6px', borderRadius: 99, background: 'rgba(255,255,255,.15)', fontWeight: 700 }}>🔥 {Math.round(p.heatScore ?? p.heat)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── SPOTLIGHT TAB ── (FEAST posts — the hottest content) */}
+        {tab === 'spotlight' && (
+          <div style={{ padding: '8px 14px' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,215,0,.5)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
+              ⭐ The Feast — Posts that reached FIRE
+            </div>
+            {spotlightPosts.length === 0 && trending.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🍲</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#ffd700' }}>The Pot is Simmering</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginTop: 4 }}>No posts have reached FEAST stage yet. Keep stirring!</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {(spotlightPosts.length > 0 ? spotlightPosts : trending.slice(0, 4)).map((p: any, i: number) => (
+                  <div key={p.id} className="ex-fade gold-glow" style={{
+                    padding: '16px', borderRadius: 18, cursor: 'pointer',
+                    background: 'linear-gradient(135deg, rgba(255,215,0,.06), rgba(255,140,0,.03))',
+                    border: '1.5px solid rgba(255,215,0,.2)',
+                    animationDelay: `${i * 0.1}s`,
                   }}>
-                    <div style={{ padding: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <span style={{ fontSize: 16 }}>{p.avatar}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.9)' }}>{p.author}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #ffd700, #ff8c00)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                        {p.villageIcon || VILLAGE_EMOJI[p.villageId] || '🔥'}
                       </div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.8)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
-                        {p.preview}
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#ffd700' }}>{p.authorName}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>{p.villageName || p.villageId} · 🔥 {Math.round(p.heatScore ?? p.heat)}</div>
                       </div>
-                      <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 10, color: 'rgba(255,255,255,.5)' }}>
-                        <span>⭐ {p.kila}</span>
-                        <span>🫧 {p.stir}</span>
-                        <span style={{ marginLeft: 'auto', fontSize: 9, padding: '1px 6px', borderRadius: 99, background: 'rgba(255,255,255,.15)', fontWeight: 700 }}>🔥 {p.heat}</span>
+                      <div style={{ marginLeft: 'auto', fontSize: 9, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,215,0,.15)', color: '#ffd700', fontWeight: 800 }}>
+                        🍽 FEAST
                       </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,.85)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                      {p.body || p.preview}
+                    </div>
+                    <div style={{ display: 'flex', gap: 14, marginTop: 10, fontSize: 10, color: 'rgba(255,215,0,.5)' }}>
+                      <span>⭐ {p.kilaCount ?? p.kila} Kíla</span>
+                      <span>🫧 {p.stirCount ?? p.stir} Stir</span>
+                      <span>💬 {p.commentCount ?? 0}</span>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -234,36 +352,38 @@ export default function ExplorePage() {
         {tab === 'people' && (
           <div style={{ padding: '8px 14px' }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
-              👥 Village kinsmen near you
+              👥 Most active voices this week
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {SUGGESTED_PEOPLE.filter(p =>
-                !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.handle.toLowerCase().includes(search.toLowerCase())
-              ).map((p, i) => {
-                const isInvited = invitedPeople.has(p.id)
+              {people.filter((p: any) =>
+                !search || p.authorName?.toLowerCase().includes(search.toLowerCase()) || p.authorHandle?.toLowerCase().includes(search.toLowerCase())
+              ).map((p: any, i: number) => {
+                const isInvited = invitedPeople.has(p.authorId || p.id)
+                const emoji = VILLAGE_EMOJI[p.latestVillageId] || '🏘'
+                const crest = CREST_LABELS[p.latestCrestTier ?? 0] || '—'
                 return (
-                  <div key={p.id} className="ex-fade" style={{
+                  <div key={p.authorId || p.id} className="ex-fade" style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
                     borderRadius: 16, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)',
                     animationDelay: `${i * 0.06}s`,
                   }}>
                     <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 }}>
-                      {p.avatar}
+                      {emoji}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f5ee' }}>{p.name}</span>
-                        <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 99, background: 'rgba(212,160,23,.15)', color: '#fbbf24' }}>{p.crest}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#f0f5ee' }}>{p.authorName || p.name}</span>
+                        <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 99, background: 'rgba(212,160,23,.15)', color: '#fbbf24' }}>{crest}</span>
                       </div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 1 }}>{p.handle} · {p.village} · {p.ring}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 1 }}>@{p.authorHandle || p.handle} · {p.latestVillageId || p.village} · {p.postCount} posts</div>
                     </div>
-                    <button onClick={() => toggleInvite(p.id)} style={{
+                    <button onClick={() => toggleInvite(p.authorId || p.id)} style={{
                       padding: '6px 14px', borderRadius: 20, fontSize: 10, fontWeight: 700, cursor: 'pointer',
                       background: isInvited ? 'rgba(255,255,255,.08)' : 'rgba(26,124,62,.2)',
                       border: `1px solid ${isInvited ? 'rgba(255,255,255,.15)' : 'rgba(26,124,62,.4)'}`,
                       color: isInvited ? 'rgba(255,255,255,.5)' : '#4ade80',
                     }}>
-                      {isInvited ? '🤫 Whisper Sent' : '🏘 Invite to Village'}
+                      {isInvited ? '🤫 Whisper Sent' : '🏘 Invite'}
                     </button>
                   </div>
                 )
@@ -309,31 +429,86 @@ export default function ExplorePage() {
         {tab === 'live' && (
           <div style={{ padding: '8px 14px' }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
-              🔴 Streaming now
+              🔴 Live now across the village
             </div>
-            {LIVE_STREAMS.map((s, i) => (
-              <div key={s.id} className="ex-fade" onClick={() => router.push('/dashboard/jollof')} style={{
+
+            {/* Real live streams from Jollof TV */}
+            {liveStreams.map((s: any, i: number) => (
+              <div key={s.id} className="ex-fade" onClick={() => router.push(`/dashboard/jollof/stream/${s.id}`)} style={{
                 display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 16, cursor: 'pointer',
                 background: 'rgba(239,68,68,.04)', border: '1px solid rgba(239,68,68,.12)', marginBottom: 10,
                 animationDelay: `${i * 0.08}s`,
               }}>
                 <div style={{ width: 56, height: 56, borderRadius: 12, background: 'rgba(239,68,68,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0, position: 'relative' }}>
-                  {s.avatar}
+                  📺
                   <div className="ex-pulse" style={{ position: 'absolute', top: -2, right: -2, width: 12, height: 12, borderRadius: '50%', background: '#ef4444', border: '2px solid #07090a' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f5ee', marginBottom: 2 }}>{s.title}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{s.host} · {s.village}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#f0f5ee', marginBottom: 2 }}>{s.title || 'Live Stream'}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{s.hostName || 'Host'} · {s.villageId || 'Village'}</div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 3 }}>
                     <span className="ex-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
                     LIVE
                   </div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>👁 {s.viewers}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginTop: 2 }}>👁 {s.viewerCount ?? s.viewers ?? 0}</div>
                 </div>
               </div>
             ))}
+
+            {/* Live Oracle Sessions */}
+            {liveData.oracles.length > 0 && (
+              <>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', margin: '14px 0 8px' }}>
+                  🗣 Live Oracle Sessions
+                </div>
+                {liveData.oracles.map((o: any, i: number) => (
+                  <div key={o.id} className="ex-fade" style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '14px', borderRadius: 16,
+                    background: 'rgba(168,85,247,.04)', border: '1px solid rgba(168,85,247,.12)', marginBottom: 8,
+                    animationDelay: `${i * 0.08}s`,
+                  }}>
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(168,85,247,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔮</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#c084fc' }}>{o.topic}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>🗣 {o.speakerCount} speakers · 👁 {o.listenerCount} listeners</div>
+                    </div>
+                    <div className="ex-pulse" style={{ fontSize: 9, padding: '2px 8px', borderRadius: 99, background: 'rgba(168,85,247,.15)', color: '#c084fc', fontWeight: 700 }}>LIVE</div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* Live Voice Stories */}
+            {liveData.stories.length > 0 && (
+              <>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', margin: '14px 0 8px' }}>
+                  🎙 Active Voice Stories
+                </div>
+                {liveData.stories.map((s: any, i: number) => (
+                  <div key={s.id} className="ex-fade" style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '12px', borderRadius: 14,
+                    background: 'rgba(59,130,246,.04)', border: '1px solid rgba(59,130,246,.12)', marginBottom: 8,
+                    animationDelay: `${i * 0.06}s`,
+                  }}>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(59,130,246,.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{s.authorAvatarEmoji || '🎙'}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#93c5fd' }}>{s.authorName || 'Anonymous'}</div>
+                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>{s.duration ?? 0}s · {s.villageId}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {liveStreams.length === 0 && liveData.oracles.length === 0 && liveData.stories.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🌙</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#f87171' }}>The Village is Quiet</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginTop: 4 }}>No live sessions right now. Be the first to go live!</div>
+              </div>
+            )}
 
             {/* Go Live CTA */}
             <div style={{ padding: '20px', textAlign: 'center', borderRadius: 16, border: '1px dashed rgba(239,68,68,.2)', background: 'rgba(239,68,68,.03)', marginTop: 8 }}>
@@ -356,7 +531,7 @@ export default function ExplorePage() {
             <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.2)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
               # Trending tags
             </div>
-            {(liveTags.length > 0 ? liveTags : TRENDING_TAGS)
+            {displayTags
               .filter(t => !search || t.tag.toLowerCase().includes(search.toLowerCase()))
               .sort((a, b) => b.heat - a.heat)
               .map((t, i) => (
@@ -380,6 +555,74 @@ export default function ExplorePage() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── HALL OF FAME TAB ── */}
+        {tab === 'fame' && (
+          <div style={{ padding: '8px 14px' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,215,0,.5)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 10 }}>
+              🏆 Best of the Month
+            </div>
+
+            {hallOfFame?.stats && (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                {[
+                  { label: 'Posts', value: hallOfFame.stats.totalPosts, color: '#4ade80' },
+                  { label: 'Total Kíla', value: hallOfFame.stats.totalKilas, color: '#fbbf24' },
+                  { label: 'Top Village', value: hallOfFame.stats.topVillage || '—', color: '#c084fc' },
+                ].map(s => (
+                  <div key={s.label} style={{ flex: 1, padding: '10px 8px', borderRadius: 12, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.06)', textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: s.color, fontFamily: 'Sora, sans-serif' }}>
+                      {typeof s.value === 'number' ? s.value.toLocaleString() : s.value}
+                    </div>
+                    <div style={{ fontSize: 8, color: 'rgba(255,255,255,.3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '.08em' }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,.15)', textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 8 }}>
+              🍽 {hallOfFame?.month || 'This Month'} — Top Posts
+            </div>
+
+            {(hallOfFame?.posts ?? []).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>📜</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#ffd700' }}>The Archives Await</div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,.4)', marginTop: 4 }}>No hall of fame entries yet. Post something worthy!</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {(hallOfFame?.posts ?? []).map((p: any, i: number) => (
+                  <div key={p.id} className="ex-fade" style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px',
+                    borderRadius: 16,
+                    background: i === 0 ? 'linear-gradient(135deg, rgba(255,215,0,.08), rgba(255,140,0,.03))' : 'rgba(255,255,255,.03)',
+                    border: `1px solid ${i === 0 ? 'rgba(255,215,0,.2)' : 'rgba(255,255,255,.06)'}`,
+                    animationDelay: `${i * 0.06}s`,
+                  }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : 'rgba(255,255,255,.2)', width: 28, textAlign: 'center', flexShrink: 0, paddingTop: 2 }}>
+                      {i < 3 ? ['🥇', '🥈', '🥉'][i] : `${i + 1}`}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: i === 0 ? '#ffd700' : '#f0f5ee' }}>{p.authorName}</span>
+                        <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)' }}>{p.villageName}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>
+                        {p.body}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, marginTop: 6, fontSize: 9, color: 'rgba(255,255,255,.4)' }}>
+                        <span>⭐ {p.kilaCount}</span>
+                        <span>🫧 {p.stirCount}</span>
+                        <span>🔥 {Math.round(p.heatScore)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

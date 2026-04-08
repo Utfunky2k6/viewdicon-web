@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ═══════════════════════════════════════════════════════════════════════
 // LOVE WORLD — COVENANT REWARDS (Post-Marriage)
@@ -100,7 +101,7 @@ export default function CovenantRewardsPage() {
 
   const [loading, setLoading] = useState(true)
   const [rewards, setRewards] = useState<RewardItem[]>(REWARDS)
-  const [summary, setSummary] = useState<JourneySummary>(MOCK_SUMMARY)
+  const [summary, setSummary] = useState<JourneySummary | null>(USE_MOCKS ? MOCK_SUMMARY : null)
   const [claiming, setClaiming] = useState<string | null>(null)
   const [showToast, setShowToast] = useState(false)
   const [toastMsg, setToastMsg] = useState('')
@@ -119,8 +120,8 @@ export default function CovenantRewardsPage() {
       const data = await res.json()
       if (data.rewards?.length) setRewards(data.rewards)
       if (data.summary) setSummary(data.summary)
-    } catch {
-      // Keep mock data
+    } catch (e) {
+      logApiFailure('love/rewards/summary', e)
     } finally {
       setLoading(false)
     }
@@ -145,7 +146,8 @@ export default function CovenantRewardsPage() {
         body: JSON.stringify({ rewardKey }),
       })
       setRewards(prev => prev.map(r => r.key === rewardKey ? { ...r, status: 'CLAIMED' as const } : r))
-    } catch {
+    } catch (e) {
+      logApiFailure('love/rewards/claim', e)
       setRewards(prev => prev.map(r => r.key === rewardKey ? { ...r, status: 'CLAIMED' as const } : r))
     } finally {
       setClaiming(null)
@@ -281,10 +283,10 @@ export default function CovenantRewardsPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {[
-              { label: 'Questions Answered', value: summary.questionsAnswered, icon: '\uD83D\uDCAC', color: BLUE },
-              { label: 'Days of Journey', value: summary.daysOfJourney, icon: '\uD83D\uDCC5', color: PURPLE },
-              { label: 'Compatibility', value: `${summary.compatibilityScore}%`, icon: '\u2764\uFE0F', color: RED },
-              { label: 'Milestones', value: `${summary.milestonesAchieved}/6`, icon: '\uD83C\uDFC6', color: GOLD },
+              { label: 'Questions Answered', value: summary?.questionsAnswered ?? 0, icon: '\uD83D\uDCAC', color: BLUE },
+              { label: 'Days of Journey', value: summary?.daysOfJourney ?? 0, icon: '\uD83D\uDCC5', color: PURPLE },
+              { label: 'Compatibility', value: `${summary?.compatibilityScore ?? 0}%`, icon: '\u2764\uFE0F', color: RED },
+              { label: 'Milestones', value: `${summary?.milestonesAchieved ?? 0}/6`, icon: '\uD83C\uDFC6', color: GOLD },
             ].map(stat => (
               <div key={stat.label} style={{
                 background: CARD2, borderRadius: 10, padding: '12px 10px', textAlign: 'center',

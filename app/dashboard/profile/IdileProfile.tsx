@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useSkinStore } from '@/stores/skinStore'
 import { useAuthStore } from '@/stores/authStore'
 import { ringsApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 
 const IDILE_TABS = ['Profile', 'Ancestor Tree', 'Vault'] as const
 type IdileTab = typeof IDILE_TABS[number]
@@ -33,7 +34,7 @@ export function IdileProfile() {
         const rows = raw?.bonds ?? raw?.data ?? []
         if (Array.isArray(rows)) setBonds(rows as RingBond[])
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('profile/idile/bonds', e))
   }, [user?.id])
 
   if (activeSkin !== 'CLAN' || !pinConfirmed) return null

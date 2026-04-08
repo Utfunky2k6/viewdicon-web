@@ -19,6 +19,7 @@ import { CanonicalVillage } from '@/constants/villages'
 import { isAfricanDialCode, AFRICAN_DIAL_CODES, WORLD_DIAL_CODES, type UserCircle, type DialCodeEntry } from '@/lib/dial-codes'
 import { useThemeStore } from '@/stores/themeStore'
 import { DrumOtpBoxes } from '@/components/ui/DrumOtpBoxes'
+import { TOP_LANGUAGES, searchLanguages as searchVaultLangs, type AfricanLanguage } from '@/constants/african-languages'
 
 // ── THEME CONSTANTS ──────────────────────────────────────────
 // LIGHT: Warm ivory parchment — premium, Africa-inspired, AA-contrast throughout
@@ -1339,7 +1340,7 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
             <DField label="Surname *" placeholder="e.g. Okafor, Mensah, Diallo" value={last} onChange={setLast} theme={theme} />
             <DField label="Display Name — How the village will know you" placeholder="e.g. Amara or @MarketKing" value={displayName} onChange={setDisplayName} theme={theme} />
 
-            {/* Language preference */}
+            {/* Language preference — powered by Language Vault */}
             <div style={{ marginBottom: 4 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: theme.subText, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Preferred Language</div>
               <select
@@ -1347,17 +1348,11 @@ function NamingStep({ onNext, theme, heritage, onNamingData, isDark }: { onNext:
                 onChange={e => setLanguageCode(e.target.value)}
                 style={{ width: '100%', padding: '12px 14px', borderRadius: 12, background: theme.muted, border: `1.5px solid ${theme.border}`, color: theme.text, fontSize: 13, outline: 'none', fontFamily: 'inherit', cursor: 'pointer' }}
               >
-                <option value="en">English</option>
-                <option value="fr">French — Français</option>
-                <option value="sw">Swahili — Kiswahili</option>
-                <option value="yo">Yoruba</option>
-                <option value="ha">Hausa</option>
-                <option value="ig">Igbo</option>
-                <option value="am">Amharic — አማርኛ</option>
-                <option value="ar">Arabic — العربية</option>
-                <option value="pt">Portuguese — Português</option>
-                <option value="zu">Zulu</option>
+                {TOP_LANGUAGES.slice(0, 50).map((l: AfricanLanguage) => (
+                  <option key={l.code} value={l.code}>{l.flag} {l.nativeName} — {l.name}</option>
+                ))}
               </select>
+              <div style={{ fontSize: 9, color: theme.subText, marginTop: 4 }}>500+ African languages available in Settings after registration</div>
             </div>
 
             {/* Gender selection */}
@@ -3301,7 +3296,8 @@ function CeremonyInner() {
       })
       setTokens(res.accessToken, res.refreshToken)
       if (typeof document !== 'undefined') {
-        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
+        const _secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
+        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${_secure}`
       }
       // Fetch full profile and hydrate store so profile page shows real data
       let userAfroId = ''
@@ -3363,11 +3359,12 @@ function CeremonyInner() {
           heritage: selectedHeritage || undefined,
           heritageCircle: 'ally',
           displayName: allyName || undefined,
-          languageCode: 'en',
+          languageCode: (typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en'),
         })
         setTokens(res.accessToken, res.refreshToken)
         if (typeof document !== 'undefined') {
-          document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`
+          const _secure = typeof location !== 'undefined' && location.protocol === 'https:' ? '; Secure' : ''
+        document.cookie = `afk_token=${res.accessToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${_secure}`
         }
         setUser({ id: res.userId })
       } catch (err) {

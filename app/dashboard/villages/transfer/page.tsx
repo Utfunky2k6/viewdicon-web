@@ -13,6 +13,7 @@ import {
   calculateCooldown,
 } from '@/constants/village-transfer'
 import { useAuthStore } from '@/stores/authStore'
+import { logApiFailure } from '@/lib/flags'
 
 // ── Types ────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4 | 5
@@ -49,8 +50,9 @@ function formatWait(days: number): string {
   return `${Math.ceil(days / 30)} Moons`
 }
 
-function futureDate(days: number): string {
-  const d = new Date()
+function futureDate(days: number, now: number): string {
+  if (!now) return ''
+  const d = new Date(now)
   d.setDate(d.getDate() + days)
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
@@ -86,6 +88,7 @@ function VillageTransferPage() {
   const qTo = searchParams.get('to') || ''
 
   const [step, setStep] = React.useState<Step>(1)
+  const [now, setNow] = React.useState(0)
   const [fromVillageId] = React.useState(qFrom)
   const [toVillageId, setToVillageId] = React.useState(qTo)
   const [selectedReason, setSelectedReason] = React.useState<TransferReason | null>(null)
@@ -93,6 +96,8 @@ function VillageTransferPage() {
   const [expedited, setExpedited] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [transferId, setTransferId] = React.useState('')
+
+  React.useEffect(() => { setNow(Date.now()) }, [])
 
   const fromVillage = VILLAGE_BY_ID[fromVillageId]
   const toVillage = toVillageId ? VILLAGE_BY_ID[toVillageId] : null
@@ -159,7 +164,8 @@ function VillageTransferPage() {
         } else {
           setTransferId(generateTransferId())
         }
-      } catch {
+      } catch (e) {
+        logApiFailure('villages/transfer/submit', e)
         setTransferId(generateTransferId())
       }
       setSubmitting(false)
@@ -678,7 +684,7 @@ function VillageTransferPage() {
                 </span>
                 {currentCooldown.days > 0 && (
                   <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', marginTop: 2 }}>
-                    ~{futureDate(currentCooldown.days)}
+                    ~{futureDate(currentCooldown.days, now)}
                   </div>
                 )}
               </div>
@@ -870,7 +876,7 @@ function VillageTransferPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 11, color: 'rgba(255,255,255,.35)' }}>Expected Completion</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#f0f7f0' }}>
-                  {futureDate(finalCooldown.days)}
+                  {futureDate(finalCooldown.days, now)}
                 </span>
               </div>
             )}

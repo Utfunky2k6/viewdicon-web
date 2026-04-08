@@ -3,8 +3,11 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { useLanguage } from '@/hooks/useLanguage'
+import { LANGUAGES_BY_REGION, REGION_NAMES, searchLanguages, LANGUAGE_MAP, type AfricanLanguage } from '@/constants/african-languages'
 
 type Section = 'general' | 'ads' | 'privacy' | 'notifications' | 'wallet' | 'language' | 'village' | 'creator'
 
@@ -20,7 +23,6 @@ const SECTIONS: { key: Section; emoji: string; label: string; desc: string }[] =
 ]
 
 const AD_CATEGORIES = ['Commerce', 'Technology', 'Health', 'Education', 'Agriculture', 'Finance', 'Fashion', 'Arts', 'Spirituality', 'Food']
-const LANGUAGES = ['English', 'Yoruba', 'Igbo', 'Hausa', 'Swahili', 'Zulu', 'Amharic', 'Arabic', 'French', 'Portuguese']
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -61,8 +63,10 @@ export default function SettingsPage() {
   const [sprayNotifs, setSprayNotifs] = React.useState(true)
   const [villageNotifs, setVillageNotifs] = React.useState(true)
 
-  // Language
-  const [primaryLang, setPrimaryLang] = React.useState('English')
+  // Language — unified via useLanguage hook
+  const { code: langCode, name: langName, setLanguage } = useLanguage()
+  const [langSearch, setLangSearch] = React.useState('')
+  const [langRegion, setLangRegion] = React.useState<string | null>(null)
   const [spiritVoice, setSpiritVoice] = React.useState(true)
   const [autoTranslate, setAutoTranslate] = React.useState(true)
 
@@ -130,7 +134,7 @@ export default function SettingsPage() {
       if (d.mentionNotifs != null)   setMentionNotifs(d.mentionNotifs)
       if (d.sprayNotifs != null)     setSprayNotifs(d.sprayNotifs)
       if (d.villageNotifs != null)   setVillageNotifs(d.villageNotifs)
-      if (d.primaryLang)             setPrimaryLang(d.primaryLang)
+      if (d.primaryLang)             {} // handled by useLanguage hook
       if (d.spiritVoice != null)     setSpiritVoice(d.spiritVoice)
       if (d.autoTranslate != null)   setAutoTranslate(d.autoTranslate)
     } catch {}
@@ -146,10 +150,10 @@ export default function SettingsPage() {
         showBillboards, showTvAds, showNightMarket,
         ghostMode, showOnline, profileVisible,
         drumNotifs, mentionNotifs, sprayNotifs, villageNotifs,
-        primaryLang, spiritVoice, autoTranslate,
+        primaryLangCode: langCode, primaryLang: langName, spiritVoice, autoTranslate,
       }))
     } catch {}
-  }, [displayName, handle, autoplay, adsEnabled, earnFromAds, adFrequency, blockedCategories, showBillboards, showTvAds, showNightMarket, ghostMode, showOnline, profileVisible, drumNotifs, mentionNotifs, sprayNotifs, villageNotifs, primaryLang, spiritVoice, autoTranslate])
+  }, [displayName, handle, autoplay, adsEnabled, earnFromAds, adFrequency, blockedCategories, showBillboards, showTvAds, showNightMarket, ghostMode, showOnline, profileVisible, drumNotifs, mentionNotifs, sprayNotifs, villageNotifs, langCode, langName, spiritVoice, autoTranslate])
 
   // ── Save general profile to backend ───────────────────────────────
   const handleSaveGeneral = async () => {
@@ -162,7 +166,8 @@ export default function SettingsPage() {
       if (updated) setUser(updated)
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus('idle'), 2500)
-    } catch {
+    } catch (e) {
+      logApiFailure('settings/save', e)
       setSaveStatus('error')
       setTimeout(() => setSaveStatus('idle'), 3000)
     }
@@ -539,11 +544,65 @@ export default function SettingsPage() {
                 <Toggle on={autoTranslate} onToggle={() => setAutoTranslate(!autoTranslate)} />
               </SettingRow>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 10 }}>Primary Language</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {LANGUAGES.map(l => (
-                <div key={l} onClick={() => setPrimaryLang(l)} style={{ padding: '8px 16px', borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: 'pointer', background: primaryLang === l ? 'rgba(74,222,128,.12)' : 'rgba(255,255,255,.04)', border: `1px solid ${primaryLang === l ? 'rgba(74,222,128,.3)' : 'rgba(255,255,255,.07)'}`, color: primaryLang === l ? '#4ade80' : 'rgba(255,255,255,.4)', transition: 'all .15s' }}>{l}</div>
+
+            {/* ── Current Language ── */}
+            <div style={{ background: 'rgba(74,222,128,.06)', borderRadius: 14, padding: 14, border: '1px solid rgba(74,222,128,.15)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 24 }}>{LANGUAGE_MAP.get(langCode)?.flag ?? '🌍'}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#4ade80' }}>{LANGUAGE_MAP.get(langCode)?.nativeName ?? 'English'}</div>
+                <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>{langName} · {langCode.toUpperCase()}</div>
+              </div>
+              <span style={{ fontSize: 10, padding: '4px 10px', borderRadius: 99, background: 'rgba(74,222,128,.15)', color: '#4ade80', fontWeight: 700 }}>Active</span>
+            </div>
+
+            {/* ── Search ── */}
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.3)', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>Hazina ya Lugha — Language Vault</div>
+            <input
+              value={langSearch}
+              onChange={e => setLangSearch(e.target.value)}
+              placeholder="Search by name, country, or code..."
+              style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)', color: '#f0f7f0', fontSize: 13, outline: 'none', marginBottom: 10, fontFamily: 'inherit' }}
+            />
+
+            {/* ── Region Filter Tabs ── */}
+            <div style={{ display: 'flex', gap: 4, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }} className="st-no-scroll">
+              <button onClick={() => setLangRegion(null)} style={{ padding: '5px 10px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', background: !langRegion ? 'rgba(74,222,128,.12)' : 'rgba(255,255,255,.04)', border: `1px solid ${!langRegion ? 'rgba(74,222,128,.3)' : 'rgba(255,255,255,.07)'}`, color: !langRegion ? '#4ade80' : 'rgba(255,255,255,.35)', transition: 'all .15s' }}>All</button>
+              {Object.entries(REGION_NAMES).map(([key, label]) => (
+                <button key={key} onClick={() => setLangRegion(key)} style={{ padding: '5px 10px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', background: langRegion === key ? 'rgba(74,222,128,.12)' : 'rgba(255,255,255,.04)', border: `1px solid ${langRegion === key ? 'rgba(74,222,128,.3)' : 'rgba(255,255,255,.07)'}`, color: langRegion === key ? '#4ade80' : 'rgba(255,255,255,.35)', transition: 'all .15s' }}>{label}</button>
               ))}
+            </div>
+
+            {/* ── Language List ── */}
+            <div style={{ maxHeight: 340, overflowY: 'auto', borderRadius: 14, border: '1px solid rgba(255,255,255,.06)' }}>
+              {(langSearch
+                ? searchLanguages(langSearch)
+                : langRegion
+                  ? (LANGUAGES_BY_REGION[langRegion] ?? [])
+                  : Object.entries(LANGUAGES_BY_REGION).flatMap(([, langs]) => langs)
+              ).slice(0, 80).map((l: AfricanLanguage) => (
+                <button
+                  key={l.code}
+                  onClick={() => setLanguage(l.code)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                    background: l.code === langCode ? 'rgba(74,222,128,.08)' : 'transparent',
+                    border: 'none', borderBottom: '1px solid rgba(255,255,255,.03)',
+                    cursor: 'pointer', textAlign: 'left', transition: 'background .15s',
+                  }}
+                >
+                  <span style={{ fontSize: 18, width: 26, textAlign: 'center' }}>{l.flag}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: l.code === langCode ? '#4ade80' : '#f0f7f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.nativeName}</div>
+                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name} · {l.countries.slice(0, 2).join(', ')} · {l.speakers >= 1 ? `${l.speakers}M` : `${Math.round(l.speakers * 1000)}K`} speakers</div>
+                  </div>
+                  {l.code === langCode && <span style={{ fontSize: 14, color: '#4ade80' }}>✓</span>}
+                  {l.hasDictionary && <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 99, background: 'rgba(212,160,23,.12)', color: '#d4a017', fontWeight: 700 }}>DICT</span>}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,.2)', marginTop: 8, textAlign: 'center' }}>
+              Spirit Voice, AI Gods, and all posts will use your selected language
             </div>
           </div>
         )}
@@ -695,7 +754,8 @@ export default function SettingsPage() {
                           preserveCulturalContributions: keepCulturalContrib,
                         }),
                       })
-                    } catch {
+                    } catch (e) {
+                      logApiFailure('settings/deactivate', e)
                       // Proceed with local cleanup even if API fails
                     }
                     setDeleting(false)

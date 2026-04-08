@@ -8,6 +8,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 const CSS_ID = 'ad-market-css'
 const CSS = `
@@ -85,11 +86,11 @@ const S = {
 export default function OjaIkedePage() {
   const router = useRouter()
   const user = useAuthStore(s => s.user)
-  const userId = (user as any)?.id ?? 'demo-user'
+  const userId = user?.id ?? ''
 
   const [tab, setTab] = React.useState<'campaigns'|'slots'|'analytics'|'tagba'>('campaigns')
-  const [campaigns, setCampaigns] = React.useState(MOCK_CAMPAIGNS)
-  const [slots, setSlots] = React.useState(MOCK_SLOTS)
+  const [campaigns, setCampaigns] = React.useState(USE_MOCKS ? MOCK_CAMPAIGNS : [])
+  const [slots, setSlots] = React.useState(USE_MOCKS ? MOCK_SLOTS : [])
   const [slotChannel, setSlotChannel] = React.useState('MAIN_TV')
   const [selectedCampaign, setSelectedCampaign] = React.useState<any>(null)
   const [showCreate, setShowCreate] = React.useState(false)
@@ -103,7 +104,7 @@ export default function OjaIkedePage() {
   const [voiceRole, setVoiceRole] = React.useState('Community Member')
   const [voiceSent, setVoiceSent] = React.useState(false)
   const [voiceCampaign, setVoiceCampaign] = React.useState('')
-  const [voices, setVoices] = React.useState(MOCK_VOICES)
+  const [voices, setVoices] = React.useState(USE_MOCKS ? MOCK_VOICES : [])
   const [likedVoices, setLikedVoices] = React.useState<Set<string>>(new Set())
   const [form, setForm] = React.useState({ title:'', budgetCowrie:'', startDate:'', endDate:'', adType:'PRE_ROLL', mediaUrl:'', text:'' })
 
@@ -114,11 +115,11 @@ export default function OjaIkedePage() {
   }, [])
 
   React.useEffect(() => {
-    jollofTvApi.adCampaigns({ creatorId: userId }).then(r => { if (r?.campaigns?.length) setCampaigns(r.campaigns) }).catch(() => {})
+    jollofTvApi.adCampaigns({ creatorId: userId }).then(r => { if (r?.campaigns?.length) setCampaigns(r.campaigns) }).catch((e) => logApiFailure('ads/campaigns', e))
   }, [userId])
 
   React.useEffect(() => {
-    jollofTvApi.channelAdSlots(slotChannel).then(r => { if (r?.slots?.length) setSlots(r.slots) }).catch(() => {})
+    jollofTvApi.channelAdSlots(slotChannel).then(r => { if (r?.slots?.length) setSlots(r.slots) }).catch((e) => logApiFailure('ads/slots', e))
   }, [slotChannel])
 
   const totalSpent = campaigns.reduce((a, c) => a + c.spentCowrie, 0)
@@ -129,7 +130,7 @@ export default function OjaIkedePage() {
   async function handleBookSlot() {
     if (!bookingSlot || !bookingAdId) return
     setLoading(true)
-    try { await jollofTvApi.bookAd({ adId: bookingAdId, slotId: bookingSlot.id, costPaid: bookingSlot.basePrice, bookedBy: userId }) } catch {}
+    try { await jollofTvApi.bookAd({ adId: bookingAdId, slotId: bookingSlot.id, costPaid: bookingSlot.basePrice, bookedBy: userId }) } catch (e) { logApiFailure('ads/book', e) }
     setSlots(prev => prev.map(s => s.id === bookingSlot.id ? { ...s, isBooked: true } : s))
     setBookingSuccess(true); setLoading(false)
     setTimeout(() => { setBookingSlot(null); setBookingSuccess(false); setBookingAdId(''); setBookingCampaignId('') }, 1800)

@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ── Inject-once CSS ───────────────────────────────────────────────
 const CSS_ID = 'inside-hut-css'
@@ -59,7 +60,7 @@ const MOCK_ROOM: Room = {
   id: 'rm1', title: 'Pan-African Unity Debate', hostId: 'elder_kofi',
   topic: 'Politics & Governance', villageId: 'government', isLive: true,
   listenerCount: 342,
-  createdAt: new Date(Date.now() - 42 * 60 * 1000).toISOString(),
+  createdAt: '2026-04-08T11:18:00.000Z',
   participants: [
     { userId: 'elder_kofi', role: 'HOST', isMuted: false },
     { userId: 'activist_a', role: 'SPEAKER', isMuted: false },
@@ -71,9 +72,9 @@ const MOCK_ROOM: Room = {
 }
 
 const MOCK_CHAT: ChatLine[] = [
-  { id: 'c1', userId: 'activist_a', text: 'This is a crucial conversation 🙌', ts: Date.now() - 30000 },
-  { id: 'c2', userId: 'listener_c', text: 'Elder Kofi speaks wisdom', ts: Date.now() - 20000 },
-  { id: 'c3', userId: 'listener_d', text: '💯 Pan-Africa united!', ts: Date.now() - 10000 },
+  { id: 'c1', userId: 'activist_a', text: 'This is a crucial conversation 🙌', ts: 1712577570000 },
+  { id: 'c2', userId: 'listener_c', text: 'Elder Kofi speaks wisdom', ts: 1712577580000 },
+  { id: 'c3', userId: 'listener_d', text: '💯 Pan-Africa united!', ts: 1712577590000 },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -208,11 +209,11 @@ export default function InsideHutPage({ params }: { params: { roomId: string } }
   const router = useRouter()
   const roomId = (params as any).roomId as string
   const user = useAuthStore(s => s.user)
-  const userId = user?.id || 'demo-user'
+  const userId = user?.id || ''
 
   const [room, setRoom] = React.useState<Room | null>(null)
   const [loading, setLoading] = React.useState(true)
-  const [chatLines, setChatLines] = React.useState<ChatLine[]>(MOCK_CHAT)
+  const [chatLines, setChatLines] = React.useState<ChatLine[]>(USE_MOCKS ? MOCK_CHAT : [])
   const [chatInput, setChatInput] = React.useState('')
   const [handRaised, setHandRaised] = React.useState(false)
   const [talkingStickHolder, setTalkingStickHolder] = React.useState<string | null>(null)
@@ -236,14 +237,15 @@ export default function InsideHutPage({ params }: { params: { roomId: string } }
         const data = await jollofTvApi.audioRoom(roomId)
         const r = (data as any)?.room ?? (data as any)?.data ?? data
         if (mounted) {
-          setRoom(r && r.id ? r : MOCK_ROOM)
-          const host = (r?.participants ?? MOCK_ROOM.participants).find((p: Participant) => p.role === 'HOST')
+          setRoom(r && r.id ? r : (USE_MOCKS ? MOCK_ROOM : null))
+          const host = (r?.participants ?? (USE_MOCKS ? MOCK_ROOM.participants : [])).find((p: Participant) => p.role === 'HOST')
           if (host) setTalkingStickHolder(host.userId)
         }
-      } catch {
+      } catch (e) {
+        logApiFailure('jollof/room/fetch', e)
         if (mounted) {
-          setRoom(MOCK_ROOM)
-          setTalkingStickHolder(MOCK_ROOM.hostId)
+          setRoom(USE_MOCKS ? MOCK_ROOM : null)
+          if (USE_MOCKS) setTalkingStickHolder(MOCK_ROOM.hostId)
         }
       } finally {
         if (mounted) setLoading(false)
@@ -251,8 +253,8 @@ export default function InsideHutPage({ params }: { params: { roomId: string } }
       // Join room
       try {
         await jollofTvApi.joinAudioRoom(roomId, userId)
-      } catch {
-        // silent — room still shown with mock
+      } catch (e) {
+        logApiFailure('jollof/room/join', e)
       }
     }
     load()
@@ -306,7 +308,7 @@ export default function InsideHutPage({ params }: { params: { roomId: string } }
   }
 
   async function handleEndRoom() {
-    try { await jollofTvApi.endAudioRoom(roomId) } catch { /* ignore */ }
+    try { await jollofTvApi.endAudioRoom(roomId) } catch (e) { logApiFailure('jollof/room/end', e) }
     router.back()
   }
 

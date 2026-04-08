@@ -8,6 +8,8 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { jollofTvApi } from '@/lib/api'
+import { USE_MOCKS } from '@/lib/flags'
+import UnderConstruction from '@/components/ui/UnderConstruction'
 
 const CSS_ID = 'ipe-ohun-css'
 const CSS = `
@@ -46,6 +48,7 @@ const TIERS = [
 ]
 
 export default function IpeOhunPage() {
+  if (!USE_MOCKS) return <UnderConstruction module="Call-In Shows" />
   const router = useRouter()
   const { user } = useAuthStore()
 

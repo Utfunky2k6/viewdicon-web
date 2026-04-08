@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { eventsApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 import type { PlatformEvent, EventSponsor } from '@/types'
 import { calcPlatformFee, TIER_CONFIG } from '@/types'
 
@@ -390,7 +391,7 @@ function TicketsTab({ event }: { event: PlatformEvent }) {
       </div>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Recent Purchases</div>
-        {MOCK_BUYS.map(p => (
+        {USE_MOCKS && MOCK_BUYS.map(p => (
           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: `1px solid ${C.border}33` }}>
             <div style={{ flex: 1 }}><div style={{ fontSize: 12, color: C.text }}>{p.buyer}</div><div style={{ fontSize: 9, color: C.muted }}>{p.tier} · {p.time}</div></div>
             <div style={{ textAlign: 'right' }}><div style={{ fontSize: 11, color: C.green }}>{fmt(p.amount)}</div><div style={{ fontSize: 9, color: C.red }}>-{fmt(p.fee)} fee</div></div>
@@ -1000,14 +1001,16 @@ export default function OrganizerPage() {
   const params  = useParams()
   const router  = useRouter()
   const eventId = params.eventId as string
-  const [event, setEvent]   = useState<PlatformEvent>(MOCK_EVENT)
+  const [event, setEvent]   = useState<PlatformEvent | null>(USE_MOCKS ? MOCK_EVENT : null)
   const [tab, setTab]       = useState<OrgTab>('revenue')
 
   useEffect(() => {
     eventsApi.get(eventId)
       .then(res => { const r = res as unknown as { event: PlatformEvent }; if (r?.event) setEvent(r.event) })
-      .catch(() => {})
+      .catch((e) => logApiFailure('events/organizer/fetch', e))
   }, [eventId])
+
+  if (!event) return null
 
   const tc   = TIER_CONFIG[event.tierLevel]
   const TABS: { id: OrgTab; label: string; icon: string; advOnly?: boolean }[] = [

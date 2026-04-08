@@ -3,6 +3,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 const CSS_ID = 'reality-show-css'
 const CSS = `
@@ -260,7 +261,12 @@ export default function RealityShowPage({ params }: { params: { showId: string }
   // World-first: Elder Witness — show modal
   const [elderModal, setElderModal] = React.useState(false)
 
-  const nightFire = isNightFireWindow()
+  const [nightFire, setNightFire] = React.useState(false)
+  const [clientNow, setClientNow] = React.useState(0)
+  React.useEffect(() => {
+    setNightFire(isNightFireWindow())
+    setClientNow(Date.now())
+  }, [])
   const userVillageSlug = (user as any)?.villageSlug ?? (user as any)?.village?.toLowerCase() ?? ''
   const userCrestLevel: CrestLevel = ((user as any)?.crestLevel ?? 1) as CrestLevel
 
@@ -282,10 +288,13 @@ export default function RealityShowPage({ params }: { params: { showId: string }
         setShow(showData)
         setLeaderboard(lbData.length ? lbData : (showData.contestants ?? []))
       } else throw new Error('empty')
-    } catch {
-      const mock = MOCK_SHOWS[showId] ?? MOCK_SHOWS['sh1']
-      setShow(mock)
-      setLeaderboard([...(mock.contestants ?? [])].filter((c: any) => !c.isEliminated).sort((a: any, b: any) => b.votes - a.votes))
+    } catch (e) {
+      logApiFailure('jollof/reality/show', e)
+      if (USE_MOCKS) {
+        const mock = MOCK_SHOWS[showId] ?? MOCK_SHOWS['sh1']
+        setShow(mock)
+        setLeaderboard([...(mock.contestants ?? [])].filter((c: any) => !c.isEliminated).sort((a: any, b: any) => b.votes - a.votes))
+      }
     } finally { setLoading(false) }
   }, [showId])
 
@@ -332,10 +341,10 @@ export default function RealityShowPage({ params }: { params: { showId: string }
           form.append('showId', showId)
           form.append('contestantId', voteTarget.id)
           form.append('voterId', (user as any)?.id ?? 'guest')
-          await fetch('/api/jollof/reality/voice-pledge', { method: 'POST', body: form }).catch(() => {})
-        } catch { /* voice pledge upload is best-effort */ }
+          await fetch('/api/jollof/reality/voice-pledge', { method: 'POST', body: form }).catch((e) => logApiFailure('reality/voice-pledge', e))
+        } catch (e) { logApiFailure('reality/voice-pledge/upload', e) /* voice pledge upload is best-effort */ }
       }
-    } catch { /* fallback ok */ }
+    } catch (e) { logApiFailure('reality/vote/submit', e) }
     setVoting(false)
     setVoteSuccess(true)
 
@@ -840,10 +849,10 @@ export default function RealityShowPage({ params }: { params: { showId: string }
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                     <span style={{ fontSize: 12 }}>🔥</span>
                     <span style={{ fontSize: 9, fontWeight: 800, color: '#ef4444', fontFamily: 'Sora, sans-serif', letterSpacing: '.04em' }}>FLAME CHAIN</span>
-                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', marginLeft: 'auto' }}>{Math.min(flameVotes.filter(t => Date.now() - t < 60000).length, 5)}/5 votes in 60s</span>
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', marginLeft: 'auto' }}>{Math.min(flameVotes.filter(t => (clientNow || Date.now()) - t < 60000).length, 5)}/5 votes in 60s</span>
                   </div>
                   <div style={{ height: 5, borderRadius: 99, background: 'rgba(255,255,255,.06)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.min(flameVotes.filter(t => Date.now() - t < 60000).length / 5 * 100, 100)}%`, background: 'linear-gradient(90deg,#ef4444,#f97316)', borderRadius: 99, transition: 'width .3s ease' }} />
+                    <div style={{ height: '100%', width: `${Math.min(flameVotes.filter(t => (clientNow || Date.now()) - t < 60000).length / 5 * 100, 100)}%`, background: 'linear-gradient(90deg,#ef4444,#f97316)', borderRadius: 99, transition: 'width .3s ease' }} />
                   </div>
                   <div style={{ fontSize: 8, color: 'rgba(255,255,255,.3)', marginTop: 4 }}>Reach 5 votes in 60s to trigger ×1.5 chain effect</div>
                 </div>

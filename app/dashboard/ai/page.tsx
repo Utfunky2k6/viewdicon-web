@@ -5,14 +5,16 @@
 // ════════════════════════════════════════════════════════════════════
 import * as React from 'react'
 import { aiGodsApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 import { AI_GODS, GOD_ORDER, type AiGod, type GodId, type GodPower } from '@/constants/aiGods'
+import { useLanguage } from '@/hooks/useLanguage'
 
 // ── Font + theme constants ────────────────────────────────────────
 const S = {
-  font: "'Inter', sans-serif",
-  head: "'Space Grotesk', sans-serif",
+  font: "var(--font-body)",
+  head: "'Sora', var(--font-body)",
 }
-const BG = '#070e07'
+const BG = 'var(--bg)'
 
 // ── Fallback response pools per god ──────────────────────────────
 const FALLBACK_POOLS: Record<GodId, string[]> = {
@@ -113,7 +115,7 @@ function ZeusInput({
         style={{
           flex: 1, padding: '14px 18px', borderRadius: 16,
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(226,232,240,0.2)',
-          color: '#f0f5ee', fontSize: 14, outline: 'none',
+          color: 'var(--text-primary)', fontSize: 14, outline: 'none',
           fontFamily: S.font,
         }}
       />
@@ -123,7 +125,7 @@ function ZeusInput({
         style={{
           padding: '0 22px', borderRadius: 16, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
           background: loading ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #6366f1, #e2e8f0)',
-          color: '#070e07', fontSize: 13, fontWeight: 800,
+          color: 'var(--bg)', fontSize: 13, fontWeight: 800,
           fontFamily: S.head, opacity: loading ? 0.5 : 1, whiteSpace: 'nowrap',
           transition: 'all .2s',
         }}
@@ -236,7 +238,7 @@ function GodCard({
           background: isZeus
             ? 'linear-gradient(135deg, rgba(99,102,241,.8), rgba(226,232,240,.15))'
             : `linear-gradient(135deg, ${god.color}cc, ${god.color}80)`,
-          color: isZeus ? '#e2e8f0' : '#070e07',
+          color: isZeus ? '#e2e8f0' : 'var(--bg)',
           letterSpacing: '.02em', transition: 'all .2s',
           boxShadow: hovered ? `0 4px 20px ${god.glow}` : 'none',
         }}
@@ -277,7 +279,7 @@ function PowerCard({
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17,
           }}>{power.icon}</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f5ee', fontFamily: S.head }}>{power.name}</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', fontFamily: S.head }}>{power.name}</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 3, lineHeight: 1.5 }}>{power.description}</div>
             <span style={{
               display: 'inline-block', marginTop: 5, padding: '2px 7px', borderRadius: 6,
@@ -322,6 +324,7 @@ function LoadingDots({ color }: { color: string }) {
 // MAIN PAGE
 // ════════════════════════════════════════════════════════════════
 export default function AiGodsPage() {
+  const { code: userLangCode } = useLanguage()
   const [view, setView] = React.useState<'portal' | 'chat'>('portal')
   const [activeGodId, setActiveGodId] = React.useState<GodId>('zeus')
   const [messages, setMessages] = React.useState<Message[]>([])
@@ -384,7 +387,7 @@ export default function AiGodsPage() {
 
           // Fire off a "Hello" to backend to trigger first-meeting introduction
           try {
-            const introRes = await aiGodsApi.query(activeGodId, 'Hello') as {
+            const introRes = await aiGodsApi.query(activeGodId, 'Hello', { languageCode: userLangCode }) as {
               ok?: boolean
               data?: {
                 response?: string
@@ -408,11 +411,13 @@ export default function AiGodsPage() {
               ])
             }
             // If no reply, we keep the static greeting from constants
-          } catch {
+          } catch (e) {
+            logApiFailure('ai/gods/load', e)
             // Failed to get first-meeting intro — keep the static greeting
           }
         }
-      } catch {
+      } catch (e) {
+        logApiFailure('ai/gods/chat', e)
         // Chat history fetch failed — fall back to static greeting from constants
         if (!cancelled) {
           setMessages([{
@@ -462,7 +467,8 @@ export default function AiGodsPage() {
         } else {
           setMemoryInfo({ hasMemory: false })
         }
-      } catch {
+      } catch (e) {
+        logApiFailure('ai/gods/query', e)
         // Memory fetch failed — no memory info shown
         if (!cancelled) setMemoryInfo(null)
       }
@@ -492,7 +498,7 @@ export default function AiGodsPage() {
     setLoading(true)
 
     try {
-      const res = await aiGodsApi.query(activeGodId, fullText) as {
+      const res = await aiGodsApi.query(activeGodId, fullText, { languageCode: userLangCode }) as {
         ok?: boolean
         data?: {
           response?: string
@@ -528,7 +534,8 @@ export default function AiGodsPage() {
         // Update message count
         setMemoryInfo(prev => prev ? { ...prev, totalMessages: res.data?.messageCount } : prev)
       }
-    } catch {
+    } catch (e) {
+      logApiFailure('ai/gods/power', e)
       const pool = FALLBACK_POOLS[activeGodId]
       const fallback = pool[Math.floor(Math.random() * pool.length)]
       setMessages(prev => [...prev, {
@@ -596,7 +603,7 @@ export default function AiGodsPage() {
   if (view === 'portal') {
     return (
       <div style={{
-        minHeight: '100dvh', background: BG, color: '#f0f5ee',
+        minHeight: '100dvh', background: BG, color: 'var(--text-primary)',
         fontFamily: S.font, paddingBottom: 100, overflowX: 'hidden',
       }}>
         {/* ── Header ── */}
@@ -713,7 +720,7 @@ export default function AiGodsPage() {
               background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
             }}>
               <div style={{ fontSize: 22, marginBottom: 4 }}>{f.icon}</div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#f0f5ee', fontFamily: S.head }}>{f.label}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', fontFamily: S.head }}>{f.label}</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{f.sub}</div>
             </div>
           ))}
@@ -733,7 +740,7 @@ export default function AiGodsPage() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 68px)',
-      background: BG, color: '#f0f5ee', fontFamily: S.font,
+      background: BG, color: 'var(--text-primary)', fontFamily: S.font,
       position: 'relative', overflow: 'hidden',
     }}>
 
@@ -750,7 +757,7 @@ export default function AiGodsPage() {
           onClick={() => setView('portal')}
           style={{
             width: 34, height: 34, borderRadius: 10, border: 'none', cursor: 'pointer',
-            background: 'rgba(255,255,255,0.06)', color: '#f0f5ee',
+            background: 'rgba(255,255,255,0.06)', color: 'var(--text-primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
             flexShrink: 0,
           }}
@@ -971,7 +978,7 @@ export default function AiGodsPage() {
             style={{
               flex: 1, padding: '13px 18px', borderRadius: 16,
               background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-              color: '#f0f5ee', fontSize: 14, outline: 'none', fontFamily: S.font,
+              color: 'var(--text-primary)', fontSize: 14, outline: 'none', fontFamily: S.font,
             }}
           />
           <button
@@ -1007,7 +1014,7 @@ export default function AiGodsPage() {
             onClick={e => e.stopPropagation()}
             style={{
               position: 'absolute', bottom: 0, left: 0, right: 0,
-              background: '#0d150d',
+              background: 'var(--bg-card)',
               borderRadius: '24px 24px 0 0',
               border: `1px solid ${activeGod.color}25`,
               borderBottom: 'none',

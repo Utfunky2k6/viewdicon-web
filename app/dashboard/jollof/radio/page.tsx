@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 /* ── inject-once CSS ── */
 const CSS_ID = 'orita-radio-css'
@@ -121,7 +122,8 @@ function CreateRadioSheet({ onClose, onCreated }: { onClose: () => void; onCreat
     try {
       const res = await jollofTvApi.createRadio({ title, description: desc, genre, villageId, streamUrl, isLive: goLive })
       onCreated(res)
-    } catch {
+    } catch (e) {
+      logApiFailure('jollof/radio/create', e)
       onCreated({ id: `r${Date.now()}`, title, genre, villageId, description: desc, isLive: goLive, listenerCount: 0, currentShow: 'New Show' })
     } finally {
       setSaving(false)
@@ -202,11 +204,12 @@ export default function OritaRadioPage() {
     jollofTvApi.radioStreams(params as any)
       .then(res => {
         const data = (res as any)?.streams ?? []
-        setStations(data.length ? data : MOCK_RADIO)
+        setStations(data.length ? data : (USE_MOCKS ? MOCK_RADIO : []))
         setLoading(false)
       })
-      .catch(() => {
-        setStations(MOCK_RADIO)
+      .catch((e) => {
+        logApiFailure('radio/streams', e)
+        if (USE_MOCKS) setStations(MOCK_RADIO)
         setLoading(false)
       })
   }, [genre])
@@ -353,7 +356,7 @@ export default function OritaRadioPage() {
             {/* Schedule Coming Up */}
             <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.6)', marginBottom: 12, fontFamily: 'Sora, sans-serif' }}>Coming Up</div>
             <div style={{ background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.06)', borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
-              {MOCK_SCHEDULE.map((show, i) => (
+              {USE_MOCKS && MOCK_SCHEDULE.map((show, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderBottom: i < MOCK_SCHEDULE.length - 1 ? '1px solid rgba(255,255,255,.05)' : 'none' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.35)', fontFamily: 'Sora, sans-serif', width: 38, flexShrink: 0 }}>{show.time}</div>
                   <div style={{ flex: 1 }}>

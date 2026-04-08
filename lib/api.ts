@@ -3,7 +3,8 @@
 // ============================================================
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || ''
-const MOCK = process.env.NEXT_PUBLIC_MOCK === 'true'
+// DEPRECATED: Use USE_MOCKS from '@/lib/flags' instead
+// const MOCK = process.env.NEXT_PUBLIC_MOCK === 'true'
 
 class ApiError extends Error {
   constructor(public status: number, public code: string, message: string) {
@@ -271,6 +272,28 @@ export const sorosokeApi = {
     if (cursor) p.set('cursor', cursor)
     return api.get<{ ok: boolean; data: unknown[]; cursor: string | null }>(`/api/feed?${p}`)
   },
+  // ── Discover endpoints ──────────────────────────────────────
+  discoverTrending:  () => api.get<{ ok: boolean; data: unknown[]; cached: boolean }>('/api/sorosoke/discover/trending'),
+  discoverSpotlight: () => api.get<{ ok: boolean; data: unknown[]; cached: boolean }>('/api/sorosoke/discover/spotlight'),
+  discoverPeople:    () => api.get<{ ok: boolean; data: unknown[]; cached: boolean }>('/api/sorosoke/discover/people'),
+  discoverLive:      () => api.get<{ ok: boolean; data: { oracles: unknown[]; stories: unknown[] } }>('/api/sorosoke/discover/live'),
+  discoverMotion:    () => api.get<{ ok: boolean; data: unknown[]; cached: boolean }>('/api/sorosoke/discover/motion'),
+  hallOfFame:        (month?: string) =>
+    api.get<{ ok: boolean; data: { month: string; posts: unknown[]; stats: { totalPosts: number; totalKilas: number; topVillage: string | null } }; cached: boolean }>(
+      `/api/sorosoke/discover/hall-of-fame${month ? `?month=${month}` : ''}`
+    ),
+  // ── Market Day Clock ──────────────────────────────────────
+  marketDay:            () => api.get('/api/sorosoke/discover/market-day'),
+  marketDayLeaderboard: () => api.get('/api/sorosoke/discover/market-day/leaderboard'),
+  // ── Drum Relay ────────────────────────────────────────────
+  relay:     (postId: string) => api.post(`/api/sorosoke/posts/${postId}/relay`, {}),
+  relayInfo: (postId: string) => api.get(`/api/sorosoke/posts/${postId}/relay`),
+  // ── Proverb Chain ─────────────────────────────────────────
+  addProverb:  (postId: string, data: { text: string; lang: string; flag: string }) =>
+    api.post(`/api/sorosoke/posts/${postId}/proverb-chain`, data),
+  getProverbs: (postId: string) => api.get(`/api/sorosoke/posts/${postId}/proverb-chain`),
+  kilaProverb: (postId: string, branchId: string) =>
+    api.post(`/api/sorosoke/posts/${postId}/proverb-chain/${branchId}/kila`, {}),
 }
 
 // ── AI Gods API ──────────────────────────────────────────────
@@ -374,6 +397,9 @@ export const jollofTvApi = {
   channelAdSlots: (channelId: string) => api.get<{ slots: any[] }>(`/api/jollof/channels/${channelId}/ads/slots`),
   bookAd:         (data: { adId: string; slotId: string; costPaid: number; bookedBy?: string }) =>
     api.post<any>('/api/jollof/ads/book', data),
+
+  // Alias: some pages call createStream instead of create
+  createStream: (data: unknown) => api.post('/api/jollof/streams', data),
 }
 
 // ── Plant Your Root (Subscriptions) ──────────────────────────
@@ -422,6 +448,7 @@ export const sesoChatApi = {
     api.post(`/api/seso/messages/${messageId}/translate`, { targetLang }),
   sendWhisper:      (targetHandle: string, message: string, skin: string) =>
     api.post('/api/seso/requests', { targetHandle, message, skin }),
+  listRequests:     () => api.get('/api/seso/requests'),
   respondToWhisper: (requestId: string, action: 'accept' | 'decline' | 'block') =>
     api.post(`/api/seso/requests/${requestId}/respond`, { action }),
   listConnections:  () => api.get('/api/seso/connections'),
@@ -821,7 +848,7 @@ export const loveWorldApi = {
   getRevealedAnswers: (matchId: string, station?: number) =>
     api.get<any>(`/api/love/questions/${matchId}/answers${station ? `?station=${station}` : ''}`),
   getQuestionProgress: (matchId: string) =>
-    api.get<any>(`/api/love/questions/${matchId}/progress`),
+    api.get<any>(`/api/love/questions/${matchId}/full-progress`),
   startDailySession: (matchId: string, station: number) =>
     api.post<any>(`/api/love/questions/${matchId}/session`, { station }),
 
@@ -838,6 +865,30 @@ export const loveWorldApi = {
     api.get<any>(`/api/love/journey/${matchId}/counselor`),
   requestCounselor: (matchId: string, type: string) =>
     api.post<any>(`/api/love/journey/${matchId}/counselor/request`, { type }),
+
+  // ── Progression Engine (Stage Machine) ──────────────────────
+  declare: (matchId: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/declare`, {}),
+  toggleFocusMode: (matchId: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/focus`, {}),
+  advanceStage: (matchId: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/advance`, {}),
+  getMatchHealth: (matchId: string) =>
+    api.get<any>(`/api/love/matches/${matchId}/health`),
+  queryCounselor: (matchId: string, message: string, godId?: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/counselor`, { message, godId }),
+  acceptCeremony: (matchId: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/ceremony`, {}),
+  endorseMatch: (matchId: string, data: { feedback: string; endorserName?: string }) =>
+    api.post<any>(`/api/love/matches/${matchId}/endorse`, data),
+  exitMatch: (matchId: string, reason?: string) =>
+    api.post<any>(`/api/love/matches/${matchId}/exit`, { reason }),
+  getMyIntentScore: () =>
+    api.get<any>('/api/love/profile/intent'),
+  getMatchEligibility: () =>
+    api.get<any>('/api/love/match-eligibility'),
+  getConsistencyScore: (matchId: string) =>
+    api.get<any>(`/api/love/matches/${matchId}/consistency`),
 }
 
 // ── Kerawa Zone API ────────────────────────────────────────────
@@ -852,48 +903,109 @@ export const kerawaApi = {
   discover: (params?: { zone?: string; mood?: string }) => api.get<any>(`/api/kerawa/matches/discover${params?.zone ? `?zone=${params.zone}` : ''}${params?.mood ? `${params?.zone ? '&' : '?'}mood=${params.mood}` : ''}`),
   connect: (targetAfroId: string) => api.post<any>(`/api/kerawa/matches/${targetAfroId}/connect`, {}),
   extendMatch: (matchId: string) => api.post<any>(`/api/kerawa/matches/${matchId}/extend`, {}),
-  getMatches: () => api.get<any>('/api/kerawa/matches'),
+  getMatches: (status?: string) => api.get<any>(`/api/kerawa/matches${status ? `?status=${status}` : ''}`),
   getMatch: (matchId: string) => api.get<any>(`/api/kerawa/matches/${matchId}`),
 
   // Messages
-  sendMessage: (matchId: string, data: { content: string; mediaUrl?: string; mediaType?: string; isViewOnce?: boolean }) => api.post<any>(`/api/kerawa/matches/${matchId}/messages`, data),
+  sendMessage: (matchId: string, data: { content: string; text?: string; mediaUrl?: string; mediaType?: string; isViewOnce?: boolean }) =>
+    api.post<any>(`/api/kerawa/matches/${matchId}/messages`, { ...data, content: data.content ?? data.text }),
   getMessages: (matchId: string) => api.get<any>(`/api/kerawa/matches/${matchId}/messages`),
   viewMessage: (messageId: string) => api.post<any>(`/api/kerawa/messages/${messageId}/view`, {}),
 
   // Escrow
   depositEscrow: (data: { matchId: string; amount: number; meetupLocation?: string; scheduledAt?: string }) => api.post<any>('/api/kerawa/escrow/deposit', data),
+  // Alias: some pages call createEscrow(matchId, {amount, currency, location})
+  createEscrow: (matchId: string, data: { amount: number; currency?: string; location?: string; meetupLocation?: string }) =>
+    api.post<any>('/api/kerawa/escrow/deposit', { matchId, amount: data.amount, meetupLocation: data.location ?? data.meetupLocation }),
   acceptEscrow: (escrowId: string) => api.post<any>(`/api/kerawa/escrow/${escrowId}/accept`, {}),
   checkinEscrow: (escrowId: string, data: { lat: number; lng: number }) => api.post<any>(`/api/kerawa/escrow/${escrowId}/checkin`, data),
   disputeEscrow: (escrowId: string) => api.post<any>(`/api/kerawa/escrow/${escrowId}/dispute`, {}),
   getMyEscrows: () => api.get<any>('/api/kerawa/escrow/my'),
 
-  // Consent
-  giveConsent: (data: { matchId: string; type: string }) => api.post<any>('/api/kerawa/consent', data),
-  revokeConsent: (consentId: string) => api.post<any>(`/api/kerawa/consent/${consentId}/revoke`, {}),
+  // Consent — overloaded to support both object and positional-arg calling styles
+  giveConsent: (matchIdOrData: string | { matchId: string; type: string }, type?: string) =>
+    api.post<any>('/api/kerawa/consent', typeof matchIdOrData === 'string' ? { matchId: matchIdOrData, type } : matchIdOrData),
+  revokeConsent: (consentIdOrMatchId: string, type?: string) =>
+    type
+      ? api.post<any>(`/api/kerawa/consent/match/${consentIdOrMatchId}/${type}/revoke`, {})
+      : api.post<any>(`/api/kerawa/consent/${consentIdOrMatchId}/revoke`, {}),
   getMatchConsents: (matchId: string) => api.get<any>(`/api/kerawa/consent/match/${matchId}`),
+  // Alias: some pages call getConsent instead of getMatchConsents
+  getConsent: (matchId: string) => api.get<any>(`/api/kerawa/consent/match/${matchId}`),
 
   // Content
-  uploadContent: (data: { type: string; mediaUrl: string; price?: number }) => api.post<any>('/api/kerawa/content', data),
+  uploadContent: (data: { type: string; mediaUrl?: string; price?: number; description?: string }) => api.post<any>('/api/kerawa/content', data),
   getMyContent: () => api.get<any>('/api/kerawa/content/my'),
   getContent: (contentId: string) => api.get<any>(`/api/kerawa/content/${contentId}`),
   unlockContent: (contentId: string) => api.post<any>(`/api/kerawa/content/${contentId}/unlock`, {}),
-  tipContent: (contentId: string, data: { amount: number }) => api.post<any>(`/api/kerawa/content/${contentId}/tip`, data),
+  tipContent: (contentId: string, amountOrData: number | { amount: number }) =>
+    api.post<any>(`/api/kerawa/content/${contentId}/tip`, typeof amountOrData === 'number' ? { amount: amountOrData } : amountOrData),
 
   // Rooms
-  createRoom: (data: { type: string; title: string; entryPrice?: number }) => api.post<any>('/api/kerawa/rooms', data),
-  getRooms: () => api.get<any>('/api/kerawa/rooms'),
+  createRoom: (data: { type: string; title: string; entryPrice?: number; maxViewers?: number; masked?: boolean }) => api.post<any>('/api/kerawa/rooms', data),
+  getRooms: (type?: string) => api.get<any>(`/api/kerawa/rooms${type ? `?type=${type}` : ''}`),
   joinRoom: (roomId: string) => api.post<any>(`/api/kerawa/rooms/${roomId}/join`, {}),
   endRoom: (roomId: string) => api.post<any>(`/api/kerawa/rooms/${roomId}/end`, {}),
 
   // Safety
-  panic: (data: { lat: number; lng: number; matchId?: string }) => api.post<any>('/api/kerawa/panic', data),
+  panic: (data: { lat: number; lng: number; matchId?: string; reason?: string }) => api.post<any>('/api/kerawa/panic', data),
+  // Alias: some pages call triggerPanic instead of panic
+  triggerPanic: (data: { lat: number; lng: number; matchId?: string; reason?: string }) => api.post<any>('/api/kerawa/panic', data),
   report: (data: { targetAfroId: string; flagType: string; description?: string }) => api.post<any>('/api/kerawa/report', data),
-  getTrustScore: (afroId: string) => api.get<any>(`/api/kerawa/trust/${afroId}`),
+  // Alias: some pages call reportUser with different field names
+  reportUser: (data: { targetId?: string; targetAfroId?: string; type?: string; flagType?: string; description?: string }) =>
+    api.post<any>('/api/kerawa/report', { targetAfroId: data.targetAfroId ?? data.targetId, flagType: data.flagType ?? data.type, description: data.description }),
+  getTrustScore: (afroId?: string) => api.get<any>(`/api/kerawa/trust/${afroId ?? 'me'}`),
+  myFlags: () => api.get<any>('/api/kerawa/safety/my-flags'),
 
   // Zones
   getZones: () => api.get<any>('/api/kerawa/zones'),
   getHeatmap: () => api.get<any>('/api/kerawa/zones/heatmap'),
   getSafeSpots: () => api.get<any>('/api/kerawa/zones/safe-spots'),
+  getActiveZone: () => api.get<any>('/api/kerawa/zones/active'),
+  checkin: (zoneId: string, lat: number, lng: number) => api.post<any>(`/api/kerawa/zones/${zoneId}/checkin`, { lat, lng }),
+}
+
+// ── Àjọ Connect (Professional Companion Network) ─────────────
+export const ajoConnectApi = {
+  // Profiles
+  createProfile:        (data: any) => api.post<any>('/api/ajo-connect/profiles', data),
+  getProfile:           () => api.get<any>('/api/ajo-connect/profiles/me'),
+  updateProfile:        (data: any) => api.patch<any>('/api/ajo-connect/profiles/me', data),
+  browse:               (params?: Record<string, any>) => {
+    const q = params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))).toString()}` : ''
+    return api.get<any>(`/api/ajo-connect/profiles${q}`)
+  },
+  listServices:         () => api.get<any>('/api/ajo-connect/services'),
+
+  // Bookings
+  requestBooking:       (data: { providerProfileId: string; serviceType: string; scheduledAt: string; durationHours: number; notes?: string; escrowAmount?: number }) =>
+    api.post<any>('/api/ajo-connect/bookings', data),
+  myClientBookings:     () => api.get<any>('/api/ajo-connect/bookings/client'),
+  myProviderBookings:   () => api.get<any>('/api/ajo-connect/bookings/provider'),
+  acceptBooking:        (id: string) => api.post<any>(`/api/ajo-connect/bookings/${id}/accept`, {}),
+  declineBooking:       (id: string) => api.post<any>(`/api/ajo-connect/bookings/${id}/decline`, {}),
+  checkIn:              (id: string, lat: number, lng: number) => api.post<any>(`/api/ajo-connect/bookings/${id}/checkin`, { lat, lng }),
+  submitReview:         (data: { bookingId: string; rating: number; comment?: string }) => api.post<any>('/api/ajo-connect/reviews', data),
+
+  // Mentorship
+  getMentors:           (params?: Record<string, any>) => {
+    const q = params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))).toString()}` : ''
+    return api.get<any>(`/api/ajo-connect/mentors${q}`)
+  },
+  bookMentorSession:    (data: { mentorId: string; scheduledAt: string; topic?: string; escrowAmount?: number }) =>
+    api.post<any>('/api/ajo-connect/mentor-sessions', data),
+
+  // Social Circles
+  getCircles:           (params?: Record<string, any>) => {
+    const q = params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))).toString()}` : ''
+    return api.get<any>(`/api/ajo-connect/circles${q}`)
+  },
+  joinCircle:           (id: string) => api.post<any>(`/api/ajo-connect/circles/${id}/join`, {}),
+  leaveCircle:          (id: string) => api.post<any>(`/api/ajo-connect/circles/${id}/leave`, {}),
+
+  // Matching
+  getMatches:           () => api.get<any>('/api/ajo-connect/matches'),
 }
 
 export { ApiError }

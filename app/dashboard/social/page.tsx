@@ -1,6 +1,7 @@
 'use client'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface Profile {
@@ -146,7 +147,7 @@ function PersonCard({ profile, sent, onConnect }: {
 export default function DiscoverPeoplePage() {
   const router = useRouter()
   const [query, setQuery] = React.useState('')
-  const [profiles, setProfiles] = React.useState<Profile[]>(MOCK_PROFILES)
+  const [profiles, setProfiles] = React.useState<Profile[]>(USE_MOCKS ? MOCK_PROFILES : [])
   const [loading, setLoading] = React.useState(false)
   const [sentIds, setSentIds] = React.useState<Set<string>>(new Set())
   const [activeTribes, setActiveTribes] = React.useState<Set<string>>(new Set())
@@ -163,7 +164,7 @@ export default function DiscoverPeoplePage() {
       .then((data: Profile[]) => {
         if (Array.isArray(data) && data.length > 0) setProfiles(data)
       })
-      .catch(() => { /* keep mock */ })
+      .catch((e) => { logApiFailure('social/suggestions', e) })
       .finally(() => setLoading(false))
   }, [])
 
@@ -178,14 +179,16 @@ export default function DiscoverPeoplePage() {
       fetch(`/api/v1/users/search?q=${encodeURIComponent(val.trim())}`)
         .then(r => r.ok ? r.json() : Promise.reject())
         .then((data: Profile[]) => setSearchResults(Array.isArray(data) ? data : []))
-        .catch(() => {
-          // Fallback: filter mocks
-          const q = val.toLowerCase()
-          setSearchResults(MOCK_PROFILES.filter(p =>
-            p.name.toLowerCase().includes(q) ||
-            p.handle.toLowerCase().includes(q) ||
-            p.tribe.toLowerCase().includes(q)
-          ))
+        .catch((e) => {
+          logApiFailure('social/search', e)
+          if (USE_MOCKS) {
+            const q = val.toLowerCase()
+            setSearchResults(MOCK_PROFILES.filter(p =>
+              p.name.toLowerCase().includes(q) ||
+              p.handle.toLowerCase().includes(q) ||
+              p.tribe.toLowerCase().includes(q)
+            ))
+          }
         })
         .finally(() => setSearchLoading(false))
     }, 400)
@@ -198,7 +201,7 @@ export default function DiscoverPeoplePage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: id }),
-    }).catch(() => { /* silent */ })
+    }).catch((e) => { logApiFailure('social/connect', e) })
   }
 
   /* Tribe filter toggle */

@@ -3,6 +3,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
 import { sorosokeApi, profileApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 const EGBE_TABS = ['Profile', 'Posts', 'ORÍKÌ', 'Connections'] as const
 type EgbeTab = typeof EGBE_TABS[number]
 
@@ -177,7 +178,7 @@ function EgbePostsTab({ authorId }: { authorId: string }) {
         setPosts(mapped)
         setStirs(Object.fromEntries(mapped.map(p => [p.id, p.stir])))
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('profile/egbe/posts', e))
       .finally(() => setLoading(false))
   }, [authorId])
 
@@ -364,7 +365,7 @@ function EgbeOrikiTab() {
         🎭 Enter ORÍKÌ Praise Feed
       </button>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-        {MOCK_ORIKI.map(v => (
+        {USE_MOCKS && MOCK_ORIKI.map(v => (
           <div key={v.id} style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,.08)', cursor: 'pointer' }}>
             <div style={{ height: 72, background: `linear-gradient(135deg,${v.grad[0]},${v.grad[1]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26 }}>{v.emoji}</div>
             <div style={{ padding: '6px 7px 8px', background: 'rgba(255,255,255,.03)' }}>
@@ -489,7 +490,8 @@ function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => voi
       await profileApi.update({ displayName, handle, bio })
       setToast('✅ Profile updated!')
       setTimeout(() => { setToast(''); onClose() }, 1200)
-    } catch {
+    } catch (e) {
+      logApiFailure('profile/egbe/update', e)
       setToast('⚠️ Could not save — try again')
       setTimeout(() => setToast(''), 2000)
     } finally {

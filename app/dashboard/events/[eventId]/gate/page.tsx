@@ -6,6 +6,7 @@
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { eventsApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 const C = {
   bg:'#070414',bgCard:'#0d0618',
@@ -92,7 +93,7 @@ export default function GatePage() {
   const [scanInput,setScanInput] = React.useState('')
   const [lastResult,setLastResult] = React.useState<{result:ScanResult;tier:string;code:string}|null>(null)
   const [resultVisible,setResultVisible] = React.useState(false)
-  const [log,setLog] = React.useState<LogEntry[]>(MOCK_LOG)
+  const [log,setLog] = React.useState<LogEntry[]>(USE_MOCKS ? MOCK_LOG : [])
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   // Counters
@@ -131,7 +132,7 @@ export default function GatePage() {
 
   const doSync = async () => {
     setSyncing(true)
-    try { await eventsApi.syncGate(eventId) } catch {}
+    try { await eventsApi.syncGate(eventId) } catch (e) { logApiFailure('gate/sync', e) }
     setSynced(true); setSyncing(false)
   }
 
@@ -142,7 +143,7 @@ export default function GatePage() {
     try {
       const res = await eventsApi.verify(eventId,{ticketCode:code,gateId:gate,deviceId})
       if (res?.result) finalResult = res.result as ScanResult
-    } catch {}
+    } catch (e) { logApiFailure('gate/verify', e) }
     const entry: LogEntry = {
       id:`scan-${Date.now()}`,code:code.toUpperCase().trim(),
       result:finalResult,tier,gate,

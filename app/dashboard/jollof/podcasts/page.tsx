@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 const CSS_ID = 'itan-cast-css'
 const CSS = `
@@ -100,7 +101,8 @@ function CreateSheet({ onClose, onCreated }: { onClose: () => void; onCreated: (
     try {
       const res = await jollofTvApi.createPodcast({ title, description: desc, category, villageId: 'arts', coverUrl: null })
       onCreated(res)
-    } catch {
+    } catch (e) {
+      logApiFailure('jollof/podcasts/create', e)
       onCreated({ id: `p${Date.now()}`, title, category, format, podType, villageId: 'arts', coverUrl: null, description: desc, _count: { episodes: 0 }, listeners: 0 })
     } finally { setSaving(false); onClose() }
   }
@@ -184,8 +186,8 @@ export default function ItanCastPage() {
     const params: Record<string, string> = {}
     if (category !== 'ALL') params.category = category
     jollofTvApi.podcasts(params)
-      .then(res => { const d = (res as any)?.podcasts ?? []; setPodcasts(d.length ? d : MOCK_PODCASTS) })
-      .catch(() => setPodcasts(MOCK_PODCASTS))
+      .then(res => { const d = (res as any)?.podcasts ?? []; setPodcasts(d.length ? d : (USE_MOCKS ? MOCK_PODCASTS : [])) })
+      .catch((e) => { logApiFailure('podcasts/list', e); if (USE_MOCKS) setPodcasts(MOCK_PODCASTS) })
       .finally(() => setLoading(false))
   }, [category])
 

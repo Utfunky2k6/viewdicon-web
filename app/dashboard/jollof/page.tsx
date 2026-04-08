@@ -7,6 +7,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 import { useAuthStore } from '@/stores/authStore'
 import TVControlPanel from '@/components/jollof/TVControlPanel'
 
@@ -285,7 +286,7 @@ function StationA({ onBack, activeShow, leaderboard: showLeaderboard }: { onBack
 
   const doSpray=()=>{
     const showId = activeShow?.id
-    if (showId) jollofTvApi.spray(showId, 500).catch(()=>{})
+    if (showId) jollofTvApi.spray(showId, 500).catch((e)=>logApiFailure('jollof/spray',e))
     setSprays(Array.from({length:7},(_,i)=>({id:Date.now()+i,x:10+Math.random()*80})))
     setTimeout(()=>setSprays([]),2200)
     showToast('💸 ₡500 Sprayed! Golden cowrie shells flying 🪙')
@@ -295,7 +296,7 @@ function StationA({ onBack, activeShow, leaderboard: showLeaderboard }: { onBack
     if (voted) return
     setVoted(true)
     if (activeShow?.id) {
-      jollofTvApi.realityVote(activeShow.id, { contestantId: 'current', voterId: 'me' }).catch(()=>{})
+      jollofTvApi.realityVote(activeShow.id, { contestantId: 'current', voterId: 'me' }).catch((e)=>logApiFailure('jollof/vote',e))
     }
     showToast('✓ Voted — 69% now agree')
   }
@@ -309,7 +310,7 @@ function StationA({ onBack, activeShow, leaderboard: showLeaderboard }: { onBack
   const doDrum=()=>{
     if (drummed) return
     setDrummed(true)
-    if (activeShow?.id) jollofTvApi.kila(activeShow.id).catch(()=>{})
+    if (activeShow?.id) jollofTvApi.kila(activeShow.id).catch((e)=>logApiFailure('jollof/kila',e))
     showToast('🥁 Drummed to Village!')
     setTimeout(()=>setDrummed(false),5000)
   }
@@ -449,7 +450,7 @@ function StationB({ onBack, liveStreams }: { onBack:()=>void; liveStreams?: any[
   const showToast=(m:string)=>{setToast(m);setTimeout(()=>setToast(''),2500)}
 
   const doSpray=(reelId:string)=>{
-    jollofTvApi.spray(reelId, 500).catch(()=>{})
+    jollofTvApi.spray(reelId, 500).catch((e)=>logApiFailure('jollof/spray',e))
     setSprays(prev=>[...prev,...Array.from({length:7},(_,i)=>({id:Date.now()+i,x:10+Math.random()*80,reel:reelId}))])
     setTimeout(()=>setSprays([]),2200)
     showToast('💸 ₡500 Sprayed! 🪙')
@@ -458,14 +459,14 @@ function StationB({ onBack, liveStreams }: { onBack:()=>void; liveStreams?: any[
   const doKila=(reelId:string)=>{
     if (kilaGiven[reelId]) return
     setKilaGiven(prev=>({...prev,[reelId]:true}))
-    jollofTvApi.kila(reelId).catch(()=>{})
+    jollofTvApi.kila(reelId).catch((e)=>logApiFailure('jollof/kila',e))
     showToast('⭐ Kila given!')
   }
 
   const doDrumReel=(reelId:string)=>{
     if (drumGiven[reelId]) return
     setDrumGiven(prev=>({...prev,[reelId]:true}))
-    jollofTvApi.kila(reelId).catch(()=>{})
+    jollofTvApi.kila(reelId).catch((e)=>logApiFailure('jollof/kila',e))
     showToast('🥁 Drummed to Village!')
   }
 
@@ -780,7 +781,7 @@ export default function JollofPage() {
 
   // ── Fetch channels on mount ───────────────────────────────────
   React.useEffect(() => {
-    jollofTvApi.channels().then(data => setChannels(data.channels ?? [])).catch(() => {})
+    jollofTvApi.channels().then(data => setChannels(data.channels ?? [])).catch((e) => logApiFailure('jollof/channels', e))
   }, [])
 
   // ── Set mainChannelId when channels load ──────────────────────
@@ -794,32 +795,32 @@ export default function JollofPage() {
   // ── Fetch channel schedule when mainChannelId is set ─────────
   React.useEffect(() => {
     if (mainChannelId) {
-      jollofTvApi.channelSchedule(mainChannelId).then(d => setMainTvSchedule(d.schedules ?? [])).catch(() => {})
+      jollofTvApi.channelSchedule(mainChannelId).then(d => setMainTvSchedule(d.schedules ?? [])).catch((e) => logApiFailure('jollof/channelSchedule', e))
     }
   }, [mainChannelId])
 
   // ── Fetch live streams on mount ───────────────────────────────
   React.useEffect(() => {
-    jollofTvApi.list({ status: 'LIVE' }).then(data => setLiveStreams((data as any).streams ?? (data as any).data ?? [])).catch(() => {})
+    jollofTvApi.list({ status: 'LIVE' }).then(data => setLiveStreams((data as any).streams ?? (data as any).data ?? [])).catch((e) => logApiFailure('jollof/liveStreams', e))
   }, [])
 
   // ── Fetch active reality show on mount ────────────────────────
   React.useEffect(() => {
     jollofTvApi.realityShows({ isActive: true }).then(data => {
       if (data.shows?.length > 0) setActiveShow(data.shows[0])
-    }).catch(() => {})
+    }).catch((e) => logApiFailure('jollof/realityShows', e))
   }, [])
 
   // ── Fetch leaderboard when activeShow loads ───────────────────
   React.useEffect(() => {
     if (!activeShow?.id) return
-    jollofTvApi.realityLeaderboard(activeShow.id).then(data => setLeaderboard(data.leaderboard ?? [])).catch(() => {})
+    jollofTvApi.realityLeaderboard(activeShow.id).then(data => setLeaderboard(data.leaderboard ?? [])).catch((e) => logApiFailure('jollof/realityLeaderboard', e))
   }, [activeShow?.id])
 
   // ── Fetch audio rooms + podcasts on mount ─────────────────────
   React.useEffect(() => {
-    jollofTvApi.audioRooms({ isLive: true }).then(data => setAudioRooms(data.rooms ?? [])).catch(() => {})
-    jollofTvApi.podcasts().then(data => setPodcasts(data.podcasts ?? [])).catch(() => {})
+    jollofTvApi.audioRooms({ isLive: true }).then(data => setAudioRooms(data.rooms ?? [])).catch((e) => logApiFailure('jollof/audioRooms', e))
+    jollofTvApi.podcasts().then(data => setPodcasts(data.podcasts ?? [])).catch((e) => logApiFailure('jollof/podcasts', e))
   }, [])
 
   React.useEffect(()=>{ injectCSS() },[])

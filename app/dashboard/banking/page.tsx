@@ -25,12 +25,13 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import { bankingQueue } from '@/lib/offline-db'
 import CowrieCoin from '@/components/banking/CowrieCoin'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ─── Offline ──────────────────────────────────────────────────────────────────
 function useNetworkStatus() {
   const [online, setOnline] = useState(true)
   useEffect(() => {
-    const u = () => { setOnline(true); bankingQueue.flush().catch(() => {}) }
+    const u = () => { setOnline(true); bankingQueue.flush().catch((e) => logApiFailure('banking/api', e)) }
     const d = () => setOnline(false)
     window.addEventListener('online', u); window.addEventListener('offline', d)
     setOnline(navigator.onLine)
@@ -55,22 +56,22 @@ function getOfflineQueue(): { id: string; type: string; payload: Record<string, 
 }
 
 // ─── UI Atoms ─────────────────────────────────────────────────────────────────
-const S = { font: 'DM Sans, sans-serif', head: 'Sora, sans-serif' }
+const S = { font: 'var(--font-utility)', head: 'var(--font-display)' }
 function Card({ children, style, onClick }: { children: React.ReactNode; style?: React.CSSProperties; onClick?: () => void }) {
-  return <div onClick={onClick} style={{ background: 'rgba(255,255,255,.04)', borderRadius: 14, padding: 16, border: '1px solid rgba(255,255,255,.08)', cursor: onClick ? 'pointer' : undefined, ...style }}>{children}</div>
+  return <div onClick={onClick} style={{ background: 'var(--bg-card)', borderRadius: 14, padding: 16, border: '1px solid var(--border)', cursor: onClick ? 'pointer' : undefined, ...style }}>{children}</div>
 }
 function Btn({ label, onClick, variant = 'ghost', disabled, style }: { label: string; onClick?: () => void; variant?: 'primary' | 'ghost' | 'danger'; disabled?: boolean; style?: React.CSSProperties }) {
-  const bg = variant === 'primary' ? '#18a05e' : variant === 'danger' ? '#c94040' : 'rgba(255,255,255,.08)'
-  return <button onClick={onClick} disabled={disabled} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: disabled ? 'rgba(255,255,255,.04)' : bg, color: disabled ? 'rgba(255,255,255,.25)' : '#fff', fontSize: 13, fontWeight: 600, fontFamily: S.font, cursor: disabled ? 'not-allowed' : 'pointer', ...style }}>{label}</button>
+  const bg = variant === 'primary' ? 'var(--green-primary)' : variant === 'danger' ? 'var(--crimson)' : 'var(--bg-raised)'
+  return <button onClick={onClick} disabled={disabled} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: disabled ? 'var(--bg-card)' : bg, color: disabled ? 'var(--text-muted)' : 'var(--text-primary)', fontSize: 13, fontWeight: 600, fontFamily: S.font, cursor: disabled ? 'not-allowed' : 'pointer', ...style }}>{label}</button>
 }
 function Pill({ label, color, bg }: { label: string; color: string; bg: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 10px', borderRadius: 20, background: bg, color, fontSize: 10, fontWeight: 700, fontFamily: S.font }}>{label}</span>
 }
 function In({ value, onChange, placeholder, style }: { value: string; onChange: (v: string) => void; placeholder: string; style?: React.CSSProperties }) {
-  return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10, padding: '10px 14px', color: '#fff', fontSize: 13, fontFamily: S.font, boxSizing: 'border-box', marginBottom: 8, ...style }} />
+  return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={{ width: '100%', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-primary)', fontSize: 13, fontFamily: S.font, boxSizing: 'border-box', marginBottom: 8, ...style }} />
 }
 function Sec({ emoji, title, sub }: { emoji: string; title: string; sub?: string }) {
-  return <div style={{ marginBottom: 12 }}><div style={{ fontSize: 15, fontWeight: 800, color: 'rgba(255,255,255,.88)', fontFamily: S.head }}>{emoji} {title}</div>{sub && <div style={{ fontSize: 11, color: 'rgba(255,255,255,.32)', marginTop: 3, fontFamily: S.font, lineHeight: 1.5 }}>{sub}</div>}</div>
+  return <div style={{ marginBottom: 12 }}><div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', fontFamily: S.head }}>{emoji} {title}</div>{sub && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontFamily: S.font, lineHeight: 1.5 }}>{sub}</div>}</div>
 }
 
 // ─── Feature icon tile (for section grids) ────────────────────────────────────
@@ -79,12 +80,12 @@ function Tile({ emoji, label, active, color, onClick }: { emoji: string; label: 
     <button onClick={onClick} style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: 6, padding: '14px 6px', borderRadius: 14,
-      border: `1.5px solid ${active ? color : 'rgba(255,255,255,.07)'}`,
-      background: active ? `${color}14` : 'rgba(255,255,255,.025)',
+      border: `1.5px solid ${active ? color : 'var(--border)'}`,
+      background: active ? `${color}14` : 'var(--bg-card)',
       cursor: 'pointer', minHeight: 72, transition: 'all .2s',
     }}>
       <span style={{ fontSize: 22 }}>{emoji}</span>
-      <span style={{ fontSize: 10, fontWeight: 600, color: active ? color : 'rgba(255,255,255,.5)', fontFamily: S.font, textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 600, color: active ? color : 'var(--text-secondary)', fontFamily: S.font, textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
     </button>
   )
 }
@@ -102,15 +103,15 @@ function VaultPanel({ afroId, online, balance, setBalance }: { afroId: string; o
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('')
   const [copied, setCopied] = useState(false)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3200) }
-  const copyId = () => { navigator.clipboard?.writeText(afroId).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+  const copyId = () => { navigator.clipboard?.writeText(afroId).catch((e) => logApiFailure('banking/api', e)); setCopied(true); setTimeout(() => setCopied(false), 2000) }
 
   async function send() {
     if (!to || !amt) return; setBusy(true)
     try {
       if (!online) { enqueueOffline('p2p', { from: afroId, to, amount: Number(amt), memo }); flash('⏳ Queued — will auto-send when online ✓') }
-      else { await cowrieApi.transfer(afroId, to, Number(amt), 'CWR', memo || 'P2P'); flash(`✓ ₡${Number(amt).toLocaleString()} ranṣẹ to ${to.split('@')[0]}`); cowrieApi.balance(afroId).then(b => setBalance(b as typeof balance)).catch(() => {}) }
+      else { await cowrieApi.transfer(afroId, to, Number(amt), 'CWR', memo || 'P2P'); flash(`✓ ₡${Number(amt).toLocaleString()} ranṣẹ to ${to.split('@')[0]}`); cowrieApi.balance(afroId).then(b => setBalance(b as typeof balance)).catch((e) => logApiFailure('banking/api', e)) }
       setTo(''); setAmt(''); setMemo('')
-    } catch { flash('✗ Transfer failed') }
+    } catch (e) { logApiFailure('banking/p2p/transfer', e); flash('✗ Transfer failed') }
     setBusy(false)
   }
 
@@ -148,7 +149,7 @@ function VaultPanel({ afroId, online, balance, setBalance }: { afroId: string; o
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.05)' }}>
             <Sec emoji="💧" title="Àṣẹ Ọjọ — Daily Blessing" sub="Claim your daily Cowrie drop — given each sunrise" />
             <Btn label="🌅 Claim Today's Blessing" variant="primary" style={{ width: '100%' }}
-              onClick={() => cowrieApi.claimDrop('DAILY_DROP', afroId).then(() => { flash('✓ Àṣẹ gbà — blessing received!'); cowrieApi.balance(afroId).then(b => setBalance(b as typeof balance)).catch(() => {}) }).catch(() => flash('✗ Already claimed today — come back tomorrow'))} />
+              onClick={() => cowrieApi.claimDrop('DAILY_DROP', afroId).then(() => { flash('✓ Àṣẹ gbà — blessing received!'); cowrieApi.balance(afroId).then(b => setBalance(b as typeof balance)).catch((e) => logApiFailure('banking/api', e)) }).catch(() => flash('✗ Already claimed today — come back tomorrow'))} />
           </div>
         </div>
       )}
@@ -240,7 +241,7 @@ function KaadiPanel() {
   const [msg, setMsg] = useState(''); const [busy, setBusy] = useState(false)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
   useEffect(() => {
-    cardApi.list().then((d: unknown) => { const r = d as { ok: boolean; data: typeof myCards }; setMyCards(r.data ?? []) }).catch(() => {})
+    cardApi.list().then((d: unknown) => { const r = d as { ok: boolean; data: typeof myCards }; setMyCards(r.data ?? []) }).catch((e) => logApiFailure('banking/api', e))
   }, [])
   return (
     <div>
@@ -283,7 +284,7 @@ function KaadiPanel() {
                 <span>{c.physical ? '🏦 Physical' : '📱 Virtual'}</span>
               </div>
               <Btn label={busy ? 'Applying...' : `Apply for ${c.name}`} variant="primary" disabled={busy} style={{ width: '100%' }}
-                onClick={() => { setBusy(true); cardApi.create({ accountId: 'main', tier: c.id, currency: 'CWR' }).then(() => { flash(`Applied for ${c.name} ✓`); cardApi.list().then((d: unknown) => { const r = d as { ok: boolean; data: typeof myCards }; setMyCards(r.data ?? []) }).catch(() => {}) }).catch(() => flash('Application failed')).finally(() => setBusy(false)) }} />
+                onClick={() => { setBusy(true); cardApi.create({ accountId: 'main', tier: c.id, currency: 'CWR' }).then(() => { flash(`Applied for ${c.name} ✓`); cardApi.list().then((d: unknown) => { const r = d as { ok: boolean; data: typeof myCards }; setMyCards(r.data ?? []) }).catch((e) => logApiFailure('banking/api', e)) }).catch(() => flash('Application failed')).finally(() => setBusy(false)) }} />
             </div>
           )}
         </div>
@@ -299,13 +300,16 @@ function KowePanel() {
   useEffect(() => {
     setLoading(true)
     bankingExtApi.history().then((d: { ok: boolean; data: unknown[] }) => setTxns((d.data ?? []) as typeof txns))
-      .catch(() => setTxns([
+      .catch((e) => {
+        logApiFailure('banking/kowe-history', e)
+        if (USE_MOCKS) setTxns([
         { id: 't1', type: 'CREDIT', amount: 5000, description: 'Cowrie drop — Eke Market Day', createdAt: '2026-04-05T08:00:00Z', hash: '0xkowe8a3f' },
         { id: 't2', type: 'AJO_PAYOUT', amount: 60000, description: 'Ẹgbẹ Ọjọ Iṣẹ — turn #8 payout', createdAt: '2026-04-04T14:00:00Z', hash: '0xkowe2b1c' },
         { id: 't3', type: 'DEBIT', amount: 12000, description: 'Sent to amaka@soko', createdAt: '2026-04-03T11:00:00Z', hash: '0xkowe9e4d' },
         { id: 't4', type: 'HARAMBEE', amount: 1000, description: 'Village Borehole Fund', createdAt: '2026-04-02T09:30:00Z', hash: '0xkowe3f8e' },
         { id: 't5', type: 'SEASON_LOCK', amount: 50000, description: 'Grain Bank — Planting Season', createdAt: '2026-04-01T08:00:00Z', hash: '0xkowe7c2a' },
-      ])).finally(() => setLoading(false))
+      ])
+    }).finally(() => setLoading(false))
   }, [])
   return (
     <div>
@@ -356,7 +360,7 @@ function ChainPanel() {
       </div>
       <In value={amt} onChange={v => setAmt(v.replace(/\D/g, ''))} placeholder={`Amount to bridge ${dir}`} />
       <Btn label={busy ? '⏳…' : dir === 'in' ? '↙ Bridge In to Chain' : '↗ Bridge Out to Wallet'} variant="primary" disabled={busy} style={{ width: '100%' }}
-        onClick={() => { if (!amt) return; setBusy(true); (dir === 'in' ? chainApi.bridgeIn(Number(amt), 'CWR') : chainApi.bridgeOut(Number(amt), 'CWR', 'wallet')).then(() => { flash(`Bridged ${dir === 'in' ? 'in' : 'out'} ✓`); setAmt(''); chainApi.chainBalance().then((d: unknown) => { const r = d as { ok: boolean; data: typeof chainBal }; setChainBal(r.data ?? null) }).catch(() => {}) }).catch(() => flash('Bridge failed')).finally(() => setBusy(false)) }} />
+        onClick={() => { if (!amt) return; setBusy(true); (dir === 'in' ? chainApi.bridgeIn(Number(amt), 'CWR') : chainApi.bridgeOut(Number(amt), 'CWR', 'wallet')).then(() => { flash(`Bridged ${dir === 'in' ? 'in' : 'out'} ✓`); setAmt(''); chainApi.chainBalance().then((d: unknown) => { const r = d as { ok: boolean; data: typeof chainBal }; setChainBal(r.data ?? null) }).catch((e) => logApiFailure('banking/api', e)) }).catch(() => flash('Bridge failed')).finally(() => setBusy(false)) }} />
       {msg && <p style={{ textAlign: 'center', margin: '8px 0 0', fontSize: 12, color: msg.includes('ail') ? '#ef4444' : '#4ade80', fontFamily: S.font }}>{msg}</p>}
     </div>
   )
@@ -460,6 +464,8 @@ function HarambeePanel({ afroId }: { afroId: string }) {
   const [creating, setCreating] = useState(false); const [form, setForm] = useState({ title: '', goal: '', scope: 'VILLAGE' })
   const [msg, setMsg] = useState('')
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+  const [now, setNow] = useState(0)
+  useEffect(() => { setNow(Date.now()) }, [])
   const loadPools = () => {
     harambeeApi.list().then((d: unknown) => { const r = d as { ok: boolean; data: typeof pools }; setPools(r.data ?? []) })
       .catch(() => setPools([{ id: 'h1', title: 'Village Borehole Fund', goalCowrie: 500000, raisedCowrie: 215000, scope: 'VILLAGE', endsAt: '2026-04-20' }, { id: 'h2', title: "School Fees — Tunde's Children", goalCowrie: 80000, raisedCowrie: 65000, scope: 'FAMILY', endsAt: '2026-04-09' }]))
@@ -486,7 +492,7 @@ function HarambeePanel({ afroId }: { afroId: string }) {
           <Card key={p.id} style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.85)', fontFamily: S.head, marginBottom: 6 }}>🤝 {p.title}</div>
             <div style={{ height: 5, background: 'rgba(255,255,255,.06)', borderRadius: 4, marginBottom: 6, overflow: 'hidden' }}><div style={{ height: '100%', background: '#18a05e', borderRadius: 4, width: `${pct}%` }} /></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,.35)', fontFamily: S.font, marginBottom: 8 }}><span>₡{p.raisedCowrie.toLocaleString()} / ₡{p.goalCowrie.toLocaleString()} ({pct}%)</span><span>{Math.max(0, Math.round((new Date(p.endsAt).getTime() - Date.now()) / 86400000))}d</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,.35)', fontFamily: S.font, marginBottom: 8 }}><span>₡{p.raisedCowrie.toLocaleString()} / ₡{p.goalCowrie.toLocaleString()} ({pct}%)</span><span>{Math.max(0, Math.round((new Date(p.endsAt).getTime() - now) / 86400000))}d</span></div>
             <Btn label="🤝 Contribute" variant="primary" style={{ width: '100%' }} onClick={() => harambeeApi.contribute(p.id, afroId, 1000).then(() => { flash('Contributed ✓'); loadPools() }).catch(() => flash('Contribution failed'))} />
           </Card>
         )
@@ -528,7 +534,7 @@ function BufferPanel({ afroId }: { afroId: string }) {
           ))}</div>
           <In value={tapAmt} onChange={v => setTapAmt(v.replace(/\D/g, ''))} placeholder="Amount needed (₡)" />
           <In value={tapReason} onChange={setTapReason} placeholder="Explain your emergency" />
-          <Btn label="🛡️ Submit" variant="danger" style={{ width: '100%' }} onClick={() => { if (!tapAmt || !tapReason) return; ancestralBufferApi.tap(afroId, Number(tapAmt), tapReason, tapTier).then(() => { flash('Emergency tap submitted ✓'); setTapAmt(''); setTapReason(''); ancestralBufferApi.status().then(d => setStatus(d as typeof status)).catch(() => {}) }).catch(() => flash('Tap request failed')).finally(() => setTapping(false)) }} />
+          <Btn label="🛡️ Submit" variant="danger" style={{ width: '100%' }} onClick={() => { if (!tapAmt || !tapReason) return; ancestralBufferApi.tap(afroId, Number(tapAmt), tapReason, tapTier).then(() => { flash('Emergency tap submitted ✓'); setTapAmt(''); setTapReason(''); ancestralBufferApi.status().then(d => setStatus(d as typeof status)).catch((e) => logApiFailure('banking/api', e)) }).catch(() => flash('Tap request failed')).finally(() => setTapping(false)) }} />
         </Card>
       )}
     </div>
@@ -865,7 +871,7 @@ function MeshPanel() {
   const [amt, setAmt] = useState('')
   const [msg, setMsg] = useState(''); const [busy, setBusy] = useState(false)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
-  const loadVouchers = () => { meshApi.pendingVouchers().then((d: unknown) => { const r = d as { ok: boolean; data: typeof vouchers }; setVouchers(r.data ?? []) }).catch(() => {}) }
+  const loadVouchers = () => { meshApi.pendingVouchers().then((d: unknown) => { const r = d as { ok: boolean; data: typeof vouchers }; setVouchers(r.data ?? []) }).catch((e) => logApiFailure('banking/api', e)) }
   useEffect(() => { loadVouchers() }, [])
   return (
     <div>
@@ -910,7 +916,7 @@ function deriveBankAddress(afroId: string): string {
 
 function IdentityTrinityPanel({ afroId }: { afroId: string }) {
   const [copied, setCopied] = useState('')
-  const copy = (v: string, key: string) => { navigator.clipboard?.writeText(v).catch(() => {}); setCopied(key); setTimeout(() => setCopied(''), 2000) }
+  const copy = (v: string, key: string) => { navigator.clipboard?.writeText(v).catch((e) => logApiFailure('banking/api', e)); setCopied(key); setTimeout(() => setCopied(''), 2000) }
   const DID   = deriveDID(afroId)
   const BANK  = deriveBankAddress(afroId)
   const CHAIN = deriveChainAddress(afroId)
@@ -1497,14 +1503,18 @@ function GriotAiPanel({ afroId }: { afroId: string }) {
 
 // ── REAL-TIME TRANSACTION FEED ───────────────────────────────────────────────
 function LiveFeedPanel({ afroId }: { afroId: string }) {
-  const [feed, setFeed] = useState([
-    { id: '1', type: 'CREDIT',           amount: 5000,  actor: 'chidi@health',    desc: 'Spray from live stream',      ts: Date.now() - 12000 },
-    { id: '2', type: 'AJO_CONTRIBUTION', amount: 3000,  actor: 'nneka@education', desc: 'Ẹgbẹ Traders contribution',  ts: Date.now() - 45000 },
-    { id: '3', type: 'HARAMBEE',         amount: 1000,  actor: 'amaka@soko',      desc: 'Village Borehole Fund',       ts: Date.now() - 120000 },
-    { id: '4', type: 'CORRIDOR_RECEIVE', amount: 45000, actor: 'london@diaspora', desc: 'NIBSS corridor from UK',       ts: Date.now() - 300000 },
-    { id: '5', type: 'ESCROW_RELEASE',   amount: 25000, actor: 'kemi@soko',       desc: 'Ankara x10 — pot settled',    ts: Date.now() - 600000 },
-  ])
+  const [feed, setFeed] = useState<{id:string,type:string,amount:number,actor:string,desc:string,ts:number}[]>([])
   const CREDIT_TYPES = ['CREDIT', 'AJO_PAYOUT', 'ESCROW_RELEASE', 'HARAMBEE', 'CORRIDOR_RECEIVE', 'SEASON_UNLOCK']
+  useEffect(() => {
+    const now = Date.now()
+    setFeed([
+      { id: '1', type: 'CREDIT',           amount: 5000,  actor: 'chidi@health',    desc: 'Spray from live stream',      ts: now - 12000 },
+      { id: '2', type: 'AJO_CONTRIBUTION', amount: 3000,  actor: 'nneka@education', desc: 'Ẹgbẹ Traders contribution',  ts: now - 45000 },
+      { id: '3', type: 'HARAMBEE',         amount: 1000,  actor: 'amaka@soko',      desc: 'Village Borehole Fund',       ts: now - 120000 },
+      { id: '4', type: 'CORRIDOR_RECEIVE', amount: 45000, actor: 'london@diaspora', desc: 'NIBSS corridor from UK',       ts: now - 300000 },
+      { id: '5', type: 'ESCROW_RELEASE',   amount: 25000, actor: 'kemi@soko',       desc: 'Ankara x10 — pot settled',    ts: now - 600000 },
+    ])
+  }, [])
   useEffect(() => {
     const timer = setInterval(() => {
       const types = ['CREDIT', 'AJO_CONTRIBUTION', 'HARAMBEE', 'SPRAY']
@@ -1715,7 +1725,7 @@ function MarketPanel({ afroId }: { afroId: string }) {
           <div style={{ width: 120, height: 120, background: 'rgba(255,255,255,.05)', borderRadius: 12, margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40, border: '2px dashed rgba(255,255,255,.12)' }}>📲</div>
           <div style={{ fontSize: 10, color: 'rgba(255,255,255,.4)', fontFamily: S.font, marginBottom: 8 }}>Your merchant QR. Customers scan to pay you directly in Cowrie.</div>
           <div style={{ fontSize: 10, fontFamily: 'monospace', color: '#4ade80', background: 'rgba(74,222,128,.06)', padding: '6px 10px', borderRadius: 6, marginBottom: 10 }}>{afroId}</div>
-          <Btn label="📲 Generate QR Code" variant="primary" style={{ width: '100%' }} onClick={() => { const payUrl = `https://pay.afro.id/${afroId}`; navigator.clipboard?.writeText(payUrl).catch(() => {}); navigator.share?.({ title: 'Pay me with Cowrie', text: `Send Cowrie to ${afroId}`, url: payUrl }).catch(() => {}); flash('QR link copied — share with customers ✓') }} />
+          <Btn label="📲 Generate QR Code" variant="primary" style={{ width: '100%' }} onClick={() => { const payUrl = `https://pay.afro.id/${afroId}`; navigator.clipboard?.writeText(payUrl).catch((e) => logApiFailure('banking/api', e)); navigator.share?.({ title: 'Pay me with Cowrie', text: `Send Cowrie to ${afroId}`, url: payUrl }).catch((e) => logApiFailure('banking/api', e)); flash('QR link copied — share with customers ✓') }} />
         </Card>
       )}
       {tab === 'invoice' && (
@@ -1859,7 +1869,7 @@ function CaravanBankPanel({ afroId, online }: { afroId: string; online: boolean 
         flash(`✓ Ranṣẹ ₡${Number(amt).toLocaleString()} → ${to}`)
         setTo(''); setAmt(''); setNote('')
       }
-    } catch { flash('Transfer failed — queued offline') } finally { setBusy(false) }
+    } catch (e) { logApiFailure('banking/caravan/transfer', e); flash('Transfer failed — queued offline') } finally { setBusy(false) }
   }
   return (
     <div>
@@ -1890,12 +1900,12 @@ function ScheduledPanel({ afroId }: { afroId: string }) {
   const [list, setList] = useState<{ id: string; to: string; amt: string; date: string; note: string }[]>([])
   const [msg, setMsg] = useState('')
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
-  useEffect(() => { fetch(`/api/bank/scheduled?afroId=${afroId}`).then(r => r.json()).then(d => setList(d.data ?? [])).catch(() => {}) }, [afroId])
+  useEffect(() => { fetch(`/api/bank/scheduled?afroId=${afroId}`).then(r => r.json()).then(d => setList(d.data ?? [])).catch((e) => logApiFailure('banking/api', e)) }, [afroId])
   async function schedule() {
     if (!to || !amt || !date) return
     const entry = { id: `sch_${Date.now()}`, to, amt, date, note }
     setList(p => [entry, ...p])
-    await fetch('/api/bank/scheduled', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, ...entry }) }).catch(() => {})
+    await fetch('/api/bank/scheduled', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, ...entry }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ Scheduled ₡${Number(amt).toLocaleString()} to ${to} on ${date}`)
     setTo(''); setAmt(''); setDate(''); setNote('')
   }
@@ -1927,7 +1937,7 @@ function BulkPanel({ afroId }: { afroId: string }) {
   async function sendBulk() {
     if (!valid) return; setBusy(true)
     const transfers = rows.filter(r => r.to && r.amt).map(r => ({ to: r.to, amount: Number(r.amt), currency: 'COW' }))
-    await fetch('/api/bank/bulk-transfer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, transfers }) }).catch(() => {})
+    await fetch('/api/bank/bulk-transfer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, transfers }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ Sent ₡${total.toLocaleString()} to ${valid} recipients`)
     setRows([{ to: '', amt: '' }, { to: '', amt: '' }, { to: '', amt: '' }]); setBusy(false)
   }
@@ -1957,12 +1967,12 @@ function RecurringTxPanel({ afroId }: { afroId: string }) {
   const [list, setList] = useState<{ id: string; to: string; amt: string; freq: string; label: string }[]>([])
   const [msg, setMsg] = useState('')
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
-  useEffect(() => { fetch(`/api/bank/recurring?afroId=${afroId}`).then(r => r.json()).then(d => setList(d.data ?? [])).catch(() => {}) }, [afroId])
+  useEffect(() => { fetch(`/api/bank/recurring?afroId=${afroId}`).then(r => r.json()).then(d => setList(d.data ?? [])).catch((e) => logApiFailure('banking/api', e)) }, [afroId])
   async function create() {
     if (!to || !amt) return
     const entry = { id: `rec_${Date.now()}`, to, amt, freq, label }
     setList(p => [entry, ...p])
-    await fetch('/api/bank/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, ...entry }) }).catch(() => {})
+    await fetch('/api/bank/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, ...entry }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ Recurring ₡${Number(amt).toLocaleString()} ${freq} to ${to}`)
     setTo(''); setAmt(''); setLabel('')
   }
@@ -1993,9 +2003,9 @@ function AutoSavePanel({ afroId }: { afroId: string }) {
   const [pct, setPct] = useState('10'); const [trigger, setTrigger] = useState<'on_receive' | 'daily'>('on_receive')
   const [target, setTarget] = useState(''); const [saved, setSaved] = useState(0); const [msg, setMsg] = useState('')
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
-  useEffect(() => { fetch(`/api/bank/autosave?afroId=${afroId}`).then(r => r.json()).then(d => setSaved(d.totalSaved ?? 0)).catch(() => {}) }, [afroId])
+  useEffect(() => { fetch(`/api/bank/autosave?afroId=${afroId}`).then(r => r.json()).then(d => setSaved(d.totalSaved ?? 0)).catch((e) => logApiFailure('banking/api', e)) }, [afroId])
   async function activate() {
-    await fetch('/api/bank/autosave', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, percentage: Number(pct), trigger, targetGoal: Number(target) }) }).catch(() => {})
+    await fetch('/api/bank/autosave', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, percentage: Number(pct), trigger, targetGoal: Number(target) }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ Auto Save activated — ${pct}% ${trigger === 'on_receive' ? 'on every receive' : 'daily sweep'}`)
   }
   return (
@@ -2036,7 +2046,7 @@ function BiasharaHubPanel({ afroId }: { afroId: string }) {
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
   async function sendInvoice() {
     if (!invTo || !invAmt) return
-    await fetch('/api/bank/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, to: invTo, amount: Number(invAmt), description: invDesc }) }).catch(() => {})
+    await fetch('/api/bank/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, to: invTo, amount: Number(invAmt), description: invDesc }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ Invoice sent to ${invTo} for ₡${Number(invAmt).toLocaleString()}`)
     setInvTo(''); setInvAmt(''); setInvDesc('')
   }
@@ -2081,17 +2091,17 @@ function HazinaPanel({ afroId }: { afroId: string }) {
   const [msg, setMsg] = useState(''); const [vBal, setVBal] = useState(0); const [fBal, setFBal] = useState(0)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
   useEffect(() => {
-    fetch(`/api/bank/treasury/village?afroId=${afroId}`).then(r => r.json()).then(d => setVBal(d.balance ?? 0)).catch(() => {})
-    fetch(`/api/bank/treasury/family?afroId=${afroId}`).then(r => r.json()).then(d => setFBal(d.balance ?? 0)).catch(() => {})
+    fetch(`/api/bank/treasury/village?afroId=${afroId}`).then(r => r.json()).then(d => setVBal(d.balance ?? 0)).catch((e) => logApiFailure('banking/api', e))
+    fetch(`/api/bank/treasury/family?afroId=${afroId}`).then(r => r.json()).then(d => setFBal(d.balance ?? 0)).catch((e) => logApiFailure('banking/api', e))
   }, [afroId])
   async function depositVillage() {
     if (!vAmt) return
-    await fetch('/api/bank/treasury/village', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, amount: Number(vAmt) }) }).catch(() => {})
+    await fetch('/api/bank/treasury/village', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, amount: Number(vAmt) }) }).catch((e) => logApiFailure('banking/api', e))
     setVBal(p => p + Number(vAmt)); flash(`✓ ₡${Number(vAmt).toLocaleString()} deposited to Village Treasury`); setVAmt('')
   }
   async function sendFamily() {
     if (!fAmt || !fMember) return
-    await fetch('/api/bank/treasury/family', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, toAfroId: fMember, amount: Number(fAmt) }) }).catch(() => {})
+    await fetch('/api/bank/treasury/family', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, toAfroId: fMember, amount: Number(fAmt) }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ ₡${Number(fAmt).toLocaleString()} sent to ${fMember} from Family Wallet`); setFAmt(''); setFMember('')
   }
   const TABS = [['village', '🏘️', 'Village Treasury'], ['family', '👨‍👩‍👧‍👦', 'Family Wallet']] as const
@@ -2142,7 +2152,7 @@ function AgriPoolPanel({ afroId }: { afroId: string }) {
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
   async function invest(poolId: string) {
     if (!amt) return
-    await fetch('/api/bank/agri-pool/invest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, poolId, amount: Number(amt) }) }).catch(() => {})
+    await fetch('/api/bank/agri-pool/invest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, poolId, amount: Number(amt) }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ ₡${Number(amt).toLocaleString()} invested in ${POOLS.find(p => p.id === poolId)?.name}`)
     setAmt(''); setSel(null)
   }
@@ -2178,10 +2188,10 @@ function TippingPanel({ afroId }: { afroId: string }) {
   const [msg, setMsg] = useState(''); const [busy, setBusy] = useState(false)
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
   const QUICK = [100, 250, 500, 1000, 2500, 5000]
-  useEffect(() => { fetch(`/api/bank/tips?afroId=${afroId}`).then(r => r.json()).then(d => setRecent(d.sent?.slice(0, 5) ?? [])).catch(() => {}) }, [afroId])
+  useEffect(() => { fetch(`/api/bank/tips?afroId=${afroId}`).then(r => r.json()).then(d => setRecent(d.sent?.slice(0, 5) ?? [])).catch((e) => logApiFailure('banking/api', e)) }, [afroId])
   async function tip() {
     if (!to || !amt) return; setBusy(true)
-    await fetch('/api/bank/tips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, toAfroId: to, amount: Number(amt), note }) }).catch(() => {})
+    await fetch('/api/bank/tips', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fromAfroId: afroId, toAfroId: to, amount: Number(amt), note }) }).catch((e) => logApiFailure('banking/api', e))
     setRecent(p => [{ afroId: to, amount: Number(amt), note }, ...p.slice(0, 4)])
     flash(`💫 ₡${Number(amt).toLocaleString()} tipped to ${to}!`)
     setTo(''); setAmt(''); setNote(''); setBusy(false)
@@ -2216,7 +2226,7 @@ function LoansPanel({ afroId }: { afroId: string }) {
   ]
   async function apply() {
     if (!loanAmt || !purpose) return; setBusy(true)
-    await fetch('/api/bank/loans/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, amount: Number(loanAmt), purpose, tenureMonths: Number(tenure) }) }).catch(() => {})
+    await fetch('/api/bank/loans/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ afroId, amount: Number(loanAmt), purpose, tenureMonths: Number(tenure) }) }).catch((e) => logApiFailure('banking/api', e))
     flash(`✓ Application submitted — ₡${Number(loanAmt).toLocaleString()} for ${tenure} months`)
     setStep('status'); setBusy(false)
   }
@@ -2757,7 +2767,7 @@ function ReferralPanel({ afroId }: { afroId: string }) {
 
   const CODE = `AFRO-${afroId.split('@')[0].toUpperCase().slice(0, 5).padEnd(5, 'X')}-7X`
   const LINK = `afro.id/join?ref=${CODE.toLowerCase()}`
-  const copy = (text: string, key: string) => { navigator.clipboard?.writeText(text).catch(() => {}); setCopied(key); setTimeout(() => setCopied(null), 2000); flash('✓ Copied to clipboard!') }
+  const copy = (text: string, key: string) => { navigator.clipboard?.writeText(text).catch((e) => logApiFailure('banking/api', e)); setCopied(key); setTimeout(() => setCopied(null), 2000); flash('✓ Copied to clipboard!') }
 
   const TIERS = [
     { key: 'bronze', label: 'Bronze', emoji: '🥉', range: '1–5 refs',   reward: 500,  color: '#cd7f32', min: 1,  max: 5 },
@@ -2893,6 +2903,8 @@ function SavingsGoalPanel({ afroId }: { afroId: string }) {
   const [addAmt, setAddAmt] = useState('')
   const [msg, setMsg] = useState('')
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+  const [now, setNow] = useState(0)
+  useEffect(() => { setNow(Date.now()) }, [])
 
   const CATEGORIES = ['🏠', '✈️', '🚗', '📱', '💍', '🎓', '🏥', '✨']
   const SAVE_PCTS = ['5', '10', '15', '20', '25']
@@ -2900,13 +2912,14 @@ function SavingsGoalPanel({ afroId }: { afroId: string }) {
   const totalSaved = goals.reduce((a, g) => a + g.saved, 0)
   const totalTarget = goals.reduce((a, g) => a + g.target, 0)
 
-  function daysLeft(deadline: string) { return Math.max(0, Math.round((new Date(deadline).getTime() - Date.now()) / 86400000)) }
+  function daysLeft(deadline: string) { if (!now) return 0; return Math.max(0, Math.round((new Date(deadline).getTime() - now) / 86400000)) }
   function projectedDate(g: Goal) {
     if (g.paused || g.monthlyContrib <= 0) return 'Paused'
     const rem = g.target - g.saved
     if (rem <= 0) return '✓ Complete!'
+    if (!now) return '...'
     const months = Math.ceil(rem / g.monthlyContrib)
-    const d = new Date(); d.setMonth(d.getMonth() + months)
+    const d = new Date(now); d.setMonth(d.getMonth() + months)
     return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
   }
   function barColor(pct: number) { return pct >= 75 ? '#4ade80' : pct >= 40 ? '#fbbf24' : '#fb923c' }
@@ -2922,7 +2935,7 @@ function SavingsGoalPanel({ afroId }: { afroId: string }) {
         <Btn label={creating ? '✕ Cancel' : '+ New Goal'} onClick={() => setCreating(!creating)} style={{ padding: '7px 14px', fontSize: 11 }} />
       </div>
       {msg && <div style={{ padding: '7px 12px', borderRadius: 8, background: msg.startsWith('✓') ? 'rgba(74,222,128,.08)' : 'rgba(239,68,68,.08)', border: `1px solid ${msg.startsWith('✓') ? 'rgba(74,222,128,.2)' : 'rgba(239,68,68,.2)'}`, fontSize: 11, color: msg.startsWith('✓') ? '#4ade80' : '#ef4444', marginBottom: 10, fontFamily: S.font }}>{msg}</div>}
-      {/* Overall summary */}
+      {/* Overall summary (includes Iron Vaults) */}
       <Card style={{ marginBottom: 14, textAlign: 'center' }}>
         <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontFamily: S.font, letterSpacing: '.1em', marginBottom: 6 }}>TOTAL SAVINGS ACROSS ALL GOALS</div>
         <div style={{ fontSize: 28, fontWeight: 900, color: '#4ade80', fontFamily: S.head }}>₡{totalSaved.toLocaleString()}</div>
@@ -3020,6 +3033,466 @@ function SavingsGoalPanel({ afroId }: { afroId: string }) {
   )
 }
 
+// ── IRON VAULT — Unbreakable Savings ──────────────────────────────────────────
+// "If you start, you finish. The ancestors do not reward those who abandon the hoe."
+type IronVaultState = 'ACTIVE' | 'FROZEN' | 'MATURED' | 'BROKEN'
+type IronVaultFreq = 'DAILY' | 'WEEKLY' | 'MONTHLY'
+type IronVaultEntry = {
+  id: string; name: string; emoji: string; state: IronVaultState
+  freq: IronVaultFreq; depositAmt: number; currency: string
+  startDate: string; endDate: string; maturityMonths: number
+  totalDeposited: number; expectedTotal: number
+  missedCount: number; penaltyAccrued: number
+  completionBonus: number // percent bonus on maturity
+}
+
+const IRON_VAULT_DURATIONS = [
+  { label: '3 months', months: 3, bonus: 2 },
+  { label: '6 months', months: 6, bonus: 5 },
+  { label: '1 year', months: 12, bonus: 8 },
+  { label: '2 years', months: 24, bonus: 12 },
+  { label: '3 years', months: 36, bonus: 16 },
+  { label: '5 years', months: 60, bonus: 20 },
+]
+const IRON_VAULT_FREQS: { value: IronVaultFreq; label: string; symbol: string }[] = [
+  { value: 'DAILY', label: 'Daily', symbol: '☀️' },
+  { value: 'WEEKLY', label: 'Weekly', symbol: '📅' },
+  { value: 'MONTHLY', label: 'Monthly', symbol: '🌙' },
+]
+const MISS_PENALTY_RATE = 0.05 // 5% of missed deposit
+const BREAK_PENALTY_RATE = 0.50 // lose 50% of total saved
+
+function IronVaultPanel({ afroId }: { afroId: string }) {
+  const [vaults, setVaults] = useState<IronVaultEntry[]>([
+    { id: 'iv1', name: 'Land Purchase Fund', emoji: '🏗️', state: 'ACTIVE', freq: 'MONTHLY', depositAmt: 150000, currency: 'CWR', startDate: '2026-01-15', endDate: '2028-01-15', maturityMonths: 24, totalDeposited: 420000, expectedTotal: 3600000, missedCount: 1, penaltyAccrued: 7500, completionBonus: 12 },
+    { id: 'iv2', name: 'Daughter Education', emoji: '🎓', state: 'ACTIVE', freq: 'WEEKLY', depositAmt: 12000, currency: 'CWR', startDate: '2026-02-01', endDate: '2027-02-01', maturityMonths: 12, totalDeposited: 96000, expectedTotal: 624000, missedCount: 0, penaltyAccrued: 0, completionBonus: 8 },
+    { id: 'iv3', name: 'Wedding Chest', emoji: '💍', state: 'MATURED', freq: 'DAILY', depositAmt: 2000, currency: 'CWR', startDate: '2025-10-01', endDate: '2026-04-01', maturityMonths: 6, totalDeposited: 360000, expectedTotal: 360000, missedCount: 2, penaltyAccrued: 200, completionBonus: 5 },
+  ])
+  const [creating, setCreating] = useState(false)
+  const [form, setForm] = useState({ name: '', amount: '', freq: 'MONTHLY' as IronVaultFreq, durationIdx: 2, emoji: '🔒' })
+  const [breakConfirm, setBreakConfirm] = useState<string | null>(null)
+  const [msg, setMsg] = useState('')
+  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 4000) }
+  const [now, setNow] = useState(0)
+  useEffect(() => { setNow(Date.now()) }, [])
+
+  const EMOJIS = ['🔒', '🏗️', '🎓', '💍', '🏠', '🚗', '👶', '🌍', '🏥', '⚓']
+
+  const activeVaults = vaults.filter(v => v.state === 'ACTIVE')
+  const totalLocked = vaults.filter(v => v.state === 'ACTIVE').reduce((a, v) => a + v.totalDeposited, 0)
+
+  function depositsExpected(v: IronVaultEntry) {
+    if (!now) return 0
+    const start = new Date(v.startDate).getTime()
+    const elapsed = now - start
+    if (v.freq === 'DAILY') return Math.floor(elapsed / 86400000)
+    if (v.freq === 'WEEKLY') return Math.floor(elapsed / (7 * 86400000))
+    return Math.floor(elapsed / (30 * 86400000))
+  }
+
+  function progress(v: IronVaultEntry) {
+    if (v.state === 'MATURED') return 100
+    return Math.min(100, Math.round((v.totalDeposited / v.expectedTotal) * 100))
+  }
+
+  function stateColor(s: IronVaultState) {
+    if (s === 'ACTIVE') return '#4ade80'
+    if (s === 'MATURED') return '#fbbf24'
+    if (s === 'FROZEN') return '#60a5fa'
+    return '#ef4444'
+  }
+
+  function stateLabel(s: IronVaultState) {
+    if (s === 'ACTIVE') return '🔥 ACTIVE — LOCKED'
+    if (s === 'MATURED') return '🏆 MATURED — CLAIM'
+    if (s === 'FROZEN') return '❄️ FROZEN'
+    return '💔 BROKEN'
+  }
+
+  function handleBreak(id: string) {
+    setVaults(prev => prev.map(v => {
+      if (v.id !== id) return v
+      const penalty = Math.round(v.totalDeposited * BREAK_PENALTY_RATE)
+      const payout = v.totalDeposited - penalty
+      flash(`💔 Iron Vault broken. ₡${penalty.toLocaleString()} penalty deducted. You receive ₡${payout.toLocaleString()}.`)
+      return { ...v, state: 'BROKEN' as IronVaultState, penaltyAccrued: v.penaltyAccrued + penalty }
+    }))
+    setBreakConfirm(null)
+  }
+
+  function handleClaim(id: string) {
+    const v = vaults.find(x => x.id === id)
+    if (!v) return
+    const bonusAmt = Math.round(v.totalDeposited * (v.completionBonus / 100))
+    const payout = v.totalDeposited - v.penaltyAccrued + bonusAmt
+    flash(`✓ ₡${payout.toLocaleString()} claimed! (+₡${bonusAmt.toLocaleString()} bonus, -₡${v.penaltyAccrued.toLocaleString()} penalties)`)
+    setVaults(prev => prev.filter(x => x.id !== id))
+  }
+
+  function handleCreate() {
+    const amt = Number(form.amount)
+    if (!form.name || !amt) return
+    const dur = IRON_VAULT_DURATIONS[form.durationIdx]
+    const start = new Date()
+    const end = new Date(); end.setMonth(end.getMonth() + dur.months)
+    const totalExpected = (() => {
+      if (form.freq === 'DAILY') return amt * dur.months * 30
+      if (form.freq === 'WEEKLY') return amt * dur.months * 4
+      return amt * dur.months
+    })()
+    const newVault: IronVaultEntry = {
+      id: `iv_${Date.now()}`, name: form.name, emoji: form.emoji, state: 'ACTIVE',
+      freq: form.freq, depositAmt: amt, currency: 'CWR',
+      startDate: start.toISOString().slice(0, 10), endDate: end.toISOString().slice(0, 10),
+      maturityMonths: dur.months, totalDeposited: 0, expectedTotal: totalExpected,
+      missedCount: 0, penaltyAccrued: 0, completionBonus: dur.bonus,
+    }
+    setVaults(prev => [newVault, ...prev])
+    setCreating(false)
+    setForm({ name: '', amount: '', freq: 'MONTHLY', durationIdx: 2, emoji: '🔒' })
+    flash(`✓ Iron Vault "${form.name}" forged! ${dur.label} · ${form.freq.toLowerCase()} · ₡${amt.toLocaleString()}/deposit`)
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: 'rgba(255,255,255,.88)', fontFamily: S.head }}>🔒 Iron Vault</div>
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginTop: 2 }}>Unbreakable Savings · Miss = Penalty · Break = Lose Half</div>
+        </div>
+        <Btn label={creating ? '✕ Cancel' : '+ Forge Vault'} onClick={() => setCreating(!creating)} style={{ padding: '7px 14px', fontSize: 11 }} />
+      </div>
+      {msg && <div style={{ padding: '7px 12px', borderRadius: 8, background: msg.startsWith('✓') ? 'rgba(74,222,128,.08)' : msg.startsWith('💔') ? 'rgba(239,68,68,.08)' : 'rgba(251,191,36,.08)', border: `1px solid ${msg.startsWith('✓') ? 'rgba(74,222,128,.2)' : msg.startsWith('💔') ? 'rgba(239,68,68,.2)' : 'rgba(251,191,36,.2)'}`, fontSize: 11, color: msg.startsWith('✓') ? '#4ade80' : msg.startsWith('💔') ? '#ef4444' : '#fbbf24', marginBottom: 10, fontFamily: S.font }}>{msg}</div>}
+
+      {/* Rules Card */}
+      <Card style={{ marginBottom: 14, border: '1px solid rgba(239,68,68,.15)', background: 'rgba(239,68,68,.04)' }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#ef4444', fontFamily: S.head, marginBottom: 8 }}>⚠️ IRON VAULT RULES — READ CAREFULLY</div>
+        <div style={{ display: 'grid', gap: 6 }}>
+          {[
+            { icon: '💰', text: 'Choose daily, weekly, or monthly deposits — once set, you MUST deposit on time' },
+            { icon: '⚡', text: `Miss a deposit → ${(MISS_PENALTY_RATE * 100).toFixed(0)}% of that deposit deducted as penalty` },
+            { icon: '💔', text: `Break the vault early → You lose ${(BREAK_PENALTY_RATE * 100).toFixed(0)}% of ALL savings` },
+            { icon: '🏆', text: 'Complete the full term → Earn 2-20% bonus depending on duration' },
+            { icon: '🔒', text: 'Once forged, the vault CANNOT be paused — only broken (with penalty)' },
+          ].map((r, i) => (
+            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <span style={{ fontSize: 12 }}>{r.icon}</span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,.55)', fontFamily: S.font, lineHeight: 1.5 }}>{r.text}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Total Locked Summary */}
+      {activeVaults.length > 0 && (
+        <Card style={{ marginBottom: 14, textAlign: 'center' }}>
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontFamily: S.font, letterSpacing: '.1em', marginBottom: 4 }}>TOTAL LOCKED IN IRON VAULTS</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#ef4444', fontFamily: S.head }}>₡{totalLocked.toLocaleString()}</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginTop: 2 }}>{activeVaults.length} active vault{activeVaults.length > 1 ? 's' : ''} · Cannot be touched</div>
+        </Card>
+      )}
+
+      {/* Create Form */}
+      {creating && (
+        <Card style={{ marginBottom: 14, border: '1px solid rgba(239,68,68,.2)' }}>
+          <Sec emoji="🔨" title="Forge New Iron Vault" sub="Once forged, this vault cannot be paused — only broken with 50% loss." />
+          <In value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Vault name (e.g. Land Purchase Fund)" />
+          <In value={form.amount} onChange={v => setForm(f => ({ ...f, amount: v.replace(/\D/g, '') }))} placeholder="Deposit amount per cycle ₡" />
+
+          {/* Emoji picker */}
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginBottom: 6 }}>VAULT ICON</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' as const }}>
+            {EMOJIS.map(e => (
+              <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))} style={{ width: 36, height: 36, borderRadius: 8, border: `1px solid ${form.emoji === e ? '#ef4444' : 'rgba(255,255,255,.1)'}`, background: form.emoji === e ? 'rgba(239,68,68,.1)' : 'transparent', fontSize: 18, cursor: 'pointer' }}>{e}</button>
+            ))}
+          </div>
+
+          {/* Frequency */}
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginBottom: 6 }}>DEPOSIT FREQUENCY</div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {IRON_VAULT_FREQS.map(f => (
+              <button key={f.value} onClick={() => setForm(p => ({ ...p, freq: f.value }))} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `1px solid ${form.freq === f.value ? '#ef4444' : 'rgba(255,255,255,.1)'}`, background: form.freq === f.value ? 'rgba(239,68,68,.1)' : 'transparent', color: form.freq === f.value ? '#ef4444' : 'rgba(255,255,255,.4)', fontSize: 11, fontWeight: 700, fontFamily: S.head, cursor: 'pointer', textAlign: 'center' as const }}>{f.symbol} {f.label}</button>
+            ))}
+          </div>
+
+          {/* Duration */}
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginBottom: 6 }}>LOCK DURATION</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 14 }}>
+            {IRON_VAULT_DURATIONS.map((d, i) => (
+              <button key={d.months} onClick={() => setForm(p => ({ ...p, durationIdx: i }))} style={{ padding: '10px 4px', borderRadius: 10, border: `1px solid ${form.durationIdx === i ? '#ef4444' : 'rgba(255,255,255,.1)'}`, background: form.durationIdx === i ? 'rgba(239,68,68,.1)' : 'transparent', cursor: 'pointer', textAlign: 'center' as const }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: form.durationIdx === i ? '#ef4444' : 'rgba(255,255,255,.4)', fontFamily: S.head }}>{d.label}</div>
+                <div style={{ fontSize: 9, color: form.durationIdx === i ? 'rgba(239,68,68,.6)' : 'rgba(255,255,255,.2)', fontFamily: S.font, marginTop: 2 }}>+{d.bonus}% bonus</div>
+              </button>
+            ))}
+          </div>
+
+          {/* Preview */}
+          {form.amount && (
+            <Card style={{ marginBottom: 12, background: 'rgba(239,68,68,.04)', border: '1px solid rgba(239,68,68,.12)' }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginBottom: 4 }}>VAULT PREVIEW</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div><div style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Per deposit</div><div style={{ fontSize: 14, fontWeight: 800, color: '#ef4444', fontFamily: S.head }}>₡{Number(form.amount).toLocaleString()}</div></div>
+                <div><div style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Total at maturity</div><div style={{ fontSize: 14, fontWeight: 800, color: '#4ade80', fontFamily: S.head }}>₡{(() => {
+                  const a = Number(form.amount); const d = IRON_VAULT_DURATIONS[form.durationIdx]
+                  const total = form.freq === 'DAILY' ? a * d.months * 30 : form.freq === 'WEEKLY' ? a * d.months * 4 : a * d.months
+                  return total.toLocaleString()
+                })()}</div></div>
+                <div><div style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Miss penalty</div><div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24', fontFamily: S.head }}>₡{Math.round(Number(form.amount) * MISS_PENALTY_RATE).toLocaleString()}/miss</div></div>
+                <div><div style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Break loss</div><div style={{ fontSize: 12, fontWeight: 700, color: '#ef4444', fontFamily: S.head }}>50% of saved</div></div>
+              </div>
+            </Card>
+          )}
+
+          <Btn label="🔨 Forge Iron Vault" variant="danger" onClick={handleCreate} disabled={!form.name || !form.amount} style={{ width: '100%', padding: '12px 0', fontSize: 14, fontWeight: 800 }} />
+        </Card>
+      )}
+
+      {/* Vault List */}
+      {vaults.map(v => {
+        const pct = progress(v)
+        const sc = stateColor(v.state)
+        const expected = depositsExpected(v)
+        const actual = Math.round(v.totalDeposited / v.depositAmt)
+        const missed = v.missedCount
+        return (
+          <Card key={v.id} style={{ marginBottom: 10, border: `1px solid ${sc}20` }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>{v.emoji}</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.85)', fontFamily: S.head }}>{v.name}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontFamily: S.font }}>{v.freq} · ₡{v.depositAmt.toLocaleString()}/deposit · {v.maturityMonths}mo</div>
+                </div>
+              </div>
+              <Pill label={v.state} color={sc} bg={`${sc}18`} />
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ height: 8, background: 'rgba(255,255,255,.06)', borderRadius: 4, marginBottom: 6, overflow: 'hidden' }}>
+              <div style={{ height: '100%', borderRadius: 4, background: `linear-gradient(90deg, ${sc}, ${sc}90)`, width: `${pct}%`, transition: 'width .5s' }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'rgba(255,255,255,.35)', fontFamily: S.font, marginBottom: 8 }}>
+              <span>₡{v.totalDeposited.toLocaleString()} saved</span>
+              <span>{pct}%</span>
+              <span>₡{v.expectedTotal.toLocaleString()} target</span>
+            </div>
+
+            {/* Stats grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 10 }}>
+              <div style={{ textAlign: 'center', padding: '6px 0', borderRadius: 8, background: 'rgba(255,255,255,.03)' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#4ade80', fontFamily: S.head }}>{actual}</div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Deposits Made</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '6px 0', borderRadius: 8, background: missed > 0 ? 'rgba(239,68,68,.06)' : 'rgba(255,255,255,.03)' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: missed > 0 ? '#ef4444' : '#4ade80', fontFamily: S.head }}>{missed}</div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Missed</div>
+              </div>
+              <div style={{ textAlign: 'center', padding: '6px 0', borderRadius: 8, background: v.penaltyAccrued > 0 ? 'rgba(251,191,36,.06)' : 'rgba(255,255,255,.03)' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: v.penaltyAccrued > 0 ? '#fbbf24' : '#4ade80', fontFamily: S.head }}>₡{v.penaltyAccrued.toLocaleString()}</div>
+                <div style={{ fontSize: 8, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>Penalties</div>
+              </div>
+            </div>
+
+            {/* Maturity info */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginBottom: 10, padding: '0 4px' }}>
+              <span>Started: {v.startDate}</span>
+              <span>Matures: {v.endDate}</span>
+              <span>Bonus: +{v.completionBonus}%</span>
+            </div>
+
+            {/* Actions */}
+            {v.state === 'ACTIVE' && (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <Btn label="💰 Deposit" variant="primary" style={{ flex: 2, fontSize: 11 }} onClick={() => {
+                  setVaults(p => p.map(x => x.id === v.id ? { ...x, totalDeposited: x.totalDeposited + x.depositAmt } : x))
+                  flash(`✓ ₡${v.depositAmt.toLocaleString()} deposited into "${v.name}"`)
+                }} />
+                {breakConfirm === v.id ? (
+                  <>
+                    <Btn label="Confirm Break" variant="danger" style={{ flex: 1, fontSize: 10 }} onClick={() => handleBreak(v.id)} />
+                    <Btn label="Cancel" style={{ flex: 1, fontSize: 10 }} onClick={() => setBreakConfirm(null)} />
+                  </>
+                ) : (
+                  <Btn label="🔓 Break" variant="danger" style={{ flex: 1, fontSize: 11 }} onClick={() => setBreakConfirm(v.id)} />
+                )}
+              </div>
+            )}
+            {v.state === 'MATURED' && (
+              <Btn label="🏆 Claim Matured Vault" variant="primary" style={{ width: '100%', padding: '11px 0', fontSize: 13, fontWeight: 800 }} onClick={() => handleClaim(v.id)} />
+            )}
+            {v.state === 'BROKEN' && (
+              <div style={{ textAlign: 'center', padding: '8px 0', fontSize: 10, color: '#ef4444', fontFamily: S.font }}>💔 This vault was broken. Penalty applied.</div>
+            )}
+          </Card>
+        )
+      })}
+
+      {vaults.length === 0 && !creating && (
+        <Card style={{ textAlign: 'center', padding: 32 }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🔒</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.6)', fontFamily: S.head }}>No Iron Vaults Yet</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font, marginTop: 4, lineHeight: 1.6 }}>Forge an unbreakable savings vault.<br/>Discipline is wealth. The ancestors reward those who finish.</div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ── WALLET COLLECTOR — External Wallet Address Receiver ───────────────────────
+// Receive crypto from any external wallet to your AfroID-tied address
+function WalletCollectorPanel({ afroId }: { afroId: string }) {
+  const CHAINS = [
+    { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', icon: '⟠', color: '#627eea', prefix: '0x' },
+    { id: 'bnb', name: 'BNB Smart Chain', symbol: 'BNB', icon: '🔶', color: '#f3ba2f', prefix: '0x' },
+    { id: 'polygon', name: 'Polygon', symbol: 'MATIC', icon: '🟣', color: '#8247e5', prefix: '0x' },
+    { id: 'solana', name: 'Solana', symbol: 'SOL', icon: '◎', color: '#9945ff', prefix: '' },
+    { id: 'tron', name: 'TRON', symbol: 'TRX', icon: '💠', color: '#ff0013', prefix: 'T' },
+    { id: 'arbitrum', name: 'Arbitrum', symbol: 'ARB', icon: '🔵', color: '#28a0f0', prefix: '0x' },
+    { id: 'base', name: 'Base', symbol: 'BASE', icon: '🔷', color: '#0052ff', prefix: '0x' },
+    { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', icon: '₿', color: '#f7931a', prefix: 'bc1' },
+  ]
+
+  const [selectedChain, setSelectedChain] = useState(CHAINS[0])
+  const [copied, setCopied] = useState(false)
+  const [showQR, setShowQR] = useState(true)
+  const [recentTx, setRecentTx] = useState([
+    { id: 't1', chain: 'ethereum', from: '0x7a2d...4f1e', amount: '0.15 ETH', time: '2h ago', status: 'confirmed' as const },
+    { id: 't2', chain: 'bnb', from: '0x3b8c...9d2a', amount: '1.2 BNB', time: '5h ago', status: 'confirmed' as const },
+    { id: 't3', chain: 'polygon', from: '0x91ef...0c7b', amount: '85 MATIC', time: '1d ago', status: 'pending' as const },
+  ])
+
+  // Deterministic address from afroId (matches unionPayChain.ts logic)
+  function deriveAddress(chain: typeof CHAINS[number]) {
+    const hash = Array.from(afroId || 'default').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)
+    const hex = Math.abs(hash).toString(16).padStart(8, '0')
+    if (chain.id === 'bitcoin') return `bc1q${hex}${hex.slice(0, 4)}r9${hex.slice(2, 8)}fk5v`
+    if (chain.id === 'solana') return `${hex.toUpperCase()}${hex}${hex.slice(0, 6)}AF${hex.slice(0, 4)}Ro`
+    if (chain.id === 'tron') return `T${hex.toUpperCase()}${hex}${hex.slice(0, 8)}`
+    return `0x${hex}${hex}${hex}${hex.slice(0, 4)}`
+  }
+
+  const address = deriveAddress(selectedChain)
+
+  function copyAddress() {
+    navigator.clipboard?.writeText(address).catch((e) => logApiFailure('banking/api', e))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  // Simple QR code using SVG (no external lib)
+  function MiniQR() {
+    // Generate deterministic pattern from address
+    const bits: boolean[] = []
+    for (let i = 0; i < 361; i++) {
+      bits.push(address.charCodeAt(i % address.length) % (i % 3 === 0 ? 3 : 2) === 0)
+    }
+    const size = 19
+    return (
+      <svg width="152" height="152" viewBox={`0 0 ${size * 8} ${size * 8}`} style={{ borderRadius: 8 }}>
+        <rect width={size * 8} height={size * 8} fill="white" />
+        {/* Position markers */}
+        {[[0, 0], [0, size - 7], [size - 7, 0]].map(([x, y], mi) => (
+          <g key={mi}>
+            <rect x={x * 8} y={y * 8} width={56} height={56} fill="black" />
+            <rect x={x * 8 + 8} y={y * 8 + 8} width={40} height={40} fill="white" />
+            <rect x={x * 8 + 16} y={y * 8 + 16} width={24} height={24} fill="black" />
+          </g>
+        ))}
+        {/* Data modules */}
+        {bits.map((bit, i) => {
+          const row = Math.floor(i / size)
+          const col = i % size
+          if ((row < 7 && col < 7) || (row < 7 && col >= size - 7) || (row >= size - 7 && col < 7)) return null
+          return bit ? <rect key={i} x={col * 8} y={row * 8} width={8} height={8} fill="black" /> : null
+        })}
+        {/* Center logo */}
+        <circle cx={size * 4} cy={size * 4} r={12} fill={selectedChain.color} />
+        <text x={size * 4} y={size * 4 + 4} textAnchor="middle" fill="white" fontSize="11" fontWeight="bold">{selectedChain.icon === '⟠' ? 'Ξ' : selectedChain.icon}</text>
+      </svg>
+    )
+  }
+
+  return (
+    <div>
+      <Sec emoji="📥" title="Receive from Any Wallet" sub="Share your address or QR code to receive crypto from any blockchain" />
+
+      {/* Chain selector */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 14 }}>
+        {CHAINS.map(c => (
+          <button key={c.id} onClick={() => setSelectedChain(c)} style={{
+            display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 4,
+            padding: '10px 4px', borderRadius: 10,
+            border: `1px solid ${selectedChain.id === c.id ? c.color : 'rgba(255,255,255,.08)'}`,
+            background: selectedChain.id === c.id ? `${c.color}14` : 'transparent',
+            cursor: 'pointer',
+          }}>
+            <span style={{ fontSize: 18 }}>{c.icon}</span>
+            <span style={{ fontSize: 8, fontWeight: 700, color: selectedChain.id === c.id ? c.color : 'rgba(255,255,255,.4)', fontFamily: S.font }}>{c.symbol}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Address Display + QR */}
+      <Card style={{ marginBottom: 14, textAlign: 'center', border: `1px solid ${selectedChain.color}30` }}>
+        <div style={{ fontSize: 9, letterSpacing: '.15em', color: selectedChain.color, fontWeight: 700, fontFamily: S.head, marginBottom: 6 }}>{selectedChain.name.toUpperCase()} ADDRESS</div>
+
+        {showQR && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <div style={{ padding: 8, background: '#fff', borderRadius: 12, display: 'inline-block' }}>
+              <MiniQR />
+            </div>
+          </div>
+        )}
+
+        <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 10, padding: '10px 12px', marginBottom: 10, wordBreak: 'break-all' as const, fontSize: 12, color: 'rgba(255,255,255,.7)', fontFamily: 'monospace', letterSpacing: '.02em', lineHeight: 1.6 }}>
+          {address}
+        </div>
+
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Btn label={copied ? '✓ Copied!' : '📋 Copy Address'} variant="primary" onClick={copyAddress} style={{ flex: 2, fontSize: 12, fontWeight: 700 }} />
+          <Btn label={showQR ? '🔽 Hide QR' : '📱 Show QR'} onClick={() => setShowQR(!showQR)} style={{ flex: 1, fontSize: 11 }} />
+        </div>
+      </Card>
+
+      {/* Supported tokens hint */}
+      <Card style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.5)', fontFamily: S.head, marginBottom: 6 }}>ACCEPTED ON {selectedChain.name.toUpperCase()}</div>
+        <div style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', fontFamily: S.font, lineHeight: 1.7 }}>
+          {selectedChain.id === 'ethereum' && '• ETH • USDT (ERC-20) • USDC • DAI • WBTC • Any ERC-20 token'}
+          {selectedChain.id === 'bnb' && '• BNB • BUSD • USDT (BEP-20) • CAKE • Any BEP-20 token'}
+          {selectedChain.id === 'polygon' && '• MATIC • USDT • USDC • AAVE • Any Polygon token'}
+          {selectedChain.id === 'solana' && '• SOL • USDT (SPL) • USDC • RAY • Any SPL token'}
+          {selectedChain.id === 'tron' && '• TRX • USDT (TRC-20) • USDC • BTT • Any TRC-20 token'}
+          {selectedChain.id === 'arbitrum' && '• ETH (Arbitrum) • USDT • USDC • ARB • Any Arbitrum token'}
+          {selectedChain.id === 'base' && '• ETH (Base) • USDC • USDbC • Any Base token'}
+          {selectedChain.id === 'bitcoin' && '• BTC (Native SegWit) • Ordinals • BRC-20 tokens'}
+        </div>
+      </Card>
+
+      {/* Recent incoming */}
+      {recentTx.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,.4)', fontFamily: S.head, marginBottom: 8 }}>RECENT INCOMING</div>
+          {recentTx.map(tx => {
+            const chain = CHAINS.find(c => c.id === tx.chain)
+            return (
+              <div key={tx.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                <span style={{ fontSize: 16 }}>{chain?.icon || '?'}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,.75)', fontFamily: S.font }}>{tx.amount}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.25)', fontFamily: S.font }}>from {tx.from} · {tx.time}</div>
+                </div>
+                <Pill label={tx.status === 'confirmed' ? '✓ Confirmed' : '⏳ Pending'} color={tx.status === 'confirmed' ? '#4ade80' : '#fbbf24'} bg={tx.status === 'confirmed' ? 'rgba(74,222,128,.1)' : 'rgba(251,191,36,.1)'} />
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SECTION + FEATURE DEFINITIONS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3028,6 +3501,7 @@ const SECTIONS = [
     features: [
       { key: 'trinity',      emoji: '🔗', label: 'AfroID Hub',    color: '#f472b6' },
       { key: 'coin',         emoji: '🪙', label: 'Cowrie · AFC',  color: '#fbbf24' },
+      { key: 'wallet_collector', emoji: '📥', label: 'Receive Crypto', color: '#627eea' },
     ] },
   { id: 'safari',     emoji: '🐪', title: 'UnionPay · Transfer',     color: '#4ade80',
     features: [
@@ -3051,6 +3525,7 @@ const SECTIONS = [
       { key: 'wallets',      emoji: '👛', label: 'Àpò Owó',      color: '#fbbf24' },
       { key: 'akoole',       emoji: '📋', label: 'Accounts',      color: '#fb923c' },
       { key: 'savings_goals',emoji: '🎯', label: 'Goals',         color: '#4ade80' },
+      { key: 'iron_vault',   emoji: '🔒', label: 'Iron Vault',   color: '#ef4444' },
       { key: 'auto_save',    emoji: '🤖', label: 'Auto Save',     color: '#22d3ee' },
       { key: 'budget',       emoji: '🧵', label: 'Kente Budget',  color: '#a78bfa' },
     ] },
@@ -3121,7 +3596,7 @@ const SECTIONS = [
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function BankingPage() {
   const { user } = useAuthStore()
-  const afroId = user?.afroId?.raw || 'demo-user'
+  const afroId = user?.afroId?.raw || ''
   const online = useNetworkStatus()
   const [balance, setBalance] = useState({ cowrie: 0, africoin: 0 })
   const [active, setActive] = useState<string | null>(null)
@@ -3133,9 +3608,18 @@ export default function BankingPage() {
     setPendingCount(getOfflineQueue().length)
   }, [afroId])
 
-  const todayDay = getTodayMarketDay(); const todayMeta = MARKET_DAY_META[todayDay]
-  const proverb = AFRICAN_BANKING_PROVERBS[Math.floor(Date.now() / 86400000) % AFRICAN_BANKING_PROVERBS.length]
+  const [todayDay, setTodayDay] = useState<ReturnType<typeof getTodayMarketDay>>('EKE' as ReturnType<typeof getTodayMarketDay>)
+  const [todayMeta, setTodayMeta] = useState(MARKET_DAY_META['EKE' as keyof typeof MARKET_DAY_META])
+  useEffect(() => { const d = getTodayMarketDay(); setTodayDay(d); setTodayMeta(MARKET_DAY_META[d]) }, [])
   const nkisi = NKISI_SHIELD_LEVELS.GREEN
+  // Hydration-safe: compute time-dependent values only on client
+  const [proverb, setProverb] = useState<typeof AFRICAN_BANKING_PROVERBS[number]>(AFRICAN_BANKING_PROVERBS[0])
+  const [greeting, setGreeting] = useState('Ẹ kú àárọ̀')
+  useEffect(() => {
+    setProverb(AFRICAN_BANKING_PROVERBS[Math.floor(Date.now() / 86400000) % AFRICAN_BANKING_PROVERBS.length])
+    const h = new Date().getHours()
+    setGreeting(h < 12 ? 'Ẹ kú àárọ̀' : h < 17 ? 'Ẹ kú ọ̀sán' : 'Ẹ kú irọ́lẹ́')
+  }, [])
 
   function toggle(key: string) { setActive(active === key ? null : key) }
 
@@ -3191,12 +3675,14 @@ export default function BankingPage() {
       case 'insights':      return <SpendingInsightsPanel afroId={afroId} />
       case 'referral':      return <ReferralPanel afroId={afroId} />
       case 'savings_goals': return <SavingsGoalPanel afroId={afroId} />
+      case 'iron_vault':    return <IronVaultPanel afroId={afroId} />
+      case 'wallet_collector': return <WalletCollectorPanel afroId={afroId} />
       default:              return null
     }
   }
 
   return (
-    <div style={{ minHeight: '100dvh', background: '#070e07', color: '#fff', paddingBottom: 90, fontFamily: S.font, position: 'relative' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', color: 'var(--text-primary)', paddingBottom: 90, fontFamily: S.font, position: 'relative' }}>
 
       {/* ── Adinkra Gye Nyame — sovereign banking pattern ── */}
       <div aria-hidden="true" style={{
@@ -3223,69 +3709,137 @@ export default function BankingPage() {
       {/* ── Market Day Banner ── */}
       <div style={{ margin: '12px 16px 0', background: `${todayMeta.color}14`, border: `1px solid ${todayMeta.color}28`, borderRadius: 12, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, position: 'relative', zIndex: 1 }}>
         <span style={{ fontSize: 16 }}>{todayMeta.emoji}</span>
-        <div><span style={{ fontSize: 11, fontWeight: 700, color: todayMeta.color, fontFamily: S.head }}>{todayDay}</span><span style={{ fontSize: 10, color: 'rgba(255,255,255,.35)', marginLeft: 8, fontFamily: S.font }}>{todayMeta.bonus}</span></div>
+        <div><span style={{ fontSize: 11, fontWeight: 700, color: todayMeta.color, fontFamily: S.head }}>{todayDay}</span><span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 8, fontFamily: S.font }}>{todayMeta.bonus}</span></div>
       </div>
 
-      {/* ── Balance Hero — African Green/Gold ── */}
-      <div style={{ margin: '16px 16px 0', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(26,124,62,.3)', position: 'relative', zIndex: 1 }}>
-        {/* Kente weave texture inside hero */}
+      {/* ── Balance Hero — Hierarchy: Greeting → Amount → Change → Actions ── */}
+      <div style={{ margin: '16px 16px 0', borderRadius: 20, overflow: 'hidden', border: '1px solid var(--border)', position: 'relative', zIndex: 1, background: 'var(--bg-card)' }}>
+        {/* Kente weave texture */}
         <div aria-hidden="true" style={{
-          position: 'absolute', inset: 0, opacity: 0.06, pointerEvents: 'none',
+          position: 'absolute', inset: 0, opacity: 0.025, pointerEvents: 'none',
           backgroundImage: `repeating-linear-gradient(0deg, transparent 0px, transparent 10px, rgba(212,160,23,.5) 10px, rgba(212,160,23,.5) 12px, transparent 12px, transparent 22px, rgba(26,124,62,.4) 22px, rgba(26,124,62,.4) 24px), repeating-linear-gradient(90deg, transparent 0px, transparent 10px, rgba(178,34,34,.3) 10px, rgba(178,34,34,.3) 12px, transparent 12px, transparent 22px, rgba(212,160,23,.3) 22px, rgba(212,160,23,.3) 24px)`,
           backgroundSize: '24px 24px',
         }} />
-        <div style={{ padding: '24px 20px', background: 'linear-gradient(160deg,rgba(7,14,7,.98),rgba(10,22,10,.95))', textAlign: 'center', position: 'relative' }}>
-          {/* Coin pair display */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
-            <CowrieCoin currency="CWR" size={52} animated />
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0 6px' }}>
-              <span style={{ fontSize: 9, letterSpacing: '0.18em', color: '#d4a017', fontWeight: 800, fontFamily: S.head }}>ILE OWO</span>
-              <span style={{ fontSize: 7, letterSpacing: '0.12em', color: 'rgba(255,255,255,.25)', fontFamily: S.head }}>PAN-AFRICAN TREASURY</span>
+        <div style={{ padding: '24px 20px 20px', position: 'relative' }}>
+          {/* Greeting + label */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', fontFamily: S.font, marginBottom: 2 }}>
+              {greeting}
             </div>
-            <CowrieCoin currency="AFC" size={52} animated />
+            <div style={{ fontSize: 11, letterSpacing: '0.12em', color: 'var(--gold)', fontWeight: 700, fontFamily: S.head }}>ILE OWO · PAN-AFRICAN TREASURY</div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 12, background: 'rgba(255,255,255,.04)', borderRadius: 10, padding: 3, width: 'fit-content', margin: '0 auto 12px' }}>
+
+          {/* Primary balance — large, clean, no coins blocking */}
+          <div style={{ marginBottom: 6 }}>
+            <div style={{ fontSize: 38, fontWeight: 900, color: 'var(--text-primary)', fontFamily: S.head, lineHeight: 1, letterSpacing: '-0.02em' }}>
+              {walletView === 'cow' ? `₡${balance.cowrie.toLocaleString()}` : walletView === 'usd' ? `$${(balance.cowrie * MOCK_FX_RATES.CWR_TO_USD).toFixed(2)}` : `₦${Math.round(balance.cowrie * MOCK_FX_RATES.CWR_TO_USD * 1620).toLocaleString()}`}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: S.font, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>{balance.africoin?.toFixed?.(4) ?? '0'} AFC on-chain</span>
+              <span style={{ color: 'var(--border)' }}>·</span>
+              <span>{walletView !== 'cow' ? `₡${balance.cowrie.toLocaleString()} COW` : `≈ $${(balance.cowrie * MOCK_FX_RATES.CWR_TO_USD).toFixed(2)} USD`}</span>
+            </div>
+          </div>
+
+          {/* Currency toggle pill */}
+          <div style={{ display: 'inline-flex', gap: 2, marginTop: 8, background: 'var(--bg-raised)', borderRadius: 8, padding: 2 }}>
             {(['cow','usd','local'] as const).map(v => (
-              <button key={v} onClick={() => setWalletView(v)} style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: walletView === v ? '#1a7c3e' : 'transparent', color: walletView === v ? '#fff' : 'rgba(255,255,255,.4)', fontSize: 11, fontWeight: 700, fontFamily: S.head, cursor: 'pointer', transition: 'all .2s' }}>
+              <button key={v} onClick={() => setWalletView(v)} style={{ padding: '5px 14px', borderRadius: 6, border: 'none', background: walletView === v ? 'var(--green-primary)' : 'transparent', color: walletView === v ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 10, fontWeight: 700, fontFamily: S.head, cursor: 'pointer', transition: 'all .15s' }}>
                 {v === 'cow' ? '₡ COW' : v === 'usd' ? '$ USD' : '₦ NGN'}
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 44, fontWeight: 900, color: '#4ade80', fontFamily: S.head, marginTop: 4, textShadow: '0 0 30px rgba(74,222,128,.3)' }}>
-            {walletView === 'cow' ? `₡${balance.cowrie.toLocaleString()}` : walletView === 'usd' ? `$${(balance.cowrie * MOCK_FX_RATES.CWR_TO_USD).toFixed(2)}` : `₦${Math.round(balance.cowrie * MOCK_FX_RATES.CWR_TO_USD * 1620).toLocaleString()}`}
+
+          {/* Quick Actions — inside hero for Revolut-style compactness */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 20 }}>
+            {([
+              { label: 'Send', emoji: '↗', color: '#4ade80', key: 'vault' },
+              { label: 'Receive', emoji: '↙', color: '#818cf8', key: 'wallet_collector' },
+              { label: 'Pay', emoji: '🧾', color: '#fbbf24', key: 'bills' },
+              { label: 'Top Up', emoji: '⊕', color: '#fb923c', key: 'caravan' },
+            ] as const).map(q => (
+              <button key={q.key} onClick={() => toggle(q.key)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '10px 0', borderRadius: 12, background: 'var(--bg-raised)', border: '1px solid var(--border)', cursor: 'pointer', transition: 'transform .15s' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: `${q.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{q.emoji}</div>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', fontFamily: S.head }}>{q.label}</span>
+              </button>
+            ))}
           </div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.28)', marginTop: 4, fontFamily: S.font }}>
-            🔗 {balance.africoin?.toFixed?.(4) ?? '0'} AFC on-chain · {walletView !== 'cow' ? `₡${balance.cowrie.toLocaleString()} COW` : `~$${(balance.cowrie * MOCK_FX_RATES.CWR_TO_USD).toFixed(2)} USD`}
-          </div>
-          <div style={{ marginTop: 12, fontSize: 11, color: 'rgba(212,160,23,.7)', fontStyle: 'italic', fontFamily: S.font, lineHeight: 1.6 }}>"{proverb.text}" — <span style={{ fontSize: 9, color: 'rgba(255,255,255,.18)' }}>{proverb.origin}</span></div>
         </div>
-        {/* Kente divider at bottom of hero */}
-        <div style={{ height: 4, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)' }} />
+        {/* Kente accent line */}
+        <div style={{ height: 3, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)' }} />
       </div>
 
-      {/* ── Quick Actions Row ── */}
-      <div style={{ margin: '16px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-        {([
-          { label: 'Send', color: '#4ade80', bg: 'rgba(74,222,128,.1)', border: 'rgba(74,222,128,.2)', key: 'vault',
-            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 19L19 5M19 5H9M19 5V15" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" fill="#000" opacity=".4"/></svg> },
-          { label: 'Receive', color: '#818cf8', bg: 'rgba(129,140,248,.1)', border: 'rgba(129,140,248,.2)', key: 'vault',
-            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M19 5L5 19M5 19H15M5 19V9" stroke="#000" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="19" cy="5" r="2" fill="#000" opacity=".4"/></svg> },
-          { label: 'Pay Bills', color: '#fbbf24', bg: 'rgba(251,191,36,.1)', border: 'rgba(251,191,36,.2)', key: 'bills',
-            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="#000" strokeWidth="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="#000" strokeWidth="2" strokeLinecap="round"/></svg> },
-          { label: 'Top Up', color: '#fb923c', bg: 'rgba(251,146,60,.1)', border: 'rgba(251,146,60,.2)', key: 'caravan',
-            icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#000" strokeWidth="2.5" strokeLinecap="round"/><circle cx="12" cy="12" r="9" stroke="#000" strokeWidth="1.5" opacity=".4"/></svg> },
-        ] as const).map(q => (
-          <button key={q.key + q.label} onClick={() => toggle(q.key)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 16, background: q.bg, border: `1px solid ${q.border}`, cursor: 'pointer', transition: 'all .2s', outline: 'none' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: q.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{q.icon}</div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,.75)', fontFamily: S.head }}>{q.label}</span>
-          </button>
-        ))}
+      {/* ── Spending Donut + Breakdown — Monzo/N26-style ── */}
+      <div style={{ margin: '12px 16px 0', padding: '16px', borderRadius: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', fontFamily: S.head, letterSpacing: '0.05em' }}>SPENDING THIS MONTH</span>
+          <button onClick={() => toggle('insights')} style={{ fontSize: 10, color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: S.head, fontWeight: 700 }}>Details →</button>
+        </div>
+        {(() => {
+          const cats = [
+            { label: 'Transfers', pct: 35, color: '#4ade80' },
+            { label: 'Bills', pct: 22, color: '#fbbf24' },
+            { label: 'Circles', pct: 18, color: '#818cf8' },
+            { label: 'Market', pct: 15, color: '#fb923c' },
+            { label: 'Other', pct: 10, color: '#64748b' },
+          ]
+          const total = balance.cowrie
+          // SVG donut chart
+          const radius = 42, cx = 52, cy = 52, circumference = 2 * Math.PI * radius
+          let offset = 0
+          return (
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              {/* Donut */}
+              <div style={{ flexShrink: 0, position: 'relative', width: 104, height: 104 }}>
+                <svg width="104" height="104" viewBox="0 0 104 104">
+                  <circle cx={cx} cy={cy} r={radius} fill="none" stroke="var(--bg-raised)" strokeWidth="14" />
+                  {cats.map((cat, i) => {
+                    const segLen = (cat.pct / 100) * circumference
+                    const gap = 3
+                    const seg = (
+                      <circle key={i} cx={cx} cy={cy} r={radius} fill="none"
+                        stroke={cat.color} strokeWidth="14" strokeLinecap="round"
+                        strokeDasharray={`${Math.max(0, segLen - gap)} ${circumference - segLen + gap}`}
+                        strokeDashoffset={-offset}
+                        style={{ transition: 'stroke-dasharray 0.6s ease, stroke-dashoffset 0.6s ease', transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px` }}
+                      />
+                    )
+                    offset += segLen
+                    return seg
+                  })}
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)', fontFamily: S.head, lineHeight: 1 }}>₡{total > 999999 ? `${(total/1000000).toFixed(1)}M` : total > 999 ? `${(total/1000).toFixed(0)}K` : total}</div>
+                  <div style={{ fontSize: 8, color: 'var(--text-muted)', fontFamily: S.font, marginTop: 1 }}>total</div>
+                </div>
+              </div>
+              {/* Legend */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {cats.map((cat, i) => {
+                  const amt = Math.round(total * (cat.pct / 100))
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: cat.color, flexShrink: 0 }} />
+                      <span style={{ flex: 1, fontSize: 11, color: 'var(--text-secondary)', fontFamily: S.font }}>{cat.label}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', fontFamily: S.head, fontVariantNumeric: 'tabular-nums' }}>₡{amt.toLocaleString()}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })()}
       </div>
 
-      {/* ── Recent Transactions Quick Strip ── */}
-      <div style={{ margin: '14px 16px 0', padding: '14px 16px', borderRadius: 16, background: 'rgba(255,255,255,.025)', border: '1px solid rgba(255,255,255,.06)' }}>
+      {/* ── Daily Proverb — subtle, not prominent ── */}
+      <div style={{ margin: '10px 16px 0', padding: '10px 14px', borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)', position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: 11, color: 'rgba(212,160,23,.65)', fontStyle: 'italic', fontFamily: S.font, lineHeight: 1.6 }}>"{proverb.text}" — <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{proverb.origin}</span></div>
+      </div>
+
+      {/* ── Recent Transactions ── */}
+      <div style={{ margin: '12px 16px 0', padding: '14px 16px', borderRadius: 16, background: 'var(--bg-card)', border: '1px solid var(--border)', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,.6)', fontFamily: S.head, letterSpacing: '0.05em' }}>RECENT</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', fontFamily: S.head, letterSpacing: '0.05em' }}>RECENT</span>
           <button onClick={() => toggle('kowe')} style={{ fontSize: 10, color: '#818cf8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: S.head, fontWeight: 700 }}>See All →</button>
         </div>
         {[
@@ -3293,10 +3847,10 @@ export default function BankingPage() {
           { emoji: '↙', name: 'Paystack',     type: 'Received', amount: 52000, color: '#4ade80', time: '5h ago' },
           { emoji: '🧾', name: 'IKEDC',        type: 'Electricity', amount: -8000, color: '#fbbf24', time: 'Yesterday' },
         ].map((tx, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: i > 0 ? '1px solid rgba(255,255,255,.04)' : 'none' }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: `${tx.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>{tx.emoji}</div>
-            <div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,.8)', fontFamily: S.head }}>{tx.name}</div><div style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', fontFamily: S.font }}>{tx.type} · {tx.time}</div></div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: tx.color, fontFamily: S.head }}>{tx.amount > 0 ? '+' : ''}₡{Math.abs(tx.amount).toLocaleString()}</div>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: `${tx.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>{tx.emoji}</div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: S.head }}>{tx.name}</div><div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: S.font }}>{tx.type} · {tx.time}</div></div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: tx.color, fontFamily: S.head, fontVariantNumeric: 'tabular-nums' }}>{tx.amount > 0 ? '+' : ''}₡{Math.abs(tx.amount).toLocaleString()}</div>
           </div>
         ))}
       </div>
@@ -3324,7 +3878,7 @@ export default function BankingPage() {
 
             {/* Expanded feature panel */}
             {activeInSection && (
-              <div style={{ background: 'rgba(255,255,255,.02)', borderRadius: 16, padding: 16, border: `1px solid ${section.features.find(f => f.key === activeInSection)?.color ?? section.color}18`, marginTop: 8 }}>
+              <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 16, border: `1px solid ${section.features.find(f => f.key === activeInSection)?.color ?? section.color}18`, marginTop: 8 }}>
                 {renderFeature(activeInSection)}
               </div>
             )}
@@ -3336,9 +3890,9 @@ export default function BankingPage() {
       <div style={{ margin: '28px 16px 0', position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ fontSize: 14 }}>🔮</span>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.06)' }} />
-          <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,.35)', fontFamily: S.head, letterSpacing: '0.1em' }}>VISION HORIZON</span>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.06)' }} />
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', fontFamily: S.head, letterSpacing: '0.1em' }}>VISION HORIZON</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
         </div>
         <div style={{ overflowX: 'auto', display: 'flex', gap: 10, paddingBottom: 8, scrollbarWidth: 'none' }}>
           {PAN_AFRICAN_IDEAS.map(idea => {
@@ -3350,8 +3904,8 @@ export default function BankingPage() {
                   <Pill label={idea.status.replace('_', ' ')} color={statusColor} bg={`${statusColor}18`} />
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: idea.color, fontFamily: S.head, marginBottom: 3 }}>{idea.name}</div>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', fontFamily: S.font, lineHeight: 1.5, marginBottom: 6 }}>{idea.subtitle}</div>
-                <div style={{ fontSize: 9, color: 'rgba(255,255,255,.2)', fontFamily: S.font, fontStyle: 'italic' }}>{idea.origin}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: S.font, lineHeight: 1.5, marginBottom: 6 }}>{idea.subtitle}</div>
+                <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: S.font, fontStyle: 'italic' }}>{idea.origin}</div>
               </div>
             )
           })}

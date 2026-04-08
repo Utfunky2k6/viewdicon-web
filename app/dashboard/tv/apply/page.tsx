@@ -142,7 +142,11 @@ export default function ApplyToBroadcastPage() {
   // UI state
   const [submitting, setSubmitting]           = React.useState(false)
   const [submitted, setSubmitted]             = React.useState(false)
-  const [appId]                               = React.useState('APP-' + Math.random().toString(36).slice(2,8).toUpperCase())
+  const [appId, setAppId]                     = React.useState('APP-000000')
+
+  React.useEffect(() => {
+    setAppId('APP-' + Math.random().toString(36).slice(2, 8).toUpperCase())
+  }, [])
 
   React.useEffect(() => {
     if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return

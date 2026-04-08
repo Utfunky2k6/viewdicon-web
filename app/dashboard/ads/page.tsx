@@ -1,6 +1,8 @@
 'use client'
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { USE_MOCKS } from '@/lib/flags'
+import UnderConstruction from '@/components/ui/UnderConstruction'
 
 /* ── types ── */
 type CampaignType = 'market_cry' | 'drum_announcement' | 'billboard' | 'night_market' | 'heat_boost' | 'tv_commercial' | 'griot_story' | 'tool_sponsor'
@@ -42,6 +44,7 @@ const MOCK_CAMPAIGNS: Campaign[] = [
 type FilterTab = 'all' | 'active' | 'scheduled' | 'completed'
 
 export default function AdManagerPage() {
+  if (!USE_MOCKS) return <UnderConstruction module="Ads Marketplace" />
   const router = useRouter()
   const [filter, setFilter] = React.useState<FilterTab>('all')
   const [paused, setPaused] = React.useState<Set<string>>(new Set())

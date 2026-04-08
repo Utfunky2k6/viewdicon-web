@@ -84,11 +84,17 @@ export default function TVSchedulePage() {
   const [booked, setBooked]         = useState<Set<string>>(new Set())
   const [success, setSuccess]       = useState<TVSlot | null>(null)
   const [calAdded, setCalAdded]     = useState<Set<string>>(new Set())
+  const [todayStr, setTodayStr]     = useState('')
+  const [estReach, setEstReach]     = useState(0)
 
   React.useEffect(() => {
     if (typeof document === 'undefined' || document.getElementById(CSS_ID)) return
     const s = document.createElement('style'); s.id = CSS_ID; s.textContent = CSS
     document.head.appendChild(s)
+  }, [])
+
+  React.useEffect(() => {
+    setTodayStr(new Date().toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' }))
   }, [])
 
   const filtered = useMemo(() => {
@@ -101,9 +107,8 @@ export default function TVSchedulePage() {
     return schedule.filter(s => s.villageId === filter)
   }, [schedule, filter])
 
-  const today = new Date().toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long' })
-
   function handleBook(slot: TVSlot) {
+    setEstReach(Math.floor(Math.random() * 3000 + 500))
     setBooking(slot)
   }
 
@@ -131,7 +136,7 @@ export default function TVSchedulePage() {
       <div className="sked-hero">
         <div className="sked-hero-bg" />
         <div className="hero-title">📺 Village Airwaves</div>
-        <div className="hero-sub">{today} · 20 Channels · Live & Bookable</div>
+        <div className="hero-sub">{todayStr} · 20 Channels · Live & Bookable</div>
 
         <div className="hero-stats">
           <div className="hero-stat">
@@ -258,7 +263,7 @@ export default function TVSchedulePage() {
                 ['⏰ Time',       `${booking.startTime} – ${booking.endTime} WAT`],
                 ['⏱ Duration',   `${booking.durationHours} hour${booking.durationHours > 1 ? 's' : ''}`],
                 ['📅 Date',       'Today (recurring daily option available)'],
-                ['👥 Est. Reach', `${Math.floor(Math.random() * 3000 + 500).toLocaleString()} village members`],
+                ['👥 Est. Reach', `${estReach.toLocaleString()} village members`],
               ].map(([label, value]) => (
                 <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid rgba(255,255,255,.06)', fontSize: 12 }}>
                   <span style={{ color: 'rgba(240,237,232,.45)' }}>{label}</span>

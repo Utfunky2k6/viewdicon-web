@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 const CSS_ID = 'masquerade-stage-css'
 const CSS = `
@@ -303,7 +304,7 @@ function VoteSheet({ show, onClose, onVoted }: { show: Show; onClose: () => void
         votes: VOTE_PACKS[selectedPack].votes,
         amount: VOTE_PACKS[selectedPack].cost,
       })
-    } catch { /* mock fallback */ }
+    } catch (e) { logApiFailure('reality/vote', e) }
     setVoteSuccess(true)
     onVoted(selectedContestant, VOTE_PACKS[selectedPack].votes)
     setTimeout(() => { setVoteSuccess(false); onClose() }, 1600)
@@ -440,9 +441,10 @@ export default function MasqueradeStage() {
       try {
         const res = await jollofTvApi.realityShows()
         const data = (res as any)?.shows || []
-        if (mounted) setShows(data.length > 0 ? data : MOCK_SHOWS)
-      } catch {
-        if (mounted) setShows(MOCK_SHOWS)
+        if (mounted) setShows(data.length > 0 ? data : (USE_MOCKS ? MOCK_SHOWS : []))
+      } catch (e) {
+        logApiFailure('reality/shows/load', e)
+        if (mounted) setShows(USE_MOCKS ? MOCK_SHOWS : [])
       } finally {
         if (mounted) setLoading(false)
       }

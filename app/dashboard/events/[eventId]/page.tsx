@@ -5,6 +5,7 @@
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { eventsApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 import type { PlatformEvent, EventTierDraft, EventTicket } from '@/types'
 import { TIER_CONFIG, calcPlatformFee, calcOrganizerReceives } from '@/types'
 
@@ -110,7 +111,7 @@ function BuyDrawer({tier,event,onClose}:{tier:EventTierDraft;event:PlatformEvent
         transferHistory:[],eventDate:event.date??event.startDate??'',venueName:event.venueName,
       }
       onClose(ticket)
-    } catch { onClose() }
+    } catch (e) { logApiFailure('events/purchase', e); onClose() }
     setLoading(false)
   }
 
@@ -183,7 +184,7 @@ export default function EventDetailPage() {
   const [donated,setDonated] = React.useState(false)
 
   React.useEffect(()=>{
-    eventsApi.get(eventId).then((r:any)=>setEv(r?.event??r?.data??MOCK_EVENT)).catch(()=>setEv(MOCK_EVENT)).finally(()=>setLoading(false))
+    eventsApi.get(eventId).then((r:any)=>setEv(r?.event??r?.data??(USE_MOCKS ? MOCK_EVENT : null))).catch((e)=>{ logApiFailure('events/get', e); if (USE_MOCKS) setEv(MOCK_EVENT) }).finally(()=>setLoading(false))
   },[eventId])
 
   if(loading||!ev) return <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{fontSize:40}}>🥁</div></div>
@@ -242,7 +243,7 @@ export default function EventDetailPage() {
         {/* Action row */}
         <div className="ed-scroll" style={{display:'flex',gap:8,marginBottom:16,overflowX:'auto'}}>
           {[
-            {icon:'🥁',label:drummed?'Drummed!':'Drum',fn:async()=>{try{await eventsApi.drumToFeed(eventId)}catch{}setDrummed(true)},c:C.purpleL,bg:'rgba(124,58,237,.1)',b:'rgba(124,58,237,.2)'},
+            {icon:'🥁',label:drummed?'Drummed!':'Drum',fn:async()=>{try{await eventsApi.drumToFeed(eventId)}catch(e){logApiFailure('events/drum',e)}setDrummed(true)},c:C.purpleL,bg:'rgba(124,58,237,.1)',b:'rgba(124,58,237,.2)'},
             {icon:'🔗',label:'Share',fn:()=>navigator.clipboard?.writeText(window.location.href).catch(()=>{}),c:C.blueL,bg:'rgba(14,165,233,.1)',b:'rgba(14,165,233,.2)'},
             {icon:'🚪',label:'Gate',fn:()=>router.push(`/dashboard/events/${eventId}/gate`),c:C.greenL,bg:'rgba(74,222,128,.1)',b:'rgba(74,222,128,.2)'},
             {icon:'📊',label:'Analytics',fn:()=>router.push(`/dashboard/events/${eventId}/organizer`),c:C.goldL,bg:'rgba(251,191,36,.1)',b:'rgba(251,191,36,.2)'},
@@ -301,7 +302,7 @@ export default function EventDetailPage() {
                       {t.resaleAllowed&&<span style={{fontSize:9,padding:'2px 7px',borderRadius:99,background:'rgba(251,191,36,.06)',color:C.goldL,border:'1px solid rgba(251,191,36,.15)',fontFamily:'Sora, sans-serif'}}>📈 Resale</span>}
                     </div>
                     {full
-                      ?<button onClick={()=>eventsApi.joinWaiting(eventId,t.name).catch(()=>{})} style={{padding:'7px 14px',borderRadius:10,border:'1px solid rgba(124,58,237,.25)',background:'rgba(124,58,237,.1)',color:C.purpleL,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>⏳ Queue</button>
+                      ?<button onClick={()=>eventsApi.joinWaiting(eventId,t.name).catch((e)=>logApiFailure('events/waitlist',e))} style={{padding:'7px 14px',borderRadius:10,border:'1px solid rgba(124,58,237,.25)',background:'rgba(124,58,237,.1)',color:C.purpleL,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>⏳ Queue</button>
                       :<button onClick={()=>setBuyingTier(t)} style={{padding:'7px 18px',borderRadius:10,border:'none',background:'linear-gradient(135deg,#7c3aed,#5b21b6)',color:'#fff',fontSize:11,fontWeight:800,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>Buy →</button>
                     }
                   </div>
@@ -315,7 +316,7 @@ export default function EventDetailPage() {
               <div style={{padding:9,borderRadius:11,background:'rgba(251,191,36,.04)',border:'1px solid rgba(251,191,36,.1)',marginBottom:10}}>
                 <div style={{fontSize:9,color:C.goldL,fontWeight:700}}>Platform takes 15% per resale · Escrow protected · Anti-fraud verified</div>
               </div>
-              {MOCK_RESALE.map(r=>(
+              {USE_MOCKS && MOCK_RESALE.map(r=>(
                 <div key={r.id} style={{borderRadius:12,border:'1px solid rgba(255,255,255,.06)',background:C.bgCard,padding:'10px 12px',marginBottom:8,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                   <div>
                     <div style={{fontSize:11,fontWeight:700,color:C.text}}>{r.tier}</div>
@@ -325,7 +326,7 @@ export default function EventDetailPage() {
                   <div style={{textAlign:'right'}}>
                     <div style={{fontSize:14,fontWeight:900,color:C.goldL,fontFamily:'Sora, sans-serif'}}>₡{r.askingPrice.toLocaleString()}</div>
                     <div style={{fontSize:9,color:C.redL}}>+{Math.round((r.askingPrice/r.originalPrice-1)*100)}% markup</div>
-                    <button onClick={()=>eventsApi.buyResale(r.id,'me').catch(()=>{})} style={{marginTop:4,padding:'4px 10px',borderRadius:8,border:'none',background:'rgba(124,58,237,.15)',color:C.purpleL,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>Buy Resale</button>
+                    <button onClick={()=>eventsApi.buyResale(r.id,'me').catch((e)=>logApiFailure('events/buyResale',e))} style={{marginTop:4,padding:'4px 10px',borderRadius:8,border:'none',background:'rgba(124,58,237,.15)',color:C.purpleL,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>Buy Resale</button>
                   </div>
                 </div>
               ))}
@@ -338,7 +339,7 @@ export default function EventDetailPage() {
                 <div style={{display:'flex',gap:5,marginBottom:8}}>
                   {[1000,2000,5000,10000].map(a=><button key={a} onClick={()=>setDonateAmt(a)} style={{flex:1,padding:'6px 0',borderRadius:8,border:`1px solid ${donateAmt===a?'rgba(74,222,128,.3)':'rgba(255,255,255,.08)'}`,background:donateAmt===a?'rgba(74,222,128,.1)':C.bgCard,color:donateAmt===a?C.greenL:C.textDim,fontSize:9,fontWeight:700,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>₡{a>=1000?a/1000+'K':a}</button>)}
                 </div>
-                <button onClick={async()=>{try{await eventsApi.donate(eventId,donateAmt)}catch{}setDonated(true)}} disabled={donated} style={{width:'100%',padding:'10px 0',borderRadius:12,border:'none',background:donated?'rgba(74,222,128,.1)':'linear-gradient(135deg,#1a7c3e,#15803d)',color:'#fff',fontSize:12,fontWeight:800,cursor:donated?'default':'pointer',fontFamily:'Sora, sans-serif'}}>
+                <button onClick={async()=>{try{await eventsApi.donate(eventId,donateAmt)}catch(e){logApiFailure('events/donate',e)}setDonated(true)}} disabled={donated} style={{width:'100%',padding:'10px 0',borderRadius:12,border:'none',background:donated?'rgba(74,222,128,.1)':'linear-gradient(135deg,#1a7c3e,#15803d)',color:'#fff',fontSize:12,fontWeight:800,cursor:donated?'default':'pointer',fontFamily:'Sora, sans-serif'}}>
                   {donated?'🙏 Thank you!':'🤲 Donate ₡'+donateAmt.toLocaleString()}
                 </button>
               </div>
@@ -402,7 +403,7 @@ export default function EventDetailPage() {
             {ev.tiers.filter(t=>(t.available??1)<=0).map(t=>(
               <div key={t.name} style={{borderRadius:14,border:'1px solid rgba(124,58,237,.2)',background:'rgba(124,58,237,.04)',padding:'12px 14px',marginBottom:10,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div><div style={{fontSize:13,fontWeight:800,color:C.text,fontFamily:'Sora, sans-serif'}}>{t.name}</div><div style={{fontSize:10,color:C.textDim}}>₡{t.price.toLocaleString()} · SOLD OUT</div></div>
-                <button onClick={()=>eventsApi.joinWaiting(eventId,t.name).catch(()=>{})} style={{padding:'8px 16px',borderRadius:10,border:'none',background:'linear-gradient(135deg,#7c3aed,#5b21b6)',color:'#fff',fontSize:11,fontWeight:800,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>⏳ Queue</button>
+                <button onClick={()=>eventsApi.joinWaiting(eventId,t.name).catch((e)=>logApiFailure('events/waitlist',e))} style={{padding:'8px 16px',borderRadius:10,border:'none',background:'linear-gradient(135deg,#7c3aed,#5b21b6)',color:'#fff',fontSize:11,fontWeight:800,cursor:'pointer',fontFamily:'Sora, sans-serif'}}>⏳ Queue</button>
               </div>
             ))}
             {ev.tiers.every(t=>(t.available??1)>0)&&<div style={{textAlign:'center',padding:20,color:C.textDim,fontSize:12}}>🎉 Tickets available — no waiting needed!</div>}

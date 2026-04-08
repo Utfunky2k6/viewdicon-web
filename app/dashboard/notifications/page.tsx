@@ -3,6 +3,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { formatRelativeTime } from '@/lib/utils'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // Notification types (Talking Drum system)
 // TALKING_DRUM  — broadcast alerts (urgent)
@@ -31,14 +32,14 @@ interface Notif {
 
 // Mock notifications shown while backend is loading or unavailable
 const MOCK_NOTIFS: Notif[] = [
-  { id: 'm1', type: 'KILA',          actor: 'Adaeze Okonkwo',    content: 'gave you 25 Kíla for your post in Commerce Village.',       at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),   isRead: false },
-  { id: 'm2', type: 'GRIOT_WHISPER', actor: 'Kwame Asante',      content: 'mentioned you in a post: "@you should see this market!"',  at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),  isRead: false },
-  { id: 'm3', type: 'TALKING_DRUM',  actor: 'Village Council',   content: 'announced a new market day — tomorrow at dawn.',            at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),  isRead: false },
-  { id: 'm4', type: 'KOLANUT_CALL',  actor: 'Fatima Al-Rashid',  content: 'sent you a connection request.',                            at: new Date(Date.now() - 1000 * 60 * 180).toISOString(), isRead: false },
-  { id: 'm5', type: 'RANK_UP',       actor: 'Your Village',      content: 'Your crest has advanced to Crest II. New tools unlocked.', at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), isRead: true },
-  { id: 'm6', type: 'MWANGA',        actor: 'Blessing Okafor',   content: 'planted a Paid Root in your Jollof TV channel.',           at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), isRead: true },
-  { id: 'm7', type: 'KALABASH',      actor: 'Sipho Dlamini',     content: 'sprayed 200 Cowrie on your live stream.',                  at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), isRead: true },
-  { id: 'm8', type: 'VILLAGE_INVITE', actor: 'Technology Village', content: 'invited you to join as a Founding Member.',              at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), isRead: true },
+  { id: 'm1', type: 'KILA',          actor: 'Adaeze Okonkwo',    content: 'gave you 25 Kíla for your post in Commerce Village.',       at: '2026-04-08T11:55:00.000Z',   isRead: false },
+  { id: 'm2', type: 'GRIOT_WHISPER', actor: 'Kwame Asante',      content: 'mentioned you in a post: "@you should see this market!"',  at: '2026-04-08T11:30:00.000Z',  isRead: false },
+  { id: 'm3', type: 'TALKING_DRUM',  actor: 'Village Council',   content: 'announced a new market day — tomorrow at dawn.',            at: '2026-04-08T10:30:00.000Z',  isRead: false },
+  { id: 'm4', type: 'KOLANUT_CALL',  actor: 'Fatima Al-Rashid',  content: 'sent you a connection request.',                            at: '2026-04-08T09:00:00.000Z', isRead: false },
+  { id: 'm5', type: 'RANK_UP',       actor: 'Your Village',      content: 'Your crest has advanced to Crest II. New tools unlocked.', at: '2026-04-08T09:00:00.000Z', isRead: true },
+  { id: 'm6', type: 'MWANGA',        actor: 'Blessing Okafor',   content: 'planted a Paid Root in your Jollof TV channel.',           at: '2026-04-08T06:00:00.000Z', isRead: true },
+  { id: 'm7', type: 'KALABASH',      actor: 'Sipho Dlamini',     content: 'sprayed 200 Cowrie on your live stream.',                  at: '2026-04-08T00:00:00.000Z', isRead: true },
+  { id: 'm8', type: 'VILLAGE_INVITE', actor: 'Technology Village', content: 'invited you to join as a Founding Member.',              at: '2026-04-07T12:00:00.000Z', isRead: true },
 ]
 
 const NOTIF_META: Record<NotifType, { emoji: string; color: string; label: string }> = {
@@ -66,10 +67,11 @@ export default function NotificationsPage() {
       .then((d) => {
         if (cancelled) return
         const items: Notif[] = Array.isArray(d?.data) ? d.data : (Array.isArray(d) ? d : null)
-        setNotifs(items && items.length > 0 ? items : MOCK_NOTIFS)
+        setNotifs(items && items.length > 0 ? items : (USE_MOCKS ? MOCK_NOTIFS : []))
       })
-      .catch(() => {
-        if (!cancelled) setNotifs(MOCK_NOTIFS)
+      .catch((e) => {
+        logApiFailure('notifications/fetch', e)
+        if (!cancelled && USE_MOCKS) setNotifs(MOCK_NOTIFS)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

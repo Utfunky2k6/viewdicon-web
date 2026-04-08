@@ -116,7 +116,7 @@ export async function enqueueBankingTx(
   // Request background sync if SW available
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
     navigator.serviceWorker.ready
-      .then(reg => reg.sync?.register('afro-banking-sync'))
+      .then(reg => (reg as any).sync?.register('afro-banking-sync'))
       .catch(() => {})
   }
 
@@ -189,7 +189,7 @@ export const postQueue = {
     await idbPut('post-queue', item)
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready
-        .then(reg => reg.sync?.register('afro-post-sync'))
+        .then(reg => (reg as any).sync?.register('afro-post-sync'))
         .catch(() => {})
     }
     return item.id

@@ -1,18 +1,26 @@
 'use client'
+// ═══════════════════════════════════════════════════════════════════
+// UKOO — The Living Lineage  (Idile Family Tree)
+// Generational layout · Baobab metaphor · African-first design
+// "Igi kan kò le dúró sí ara rẹ̀" — A single tree cannot make a forest.
+// ═══════════════════════════════════════════════════════════════════
 import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ringsApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS } from '@/lib/flags'
 
 type NodeState = 'verified' | 'pending' | 'deceased'
+type Generation = 'great_grandparent' | 'grandparent' | 'parent' | 'self' | 'sibling' | 'child' | 'grandchild' | 'other'
+
 interface TreeNode {
   id: string
   label: string
   sub: string
   state: NodeState
-  cx: number
-  cy: number
+  generation: Generation
   isViewdicon?: boolean
+  gender?: 'male' | 'female' | 'unknown'
 }
 
 const RELATIONSHIP_TYPES = [
@@ -22,657 +30,406 @@ const RELATIONSHIP_TYPES = [
   'ADOPTIVE_CHILD', 'STEP_PARENT', 'STEP_CHILD', 'HALF_SIBLING',
   'IN_LAW', 'SPIRITUAL_GUIDE', 'TRIBAL_ELDER',
 ] as const
-
 type Relationship = typeof RELATIONSHIP_TYPES[number]
 
 interface AddedMember {
-  id: string
-  name: string
-  relationship: Relationship
-  targetIdentifier: string
-  addedAt: string
-  inviteSent: boolean
+  id: string; name: string; relationship: Relationship
+  targetIdentifier: string; addedAt: string; inviteSent: boolean
 }
 
 const LS_KEY = 'vd-family-tree'
-
-function loadPersistedMembers(): AddedMember[] {
+function loadPersisted(): AddedMember[] {
   if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
+  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? '[]') } catch { return [] }
 }
-
-function persistMembers(members: AddedMember[]) {
+function persist(m: AddedMember[]) {
   if (typeof window === 'undefined') return
-  try { localStorage.setItem(LS_KEY, JSON.stringify(members)) } catch { /* noop */ }
+  try { localStorage.setItem(LS_KEY, JSON.stringify(m)) } catch { /**/ }
+}
+function relLabel(r: string) {
+  return r.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+function relToGeneration(rel: string): Generation {
+  const r = rel.toUpperCase()
+  if (['GRANDPARENT','GRANDMOTHER','GRANDFATHER'].some(x => r.includes(x))) return 'grandparent'
+  if (['GREAT'].some(x => r.includes(x))) return 'great_grandparent'
+  if (['PARENT','FATHER','MOTHER'].some(x => r.includes(x))) return 'parent'
+  if (['CHILD','SON','DAUGHTER','ADOPTIVE_CHILD','STEP_CHILD','WARD'].some(x => r.includes(x))) return 'child'
+  if (['GRANDCHILD','GRANDSON','GRANDDAUGHTER'].some(x => r.includes(x))) return 'grandchild'
+  if (['SIBLING','BROTHER','SISTER','STEP_SIBLING','HALF_SIBLING'].some(x => r.includes(x))) return 'sibling'
+  return 'other'
 }
 
-function relLabel(r: string): string {
-  return r
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, c => c.toUpperCase())
-    .toLowerCase()
-    .replace(/\b\w/g, c => c.toUpperCase())
+const GENERATION_META: Record<Generation, { label: string; color: string; emoji: string; order: number }> = {
+  great_grandparent: { label: 'Great-Grandparents', color: '#a78bfa', emoji: '🕊️', order: 0 },
+  grandparent:       { label: 'Grandparents',        color: '#f59e0b', emoji: '🏺', order: 1 },
+  parent:            { label: 'Parents',             color: '#4ade80', emoji: '🌿', order: 2 },
+  self:              { label: 'You',                 color: '#22d3ee', emoji: '⭐', order: 3 },
+  sibling:           { label: 'Siblings',            color: '#4ade80', emoji: '🌱', order: 3 },
+  child:             { label: 'Children',            color: '#fb923c', emoji: '🌸', order: 4 },
+  grandchild:        { label: 'Grandchildren',       color: '#f472b6', emoji: '✨', order: 5 },
+  other:             { label: 'Extended Family',     color: '#94a3b8', emoji: '🤝', order: 6 },
 }
 
-// Default mock tree nodes (original hardcoded set — shown as fallback)
-const MOCK_TREE_NODES: TreeNode[] = [
-  { id: 'gf_pat', label: 'Baba Agba',  sub: 'Grandfather', state: 'deceased', cx: 200, cy: 100 },
-  { id: 'gm_pat', label: 'Iya Agba',   sub: 'Grandmother', state: 'deceased', cx: 350, cy: 100 },
-  { id: 'gf_mat', label: 'Baba Iya',   sub: 'Grandfather', state: 'verified', cx: 650, cy: 100 },
-  { id: 'gm_mat', label: 'Iya Iya',    sub: 'Grandmother', state: 'verified', cx: 800, cy: 100 },
-  { id: 'father', label: 'Umoh Snr',   sub: 'Baba',        state: 'verified', cx: 275, cy: 250, isViewdicon: true },
-  { id: 'mother', label: 'Mma Utibe',  sub: 'Iya',         state: 'verified', cx: 725, cy: 250, isViewdicon: true },
-  { id: 'bro',    label: 'Kwame',      sub: 'Egbon',       state: 'pending',  cx: 300, cy: 400, isViewdicon: true },
-  { id: 'me',     label: 'You',        sub: 'ME',          state: 'verified', cx: 500, cy: 400, isViewdicon: true },
-  { id: 'sis',    label: 'Chioma',     sub: 'Aburo',       state: 'verified', cx: 700, cy: 400 },
-  { id: 'child',  label: 'Ebenezer',   sub: 'Son',         state: 'pending',  cx: 500, cy: 550 },
+// ── Default mock nodes (fallback before API loads) ──────────────
+const MOCK_NODES: TreeNode[] = [
+  { id: 'ggf', label: 'Baba Nla Agba',  sub: 'Great-Grandfather', state: 'deceased', generation: 'great_grandparent', gender: 'male' },
+  { id: 'ggm', label: 'Iya Nla Agba',   sub: 'Great-Grandmother', state: 'deceased', generation: 'great_grandparent', gender: 'female' },
+  { id: 'gf1', label: 'Baba Agba',      sub: 'Grandfather',       state: 'deceased', generation: 'grandparent', gender: 'male' },
+  { id: 'gm1', label: 'Iya Agba',       sub: 'Grandmother',       state: 'deceased', generation: 'grandparent', gender: 'female' },
+  { id: 'gf2', label: 'Baba Iya',       sub: 'Grandfather',       state: 'verified', generation: 'grandparent', gender: 'male', isViewdicon: true },
+  { id: 'gm2', label: 'Iya Iya',        sub: 'Grandmother',       state: 'verified', generation: 'grandparent', gender: 'female', isViewdicon: true },
+  { id: 'dad', label: 'Umoh Snr',       sub: 'Father',            state: 'verified', generation: 'parent',      gender: 'male',   isViewdicon: true },
+  { id: 'mum', label: 'Mma Utibe',      sub: 'Mother',            state: 'verified', generation: 'parent',      gender: 'female', isViewdicon: true },
+  { id: 'bro', label: 'Kwame',          sub: 'Brother',           state: 'pending',  generation: 'sibling',     gender: 'male',   isViewdicon: true },
+  { id: 'me',  label: 'You',            sub: 'ME',                state: 'verified', generation: 'self',        gender: 'unknown', isViewdicon: true },
+  { id: 'sis', label: 'Chioma',         sub: 'Sister',            state: 'verified', generation: 'sibling',     gender: 'female' },
+  { id: 'kid', label: 'Ebenezer',       sub: 'Son',               state: 'pending',  generation: 'child',       gender: 'male', isViewdicon: true },
 ]
 
-const MOCK_LINKS = [
-  { x1: 200, y1: 100, x2: 350, y2: 100 },
-  { x1: 650, y1: 100, x2: 800, y2: 100 },
-  { x1: 275, y1: 100, x2: 275, y2: 250 },
-  { x1: 725, y1: 100, x2: 725, y2: 250 },
-  { x1: 275, y1: 250, x2: 725, y2: 250 },
-  { x1: 500, y1: 250, x2: 500, y2: 400 },
-  { x1: 300, y1: 400, x2: 700, y2: 400 },
-  { x1: 500, y1: 400, x2: 500, y2: 550 },
-]
+function nodeEmoji(n: TreeNode) {
+  if (n.id === 'me') return '⭐'
+  if (n.state === 'deceased') return '🕊️'
+  if (n.gender === 'male') return '👨🏾'
+  if (n.gender === 'female') return '👩🏾'
+  return '🧑🏾'
+}
+function stateColor(s: NodeState) {
+  if (s === 'verified') return 'var(--nkisi-green)'
+  if (s === 'deceased') return '#52525b'
+  return '#f59e0b'
+}
+function stateBg(s: NodeState) {
+  if (s === 'verified') return 'rgba(34,197,94,0.08)'
+  if (s === 'deceased') return 'rgba(82,82,91,0.1)'
+  return 'rgba(245,158,11,0.08)'
+}
 
-export default function FamilyTreeSVG() {
+export default function FamilyTreePage() {
   const router = useRouter()
-  const [selected, setSelected] = useState<TreeNode | null>(null)
-  const [nodes, setNodes]       = useState<TreeNode[]>(MOCK_TREE_NODES)
-  const [links, setLinks]       = useState(MOCK_LINKS)
-  const [addedMembers, setAddedMembers] = useState<AddedMember[]>([])
-  const [showSheet, setShowSheet]       = useState(false)
-  const [submitting, setSubmitting]     = useState(false)
-  const [submitMsg, setSubmitMsg]       = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
-
-  // Form fields
-  const [formName,       setFormName]       = useState('')
-  const [formRel,        setFormRel]        = useState<Relationship>('PARENT')
-  const [formIdentifier, setFormIdentifier] = useState('')
-
   const user   = useAuthStore(s => s.user)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const userId = user?.id || (user as any)?.afroId?.raw || ''
 
-  // ── Load persisted members from localStorage on mount ──────────
-  useEffect(() => {
-    const stored = loadPersistedMembers()
-    setAddedMembers(stored)
-  }, [])
+  const [nodes, setNodes]           = useState<TreeNode[]>(USE_MOCKS ? MOCK_NODES : [])
+  const [added, setAdded]           = useState<AddedMember[]>([])
+  const [selected, setSelected]     = useState<TreeNode | null>(null)
+  const [showSheet, setShowSheet]   = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [msg, setMsg]               = useState<{ ok: boolean; text: string } | null>(null)
 
-  // ── Fetch real bonds from rings-service ─────────────────────────
+  const [formName, setFormName]     = useState('')
+  const [formRel, setFormRel]       = useState<Relationship>('PARENT')
+  const [formId, setFormId]         = useState('')
+
+  // Load persisted + fetch API
+  useEffect(() => { setAdded(loadPersisted()) }, [])
   useEffect(() => {
     if (!userId) return
-    let cancelled = false
+    let dead = false
     ;(async () => {
       try {
         const res = await ringsApi.getBonds(userId)
-        if (cancelled) return
+        if (dead) return
         const bonds = res?.data?.bonds || res?.bonds || []
         if (Array.isArray(bonds) && bonds.length > 0) {
-          const apiNodes: TreeNode[] = bonds.map((bond: Record<string, unknown>, i: number) => ({
-            id:          (bond.id as string) || `bond-${i}`,
-            label:       (bond.displayName as string) || (bond.name as string) || (bond.handle as string) || 'Unknown',
-            sub:         relLabel((bond.relationship as string) || (bond.type as string) || 'Bond'),
-            state:       (
-              bond.status === 'accepted' || bond.status === 'verified' ||
-              bond.status === 'ACCEPTED' || bond.status === 'ACTIVE'
-            ) ? 'verified' as const : 'pending' as const,
-            cx: 150 + (i % 5) * 175,
-            cy: 100 + Math.floor(i / 5) * 150,
-            isViewdicon: !!(bond.afroId),
-          }))
-          const meNode: TreeNode = {
-            id: 'me', label: 'You', sub: 'ME', state: 'verified', cx: 500, cy: 400, isViewdicon: true,
-          }
-          setNodes([meNode, ...apiNodes])
-          const apiLinks = apiNodes.map(n => ({ x1: 500, y1: 400, x2: n.cx, y2: n.cy }))
-          setLinks(apiLinks)
+          const fromApi: TreeNode[] = bonds.map((b: any, i: number) => {
+            const rel = b.relationship || b.type || 'OTHER'
+            return {
+              id: b.id || `api-${i}`, label: b.displayName || b.name || b.handle || 'Member',
+              sub: relLabel(rel), state: ['accepted','verified','ACCEPTED','ACTIVE'].includes(b.status) ? 'verified' : 'pending',
+              generation: relToGeneration(rel), gender: 'unknown', isViewdicon: !!b.afroId,
+            }
+          })
+          setNodes([{ id: 'me', label: 'You', sub: 'ME', state: 'verified', generation: 'self', isViewdicon: true }, ...fromApi])
         }
-        // If empty, keep MOCK_TREE_NODES (already set as default state)
-      } catch {
-        // API failed — keep mock nodes (already default)
-      }
+      } catch { /**/ }
     })()
-    return () => { cancelled = true }
+    return () => { dead = true }
   }, [userId])
 
-  // ── Map added (locally-persisted) members to SVG nodes ─────────
-  const addedMemberNodes: TreeNode[] = addedMembers.map((m, i) => ({
-    id:         `added-${m.id}`,
-    label:      m.name,
-    sub:        relLabel(m.relationship),
-    state:      'pending' as const,
-    cx:         150 + (i % 5) * 175,
-    cy:         650 + Math.floor(i / 5) * 130,
-    isViewdicon: false,
+  // Merge added members
+  const addedNodes: TreeNode[] = added.map((m, i) => ({
+    id: `added-${m.id}`, label: m.name, sub: relLabel(m.relationship),
+    state: 'pending', generation: relToGeneration(m.relationship), gender: 'unknown', isViewdicon: false,
   }))
-
-  // Links from "me" node → each added member node
-  const addedMemberLinks = addedMemberNodes.map(n => ({
-    x1: 500,
-    y1: nodes.find(nd => nd.id === 'me')?.cy ?? 400,
-    x2: n.cx,
-    y2: n.cy,
-  }))
-
-  const allNodes     = [...nodes, ...addedMemberNodes]
-  const allLinks     = [...links, ...addedMemberLinks]
-  const totalMembers = allNodes.filter(n => n.id !== 'me').length
-  const maxY         = Math.max(...allNodes.map(n => n.cy), 700) + 120
-
-  // ── Chat / blood-call routing ───────────────────────────────────
+  const allNodes = [...nodes, ...addedNodes]
   const familyChatId = `f-family-${user?.id ?? 'default'}`
+  const totalVerified = allNodes.filter(n => n.state === 'verified').length
+  const totalPending  = allNodes.filter(n => n.state === 'pending').length
+  const totalMembers  = allNodes.filter(n => n.id !== 'me').length
 
-  // ── Submit add-member form ──────────────────────────────────────
-  const handleSubmit = useCallback(async () => {
-    if (!formName.trim() || !formIdentifier.trim()) return
-    setSubmitting(true)
-    setSubmitMsg(null)
+  // Group by generation
+  const byGen: Partial<Record<Generation, TreeNode[]>> = {}
+  for (const n of allNodes) {
+    if (!byGen[n.generation]) byGen[n.generation] = []
+    byGen[n.generation]!.push(n)
+  }
+  const sortedGens = (Object.keys(byGen) as Generation[]).sort(
+    (a, b) => GENERATION_META[a].order - GENERATION_META[b].order
+  )
 
-    const newMember: AddedMember = {
-      id:               `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      name:             formName.trim(),
-      relationship:     formRel,
-      targetIdentifier: formIdentifier.trim(),
-      addedAt:          new Date().toISOString(),
-      inviteSent:       false,
+  const handleAdd = useCallback(async () => {
+    if (!formName.trim() || !formId.trim()) return
+    setLoading(true); setMsg(null)
+    const m: AddedMember = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
+      name: formName.trim(), relationship: formRel,
+      targetIdentifier: formId.trim(), addedAt: new Date().toISOString(), inviteSent: false,
     }
-
     try {
-      await ringsApi.sendInvite({
-        name:             newMember.name,
-        relationship:     newMember.relationship,
-        targetIdentifier: newMember.targetIdentifier,
-      } as any)
-      newMember.inviteSent = true
-      setSubmitMsg({ type: 'ok', text: "Bond request sent! They'll appear once they accept." })
+      await ringsApi.sendInvite({ name: m.name, relationship: m.relationship, targetIdentifier: m.targetIdentifier } as any)
+      m.inviteSent = true
+      setMsg({ ok: true, text: "Bond request sent! They'll appear once they accept." })
     } catch {
-      setSubmitMsg({ type: 'err', text: 'Added locally — invite will be sent when online.' })
+      setMsg({ ok: false, text: 'Saved locally — invite will send when back online.' })
     }
+    const updated = [...added, m]
+    setAdded(updated); persist(updated)
+    setFormName(''); setFormRel('PARENT'); setFormId('')
+    setLoading(false)
+    setTimeout(() => { setMsg(null); setShowSheet(false) }, 2500)
+  }, [formName, formRel, formId, added])
 
-    const updated = [...addedMembers, newMember]
-    setAddedMembers(updated)
-    persistMembers(updated)
-
-    setFormName('')
-    setFormRel('PARENT')
-    setFormIdentifier('')
-    setSubmitting(false)
-
-    // Auto-dismiss sheet ~2.5s after success/error message
-    setTimeout(() => {
-      setSubmitMsg(null)
-      setShowSheet(false)
-    }, 2500)
-  }, [formName, formRel, formIdentifier, addedMembers])
-
-  // ── Render ──────────────────────────────────────────────────────
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', minHeight: '100vh',
-      background: '#0c1009', color: '#fff', fontFamily: 'system-ui, sans-serif',
-    }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', color: 'var(--text-primary)', fontFamily: 'var(--font-body)', paddingBottom: 100 }}>
 
-      {/* ── Header bar with back button ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12,
-        padding: '14px 16px 6px', flexShrink: 0,
-      }}>
-        <button
-          onClick={() => router.back()}
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 10, padding: '7px 14px',
-            color: '#fff', fontSize: 13, cursor: 'pointer', fontWeight: 600,
-          }}
-        >
-          ← Back
-        </button>
-        <h2 style={{ margin: 0, color: '#4ade80', fontSize: 20, fontWeight: 800, flex: 1 }}>
-          Idile Family Tree
-        </h2>
+      {/* ── Adinkra Sankofa overlay ── */}
+      <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.025,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%23d4a017' fill='none' stroke-linecap='round'%3E%3Ccircle cx='40' cy='44' r='16' stroke-width='1'/%3E%3Cpath d='M40 28 Q32 16 26 18 Q20 22 26 28 Q32 24 40 28' stroke-width='1'/%3E%3Ccircle cx='40' cy='22' r='4' stroke-width='1.2' fill='%23d4a017' fill-opacity='.2'/%3E%3Cpath d='M56 44 Q68 36 66 28 Q62 22 56 28' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E")`,
+        backgroundSize: '80px 80px' }} />
+
+      {/* ── Kente top stripe ── */}
+      <div style={{ height: 3, background: 'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%,#1a1a1a 100%)', position: 'relative', zIndex: 2 }} />
+
+      {/* ── Header ── */}
+      <div style={{ padding: '14px 16px 0', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 2 }}>
+        <button onClick={() => router.back()} style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>←</button>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1.2 }}>Ukoo · Idile</h1>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>Your Living Lineage</p>
+        </div>
+        <button onClick={() => setShowSheet(true)} style={{ height: 36, padding: '0 14px', borderRadius: 10, background: 'var(--green-primary)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', flexShrink: 0 }}>+ Add Bond</button>
       </div>
 
-      {/* ── UKOO unlock banner (shown until ≥3 members) ── */}
-      {totalMembers < 3 && (
-        <div style={{
-          margin: '10px 16px 0',
-          padding: '14px 16px',
-          borderRadius: 14,
-          background: 'linear-gradient(135deg, rgba(74,222,128,0.12), rgba(74,222,128,0.04))',
-          border: '1.5px solid rgba(74,222,128,0.35)',
-          display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 26 }}>🌳</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#4ade80', marginBottom: 3, lineHeight: 1.4 }}>
-              Add at least 3 family members to unlock the full UKOO experience
-            </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-              {totalMembers} / 3 members added
-            </div>
+      {/* ── Stats bar ── */}
+      <div style={{ margin: '14px 16px 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, position: 'relative', zIndex: 1 }}>
+        {[
+          { value: totalMembers, label: 'Members', color: 'var(--text-primary)' },
+          { value: totalVerified, label: 'Verified', color: 'var(--nkisi-green)' },
+          { value: totalPending,  label: 'Pending',  color: '#f59e0b' },
+        ].map(s => (
+          <div key={s.label} style={{ textAlign: 'center', padding: '10px 0', borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: s.color, fontFamily: 'var(--font-display)', lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', marginTop: 3, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s.label}</div>
           </div>
-          <button
-            onClick={() => setShowSheet(true)}
-            style={{
-              padding: '8px 14px', borderRadius: 10,
-              background: '#4ade80', color: '#0c1009',
-              border: 'none', fontWeight: 800, fontSize: 11,
-              cursor: 'pointer', flexShrink: 0,
-            }}
-          >
-            Add Member
-          </button>
+        ))}
+      </div>
+
+      {/* ── Proverb ── */}
+      <div style={{ margin: '10px 16px 0', padding: '10px 14px', borderRadius: 12, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <p style={{ margin: 0, fontSize: 11, color: 'var(--gold)', fontStyle: 'italic', fontFamily: 'var(--font-body)', lineHeight: 1.6, opacity: 0.8 }}>
+          "Igi kan kò le dúró sí ara rẹ̀" — A single tree cannot make a forest. <span style={{ fontSize: 9, color: 'var(--text-muted)', fontStyle: 'normal' }}>Yoruba proverb</span>
+        </p>
+      </div>
+
+      {/* ── Unlock banner (< 3 members) ── */}
+      {totalMembers < 3 && (
+        <div style={{ margin: '10px 16px 0', padding: '14px 16px', borderRadius: 14, background: 'rgba(74,222,128,0.06)', border: '1.5px solid rgba(74,222,128,0.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 24 }}>🌳</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--nkisi-green)', fontFamily: 'var(--font-display)', marginBottom: 2 }}>Add 3 members to unlock UKOO</div>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{totalMembers} / 3 family members added</div>
+          </div>
+          <button onClick={() => setShowSheet(true)} style={{ padding: '8px 14px', borderRadius: 10, background: 'var(--green-primary)', color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>Add</button>
         </div>
       )}
 
-      {/* ── Main content: SVG tree + node detail side panel ── */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-
-        {/* SVG Canvas */}
-        <div style={{ flex: 1, position: 'relative', overflow: 'auto' }}>
-          <svg
-            width="100%"
-            height="100%"
-            viewBox={`0 0 1000 ${maxY}`}
-            style={{ minHeight: maxY, filter: 'drop-shadow(0 0 20px rgba(74,222,128,0.08))' }}
-          >
-            {/* ── Connecting lines ── */}
-            {allLinks.map((l, i) => {
-              const isAddedLink = i >= links.length
-              return (
-                <line
-                  key={i}
-                  x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-                  stroke={isAddedLink ? 'rgba(74,222,128,0.25)' : 'rgba(168,85,247,0.3)'}
-                  strokeWidth="3"
-                  strokeDasharray={isAddedLink ? '8 4' : '6 6'}
-                />
-              )
-            })}
-
-            {/* ── SVG Nodes ── */}
-            {allNodes.map(node => {
-              const isVerified = node.state === 'verified'
-              const isDeceased = node.state === 'deceased'
-              const isPending  = node.state === 'pending'
-              const isAdded    = node.id.startsWith('added-')
-
-              const strokeColor = isDeceased
-                ? '#52525B'
-                : isAdded
-                  ? '#4ade80'
-                  : isVerified
-                    ? '#22C55E'
-                    : '#F59E0B'   // pending amber
-
-              const bgColor = isDeceased ? '#18181B' : isAdded ? '#0c2618' : '#1a2e12'
-              const isDashed = isAdded || isPending
-
-              return (
-                <g
-                  key={node.id}
-                  transform={`translate(${node.cx}, ${node.cy})`}
-                  onClick={() => setSelected(node)}
-                  style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
-                >
-                  {/* Node circle */}
-                  <circle
-                    r="40"
-                    fill={bgColor}
-                    stroke={strokeColor}
-                    strokeWidth={isAdded ? 3 : 4}
-                    strokeDasharray={isDashed ? '6 3' : 'none'}
-                  />
-
-                  {/* Vi badge for Viewdicon users */}
-                  {node.isViewdicon && !isDeceased && (
-                    <circle cx="28" cy="-28" r="12" fill="#4ade80" stroke="#0c1009" strokeWidth="2" />
-                  )}
-                  {node.isViewdicon && !isDeceased && (
-                    <text x="28" y="-24" textAnchor="middle" fill="#0c1009" fontSize="10" fontWeight="bold">Vi</text>
-                  )}
-
-                  {/* Hourglass indicator for pending API bonds (not locally-added) */}
-                  {isPending && !isAdded && (
-                    <text x="-28" y="-24" textAnchor="middle" fontSize="14">⏳</text>
-                  )}
-
-                  {/* Deceased dove emoji */}
-                  {isDeceased && (
-                    <text x="0" y="5" textAnchor="middle" fontSize="24">&#x1F54A;&#xFE0F;</text>
-                  )}
-                  {!isDeceased && (
-                    <text x="0" y="5" textAnchor="middle" fill="#fff" fontSize="24">
-                      {isAdded
-                        ? '👤'
-                        : (node.id.includes('pat') || node.id.includes('ather') || node.id.includes('bro')
-                            ? '👨🏾'
-                            : '👩🏾'
-                          )
-                      }
-                    </text>
-                  )}
-
-                  {/* Name & relationship label */}
-                  <text y="60" textAnchor="middle" fill={isAdded ? '#4ade80' : '#e9d5ff'} fontSize="14" fontWeight="bold">
-                    {node.label}
-                  </text>
-                  <text y="75" textAnchor="middle" fill={isAdded ? 'rgba(74,222,128,0.5)' : 'rgba(233,213,255,0.6)'} fontSize="11">
-                    {node.sub}
-                  </text>
-
-                  {/* PENDING badge — locally added members */}
-                  {isAdded && (
-                    <>
-                      <rect x="-24" y="80" width="48" height="16" rx="8"
-                        fill="rgba(74,222,128,0.15)" stroke="rgba(74,222,128,0.3)" strokeWidth="1" />
-                      <text x="0" y="91" textAnchor="middle" fill="#4ade80" fontSize="8" fontWeight="700">PENDING</text>
-                    </>
-                  )}
-
-                  {/* PENDING badge — API bonds not yet accepted */}
-                  {isPending && !isAdded && (
-                    <>
-                      <rect x="-32" y="80" width="64" height="16" rx="8"
-                        fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.3)" strokeWidth="1" />
-                      <text x="0" y="91" textAnchor="middle" fill="#f59e0b" fontSize="8" fontWeight="700">⏳ PENDING</text>
-                    </>
-                  )}
-                </g>
-              )
-            })}
-          </svg>
-        </div>
-
-        {/* ── Node detail side panel ── */}
-        {selected && (
-          <div style={{
-            width: 300, background: '#111a0e',
-            borderLeft: '1px solid rgba(74,222,128,0.15)',
-            padding: 20, display: 'flex', flexDirection: 'column',
-            overflowY: 'auto', flexShrink: 0,
-          }}>
-            <button
-              onClick={() => setSelected(null)}
-              style={{ alignSelf: 'flex-end', background: 'transparent', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}
-            >
-              ×
-            </button>
-
-            <div style={{ textAlign: 'center', marginTop: 12 }}>
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%', background: '#1a2e12',
-                margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 36,
-                border: selected.id.startsWith('added-') ? '2px dashed #4ade80' : '2px solid #22c55e',
-              }}>
-                {selected.state === 'deceased' ? '🕊️' : '📸'}
+      {/* ── Generational Tree ── */}
+      <div style={{ padding: '20px 16px 0', position: 'relative', zIndex: 1 }}>
+        {sortedGens.map((gen, gi) => {
+          const genNodes = byGen[gen]!
+          const meta = GENERATION_META[gen]
+          const isSelf = gen === 'self'
+          return (
+            <div key={gen} style={{ marginBottom: 0 }}>
+              {/* Generation label */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 6, height: 6, borderRadius: 2, background: meta.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 10, fontWeight: 800, color: meta.color, fontFamily: 'var(--font-display)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{meta.label}</span>
+                <div style={{ flex: 1, height: 1, background: `${meta.color}20` }} />
+                <span style={{ fontSize: 12, opacity: 0.5 }}>{meta.emoji}</span>
               </div>
-              <h3 style={{ margin: 0, fontSize: 20, color: '#fff' }}>{selected.label}</h3>
-              <p style={{ margin: '4px 0 16px', color: '#4ade80', fontSize: 13 }}>{selected.sub}</p>
-            </div>
 
-            <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 10, padding: 12, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 12 }}>
-                <span style={{ color: 'rgba(255,255,255,0.5)' }}>Status</span>
-                <strong style={{
-                  color: selected.state === 'verified' ? '#22c55e' : selected.state === 'deceased' ? '#71717a' : '#f59e0b',
-                  textTransform: 'capitalize',
+              {/* Node cards row */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 0 }}>
+                {genNodes.map(n => (
+                  <button key={n.id} onClick={() => setSelected(n)} style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                    padding: '12px 10px', borderRadius: 14, cursor: 'pointer',
+                    background: n.id === 'me' ? 'rgba(34,211,238,0.08)' : stateBg(n.state),
+                    border: `1.5px solid ${n.id === 'me' ? '#22d3ee' : stateColor(n.state)}${n.id === 'me' ? '' : '40'}`,
+                    minWidth: 72, flex: '0 0 auto', textAlign: 'center', transition: 'transform .15s',
+                    position: 'relative',
+                  }}>
+                    {/* Viewdicon badge */}
+                    {n.isViewdicon && n.state !== 'deceased' && (
+                      <div style={{ position: 'absolute', top: 6, right: 6, width: 14, height: 14, borderRadius: '50%', background: 'var(--green-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: 7, fontWeight: 900, color: '#fff', fontFamily: 'var(--font-display)' }}>Vi</span>
+                      </div>
+                    )}
+                    {/* Avatar */}
+                    <div style={{
+                      width: isSelf ? 48 : 40, height: isSelf ? 48 : 40, borderRadius: '50%',
+                      background: n.state === 'deceased' ? 'rgba(82,82,91,0.15)' : `${stateColor(n.state)}12`,
+                      border: `${n.id === 'me' ? 2.5 : 1.5}px ${n.state === 'pending' ? 'dashed' : 'solid'} ${stateColor(n.state)}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isSelf ? 22 : 18, flexShrink: 0,
+                    }}>
+                      {nodeEmoji(n)}
+                    </div>
+                    {/* Name */}
+                    <span style={{ fontSize: n.id === 'me' ? 11 : 10, fontWeight: n.id === 'me' ? 900 : 700, color: n.id === 'me' ? '#22d3ee' : 'var(--text-primary)', fontFamily: 'var(--font-display)', maxWidth: 68, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.label}</span>
+                    {/* Relationship */}
+                    <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-body)', maxWidth: 68, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.sub}</span>
+                    {/* Status pill */}
+                    {n.state === 'pending' && (
+                      <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: 'rgba(245,158,11,0.12)', color: '#f59e0b', fontFamily: 'var(--font-display)' }}>PENDING</span>
+                    )}
+                  </button>
+                ))}
+
+                {/* Add member placeholder for this generation */}
+                <button onClick={() => { setFormRel(gen === 'parent' ? 'PARENT' : gen === 'child' ? 'CHILD' : gen === 'grandparent' ? 'GRANDPARENT' : gen === 'sibling' ? 'SIBLING' : 'PARENT'); setShowSheet(true) }} style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                  padding: '12px 10px', borderRadius: 14, cursor: 'pointer',
+                  background: 'transparent', border: `1.5px dashed var(--border)`, minWidth: 72, flex: '0 0 auto',
+                  opacity: 0.5, transition: 'opacity .15s',
                 }}>
-                  {selected.id.startsWith('added-') ? 'invite pending' : selected.state}
-                </strong>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-raised)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>+</div>
+                  <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>Add</span>
+                </button>
               </div>
-              {selected.isViewdicon && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.5)' }}>Viewdicon ID</span>
-                  <strong style={{ color: '#fff' }}>AKN-4X9P</strong>
+
+              {/* Generation connector — vertical line between gens */}
+              {gi < sortedGens.length - 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', margin: '0 0 8px' }}>
+                  <div style={{ width: 1, height: 24, background: 'var(--border)', borderRadius: 1 }} />
                 </div>
               )}
             </div>
+          )
+        })}
+      </div>
 
-            {/* Action buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
-              <button
-                disabled={selected.state === 'deceased'}
-                onClick={() => router.push(`/dashboard/chat/${familyChatId}`)}
-                style={{
-                  padding: 12, borderRadius: 12, background: '#4ade80', color: '#0c1009',
-                  border: 'none', fontWeight: 700, fontSize: 13,
-                  cursor: selected.state === 'deceased' ? 'not-allowed' : 'pointer',
-                  opacity: selected.state === 'deceased' ? 0.3 : 1,
-                }}
-              >
-                💬 Message in Family Chat
-              </button>
-              <button
-                disabled={selected.state === 'deceased'}
-                onClick={() => router.push(`/dashboard/chat/${familyChatId}?bloodCall=1`)}
-                style={{
-                  padding: 12, borderRadius: 12,
-                  background: 'rgba(220,38,38,0.1)', color: '#ef4444',
-                  border: '1px solid rgba(220,38,38,0.3)',
-                  fontWeight: 700, fontSize: 13,
-                  cursor: selected.state === 'deceased' ? 'not-allowed' : 'pointer',
-                  opacity: selected.state === 'deceased' ? 0.3 : 1,
-                }}
-              >
-                🚨 Send Blood-Call Test
-              </button>
-              <button onClick={() => router.push('/dashboard/settings')} style={{
-                padding: 12, borderRadius: 12, background: 'transparent', color: '#4ade80',
-                border: '1px solid rgba(74,222,128,0.3)', fontWeight: 700, fontSize: 13, cursor: 'pointer',
-              }}>
-                ⚙️ Update Details
+      {/* ── FAB ── */}
+      <button onClick={() => setShowSheet(true)} aria-label="Add family member" style={{
+        position: 'fixed', bottom: 90, right: 20, width: 52, height: 52, borderRadius: '50%',
+        background: 'var(--green-primary)', color: '#fff', border: 'none', fontSize: 24, fontWeight: 700,
+        cursor: 'pointer', boxShadow: '0 4px 20px rgba(26,124,62,0.4)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 40,
+      }}>+</button>
+
+      {/* ── Member detail bottom sheet ── */}
+      {selected && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setSelected(null)}>
+          <div style={{ width: '100%', background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', padding: '0 20px 48px', maxHeight: '70vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '12px auto 20px' }} />
+
+            {/* Avatar + name */}
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{
+                width: 80, height: 80, borderRadius: '50%', margin: '0 auto 12px',
+                background: stateBg(selected.state),
+                border: `2.5px ${selected.state === 'pending' ? 'dashed' : 'solid'} ${stateColor(selected.state)}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38,
+              }}>{nodeEmoji(selected)}</div>
+              <h3 style={{ margin: '0 0 2px', fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{selected.label}</h3>
+              <p style={{ margin: 0, fontSize: 13, color: stateColor(selected.state), fontFamily: 'var(--font-body)' }}>{selected.sub}</p>
+            </div>
+
+            {/* Details */}
+            <div style={{ background: 'var(--bg-raised)', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
+              {[
+                { k: 'Generation', v: GENERATION_META[selected.generation].label },
+                { k: 'Status', v: selected.id.startsWith('added-') ? 'Invite pending' : selected.state.charAt(0).toUpperCase() + selected.state.slice(1) },
+                ...(selected.isViewdicon ? [{ k: 'On Viewdicon', v: '✓ Member' }] : []),
+              ].map(row => (
+                <div key={row.k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{row.k}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{row.v}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {selected.state !== 'deceased' && (
+                <button onClick={() => { setSelected(null); router.push(`/dashboard/chat/${familyChatId}`) }} style={{ padding: '13px 0', borderRadius: 12, background: 'var(--green-primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-display)' }}>
+                  💬 Message in Family Chat
+                </button>
+              )}
+              {selected.state !== 'deceased' && (
+                <button onClick={() => { setSelected(null); router.push(`/dashboard/chat/${familyChatId}?bloodCall=1`) }} style={{ padding: '13px 0', borderRadius: 12, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font-display)' }}>
+                  🚨 Send Blood-Call SOS
+                </button>
+              )}
+              <button onClick={() => setSelected(null)} style={{ padding: '13px 0', borderRadius: 12, background: 'var(--bg-raised)', color: 'var(--text-secondary)', border: '1px solid var(--border)', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Close
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── FAB: Add Family Member ── */}
-      <button
-        onClick={() => setShowSheet(true)}
-        aria-label="Add family member"
-        style={{
-          position: 'fixed', bottom: 88, right: 20,
-          width: 56, height: 56, borderRadius: '50%',
-          background: '#4ade80', color: '#0c1009',
-          border: 'none', fontSize: 28, fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: '0 4px 20px rgba(74,222,128,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 40, transition: 'transform 0.15s, box-shadow 0.15s',
-          lineHeight: 1,
-        }}
-      >
-        +
-      </button>
-
-      {/* ── Add Member Bottom Sheet ── */}
+      {/* ── Add Member bottom sheet ── */}
       {showSheet && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 80,
-            background: 'rgba(0,0,0,0.72)',
-            display: 'flex', alignItems: 'flex-end',
-          }}
-          onClick={() => setShowSheet(false)}
-        >
-          <div
-            style={{
-              width: '100%', background: '#111a0e',
-              borderRadius: '20px 20px 0 0',
-              padding: '20px 20px 48px',
-              maxHeight: '85vh', overflowY: 'auto',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Drag handle */}
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)', margin: '0 auto 18px' }} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'flex-end' }} onClick={() => setShowSheet(false)}>
+          <div style={{ width: '100%', background: 'var(--bg-card)', borderRadius: '20px 20px 0 0', padding: '0 20px 48px', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)', margin: '12px auto 20px' }} />
 
-            {/* Sheet header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, color: '#4ade80', fontWeight: 800 }}>Add Family Member</h3>
-              <button
-                onClick={() => setShowSheet(false)}
-                style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}
-              >
-                ×
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Add Family Member</h3>
+              <button onClick={() => setShowSheet(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
             </div>
 
-            {/* Submit feedback message */}
-            {submitMsg && (
-              <div style={{
-                padding: '10px 14px', borderRadius: 10, marginBottom: 14,
-                background: submitMsg.type === 'ok' ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)',
-                border: `1px solid ${submitMsg.type === 'ok' ? 'rgba(74,222,128,0.35)' : 'rgba(251,191,36,0.35)'}`,
-                fontSize: 13, fontWeight: 600,
-                color: submitMsg.type === 'ok' ? '#4ade80' : '#fbbf24',
-              }}>
-                {submitMsg.text}
-              </div>
+            {msg && (
+              <div style={{ padding: '10px 14px', borderRadius: 10, marginBottom: 14, background: msg.ok ? 'rgba(74,222,128,0.08)' : 'rgba(251,191,36,0.08)', border: `1px solid ${msg.ok ? 'rgba(74,222,128,0.25)' : 'rgba(251,191,36,0.25)'}`, fontSize: 13, fontWeight: 600, color: msg.ok ? 'var(--nkisi-green)' : '#fbbf24', fontFamily: 'var(--font-body)' }}>{msg.text}</div>
             )}
 
-            {/* Input: Name or AfroID */}
-            <label style={{
-              fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
-              letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6, display: 'block',
-            }}>
-              Name or AfroID
-            </label>
-            <input
-              type="text"
-              value={formName}
-              onChange={e => setFormName(e.target.value)}
-              placeholder="Full name or AFR-NGA-..."
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 10,
-                border: '1px solid rgba(74,222,128,0.22)',
-                background: 'rgba(0,0,0,0.3)', color: '#fff',
-                fontSize: 14, marginBottom: 16, outline: 'none', boxSizing: 'border-box',
-              }}
-            />
+            {[
+              { label: 'Full name or AfroID', value: formName, set: setFormName, placeholder: 'e.g. Adaeze Okafor or AFR-NGA-...' },
+              { label: 'AfroID or Phone number', value: formId, set: setFormId, placeholder: 'AFR-NGA-... or +234...' },
+            ].map(f => (
+              <div key={f.label} style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.08em', fontFamily: 'var(--font-display)', textTransform: 'uppercase', marginBottom: 6 }}>{f.label}</label>
+                <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder} style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-raised)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+            ))}
 
-            {/* Input: Relationship */}
-            <label style={{
-              fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
-              letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6, display: 'block',
-            }}>
-              Relationship
-            </label>
-            <select
-              value={formRel}
-              onChange={e => setFormRel(e.target.value as Relationship)}
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 10,
-                border: '1px solid rgba(74,222,128,0.22)',
-                background: '#0c1009', color: '#fff',
-                fontSize: 14, marginBottom: 16, outline: 'none',
-                boxSizing: 'border-box', cursor: 'pointer',
-              }}
-            >
-              {RELATIONSHIP_TYPES.map(r => (
-                <option key={r} value={r} style={{ background: '#0c1009', color: '#fff' }}>
-                  {relLabel(r)}
-                </option>
-              ))}
-            </select>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.08em', fontFamily: 'var(--font-display)', textTransform: 'uppercase', marginBottom: 6 }}>Relationship</label>
+              <select value={formRel} onChange={e => setFormRel(e.target.value as Relationship)} style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-raised)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}>
+                {RELATIONSHIP_TYPES.map(r => <option key={r} value={r} style={{ background: 'var(--bg-card)' }}>{relLabel(r)}</option>)}
+              </select>
+            </div>
 
-            {/* Input: AfroID or Phone (targetIdentifier) */}
-            <label style={{
-              fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)',
-              letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 6, display: 'block',
-            }}>
-              AfroID or Phone
-            </label>
-            <input
-              type="text"
-              value={formIdentifier}
-              onChange={e => setFormIdentifier(e.target.value)}
-              placeholder="AFR-NGA-... or +234..."
-              style={{
-                width: '100%', padding: '12px 14px', borderRadius: 10,
-                border: '1px solid rgba(74,222,128,0.22)',
-                background: 'rgba(0,0,0,0.3)', color: '#fff',
-                fontSize: 14, marginBottom: 20, outline: 'none', boxSizing: 'border-box',
-              }}
-            />
-
-            {/* Submit button */}
-            <button
-              onClick={handleSubmit}
-              disabled={submitting || !formName.trim() || !formIdentifier.trim()}
-              style={{
-                width: '100%', padding: '14px', borderRadius: 12,
-                background: (!formName.trim() || !formIdentifier.trim())
-                  ? 'rgba(74,222,128,0.15)'
-                  : '#4ade80',
-                color: (!formName.trim() || !formIdentifier.trim())
-                  ? 'rgba(255,255,255,0.4)'
-                  : '#0c1009',
-                border: 'none', fontWeight: 800, fontSize: 14,
-                cursor: (!formName.trim() || !formIdentifier.trim() || submitting)
-                  ? 'not-allowed'
-                  : 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              {submitting ? 'Sending Request...' : '🌳 Send Bond Request'}
+            <button onClick={handleAdd} disabled={loading || !formName.trim() || !formId.trim()} style={{ width: '100%', padding: '14px', borderRadius: 12, background: (!formName.trim() || !formId.trim()) ? 'var(--bg-raised)' : 'var(--green-primary)', color: (!formName.trim() || !formId.trim()) ? 'var(--text-muted)' : '#fff', border: 'none', fontWeight: 800, fontSize: 14, cursor: (!formName.trim() || !formId.trim() || loading) ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-display)', transition: 'all 0.2s' }}>
+              {loading ? 'Sending...' : '🌳 Send Bond Request'}
             </button>
 
-            {/* Recently added members list */}
-            {addedMembers.length > 0 && (
+            {/* Recently added list */}
+            {added.length > 0 && (
               <div style={{ marginTop: 24 }}>
-                <div style={{
-                  fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.35)',
-                  letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10,
-                }}>
-                  Recently Added ({addedMembers.length})
-                </div>
-                {addedMembers.map(m => (
-                  <div key={m.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', borderRadius: 10, marginBottom: 6,
-                    background: 'rgba(74,222,128,0.04)',
-                    border: '1px dashed rgba(74,222,128,0.2)',
-                  }}>
-                    <div style={{
-                      width: 32, height: 32, borderRadius: '50%',
-                      background: 'rgba(74,222,128,0.1)',
-                      border: '1.5px dashed rgba(74,222,128,0.35)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 14, flexShrink: 0,
-                    }}>
-                      👤
-                    </div>
+                <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.1em', fontFamily: 'var(--font-display)', marginBottom: 10 }}>RECENTLY ADDED ({added.length})</div>
+                {added.map(m => (
+                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, marginBottom: 6, background: 'var(--bg-raised)', border: '1px dashed var(--border)' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(74,222,128,0.08)', border: '1.5px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>👤</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#f0f7f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {m.name}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'rgba(74,222,128,0.6)' }}>
-                        {relLabel(m.relationship)}
-                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{relLabel(m.relationship)}</div>
                     </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{
-                        fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 99,
-                        background: m.inviteSent ? 'rgba(74,222,128,0.12)' : 'rgba(251,191,36,0.12)',
-                        color: m.inviteSent ? '#4ade80' : '#fbbf24',
-                      }}>
-                        {m.inviteSent ? 'INVITED' : 'PENDING'}
-                      </div>
-                    </div>
+                    <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 99, background: m.inviteSent ? 'rgba(74,222,128,0.1)' : 'rgba(251,191,36,0.1)', color: m.inviteSent ? 'var(--nkisi-green)' : '#fbbf24', fontFamily: 'var(--font-display)' }}>{m.inviteSent ? 'INVITED' : 'PENDING'}</span>
                   </div>
                 ))}
               </div>

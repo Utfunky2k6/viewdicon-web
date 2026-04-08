@@ -120,8 +120,12 @@ function UpgradePath() {
 // ── Main page ──────────────────────────────────────────────────
 export default function AllyDashboard() {
   const router = useRouter()
-  const [allyId] = React.useState(() => `ALY-${Date.now().toString(36).toUpperCase().slice(-4)}-2026`)
+  const [allyId, setAllyId] = React.useState('ALY-XXXX-2026')
   const [showLocked, setShowLocked] = React.useState(false)
+
+  React.useEffect(() => {
+    setAllyId(`ALY-${Date.now().toString(36).toUpperCase().slice(-4)}-2026`)
+  }, [])
 
   React.useEffect(() => {
     // Inject CSS once

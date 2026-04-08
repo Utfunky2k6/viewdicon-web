@@ -6,6 +6,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ── Inject-once CSS ───────────────────────────────────────────────
 const CSS_ID = 'odu-guide-css'
@@ -699,7 +700,8 @@ export default function OduGuidePage() {
         return a.name.localeCompare(b.name)
       })
       setAllChannels(chs)
-    }).catch(() => {
+    }).catch((e) => {
+      logApiFailure('guide/channels', e)
       // fallback: use legacy 3 channels
       setAllChannels([])
     })
@@ -735,9 +737,10 @@ export default function OduGuidePage() {
         const id = ch?.id ?? key
         try {
           const res = await jollofTvApi.channelSchedule(id)
-          result[key] = res.schedules?.length ? res.schedules : MOCK_SCHEDULE[key] ?? []
-        } catch {
-          result[key] = MOCK_SCHEDULE[key] ?? []
+          result[key] = res.schedules?.length ? res.schedules : (USE_MOCKS ? MOCK_SCHEDULE[key] ?? [] : [])
+        } catch (e) {
+          logApiFailure('guide/channel-schedule', e)
+          result[key] = USE_MOCKS ? MOCK_SCHEDULE[key] ?? [] : []
         }
       }))
 

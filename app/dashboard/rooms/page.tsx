@@ -1,5 +1,6 @@
 'use client'
 import * as React from 'react'
+import { logApiFailure } from '@/lib/flags'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -35,7 +36,7 @@ export default function RoomsPage() {
     fetch('/api/events/rooms')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setRooms(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch((e) => logApiFailure('rooms/fetch', e))
   }, [])
 
   const liveRooms     = rooms.filter((r) => r.isLive)

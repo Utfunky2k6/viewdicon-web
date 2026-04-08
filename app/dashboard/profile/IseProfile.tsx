@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { HonorRankScreen } from '@/components/profile/HonorRankScreen'
 import { sessionsApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 
 const ISE_TABS = ['Work', 'Trade Proof', 'Tools', 'Villages'] as const
 type IseTab = typeof ISE_TABS[number]
@@ -94,8 +95,8 @@ function IseWorkTab({ xp, onShowRank }: { xp: number; onShowRank: () => void }) 
       CONSULTING:'💡', DEFAULT:'📋',
     }
     Promise.all([
-      sessionsApi.myCompleted().catch(() => ({ sessions: [], summary: undefined })),
-      sessionsApi.myActive().catch(() => ({ sessions: [] })),
+      sessionsApi.myCompleted().catch((e) => { logApiFailure('profile/ise/completed', e); return { sessions: [], summary: undefined } }),
+      sessionsApi.myActive().catch((e) => { logApiFailure('profile/ise/active', e); return { sessions: [] } }),
     ]).then(([completed, active]) => {
       const allCompleted = (completed.sessions ?? []) as Record<string,unknown>[]
       const allActive    = (active.sessions ?? []) as Record<string,unknown>[]

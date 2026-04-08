@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 /* ── inject-once CSS ── */
 const CSS_ID = 'itan-ep-css'
@@ -120,17 +121,20 @@ export default function PodcastDetailPage() {
     if (!podcastId) return
     setLoading(true)
     Promise.all([
-      jollofTvApi.podcast(podcastId).catch(() => MOCK_PODCAST),
-      jollofTvApi.podcastEpisodes(podcastId).catch(() => ({ episodes: MOCK_EPISODES })),
+      jollofTvApi.podcast(podcastId).catch((e) => { logApiFailure('podcast/detail', e); return USE_MOCKS ? MOCK_PODCAST : null }),
+      jollofTvApi.podcastEpisodes(podcastId).catch((e) => { logApiFailure('podcast/episodes', e); return USE_MOCKS ? { episodes: MOCK_EPISODES } : { episodes: [] } }),
     ]).then(([podRes, epRes]) => {
-      const p = (podRes as any)?.data ?? podRes ?? MOCK_PODCAST
-      const eps = (epRes as any)?.episodes ?? MOCK_EPISODES
+      const p = (podRes as any)?.data ?? podRes ?? (USE_MOCKS ? MOCK_PODCAST : null)
+      const eps = (epRes as any)?.episodes ?? (USE_MOCKS ? MOCK_EPISODES : [])
       setPodcast(p)
-      setEpisodes(eps.length ? eps : MOCK_EPISODES)
+      setEpisodes(eps.length ? eps : (USE_MOCKS ? MOCK_EPISODES : []))
       setLoading(false)
-    }).catch(() => {
-      setPodcast(MOCK_PODCAST)
-      setEpisodes(MOCK_EPISODES)
+    }).catch((e) => {
+      logApiFailure('podcast/load', e)
+      if (USE_MOCKS) {
+        setPodcast(MOCK_PODCAST)
+        setEpisodes(MOCK_EPISODES)
+      }
       setLoading(false)
     })
   }, [podcastId])

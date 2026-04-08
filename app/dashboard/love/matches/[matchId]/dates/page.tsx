@@ -1,330 +1,543 @@
+/**
+ * UFE -- Station 3: Experience Layer
+ *
+ * Where matched couples plan and go on dates.
+ * Virtual (video/voice) and in-person experiences.
+ * Schedule, manage, and rate shared moments.
+ */
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { loveWorldApi } from '../../../../../../lib/api'
-import { useAuthStore } from '../../../../../../stores/authStore'
+import { COLOR, TYPE, SPACE, RADIUS, DURATION, EASE, REALM } from '@/components/love-world/tokens'
+import {
+  RealmProvider, LWText, LWButton, LWCard, LWNav,
+  LWBadge, LWSkeleton, LWEmpty, LWSheet, LWInput,
+} from '@/components/love-world/primitives'
+import { loveWorldApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 
-interface VirtualDate {
-  id: string; dateType: string; scheduledAt: string; status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED'
-  rating?: number; reflection?: string; partnerRating?: number; createdAt: string
+/* ─── Types ─── */
+
+interface DateEvent {
+  id: string
+  matchId: string
+  dateType: 'VIDEO' | 'VOICE' | 'IN_PERSON'
+  scheduledAt: string
+  status: 'SCHEDULED' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
+  venue?: string
+  rating?: number
+  reflection?: string
+  createdAt: string
 }
 
-const DATE_TYPES = [
-  { key: 'VIDEO_CALL', label: 'Video Call', icon: '\uD83D\uDCF9' },
-  { key: 'COOKING_TOGETHER', label: 'Cooking Together', icon: '\uD83C\uDF73' },
-  { key: 'CULTURAL_QUIZ', label: 'Cultural Quiz', icon: '\uD83C\uDFAD' },
-  { key: 'MOVIE_WATCH', label: 'Movie Watch', icon: '\uD83C\uDFAC' },
-  { key: 'PRAYER_MEDITATION', label: 'Prayer / Meditation', icon: '\uD83D\uDE4F' },
-  { key: 'CUSTOM', label: 'Custom', icon: '\u2728' },
-] as const
+/* ─── Constants ─── */
 
-const GOLD = '#D4AF37'
-const BG = '#0A0A0F'
-const CARD = '#111118'
-const CARD2 = '#1A1A25'
-const GREEN = '#00C853'
-const RED = '#FF3B30'
-const WHITE = '#FFFFFF'
-const BLUE = '#4A90D9'
+const T = REALM.ufe
 
-const STATUS_COLORS: Record<string, string> = {
-  SCHEDULED: BLUE,
-  IN_PROGRESS: GREEN,
-  COMPLETED: GOLD,
+const DATE_TYPES = {
+  VIDEO:     { icon: '\uD83C\uDFA5', label: 'Video Call',  description: 'Virtual face-to-face — see each other in real time' },
+  VOICE:     { icon: '\uD83C\uDF99\uFE0F', label: 'Voice Call',  description: 'Audio-only conversation — focus on the words' },
+  IN_PERSON: { icon: '\uD83E\uDDED', label: 'In-Person',   description: 'Meet at an agreed venue — bring your best self' },
+} as const
+
+const STATUS_BADGE: Record<string, { variant: 'default' | 'accent' | 'success' | 'warning' | 'danger'; label: string }> = {
+  SCHEDULED:   { variant: 'warning', label: 'Scheduled' },
+  CONFIRMED:   { variant: 'accent',  label: 'Confirmed' },
+  IN_PROGRESS: { variant: 'success', label: 'In Progress' },
+  COMPLETED:   { variant: 'default', label: 'Completed' },
+  CANCELLED:   { variant: 'danger',  label: 'Cancelled' },
 }
 
-export default function VirtualDatesPage() {
-  const { matchId } = useParams<{ matchId: string }>()
+/* ─── Helpers ─── */
+
+function formatDateTime(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit',
+    })
+  } catch {
+    return iso
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════
+   Main Page
+   ═════════════════════════════════════════════════════════════ */
+
+export default function DatesPage() {
+  const { matchId } = useParams() as { matchId: string }
   const router = useRouter()
-  const user = useAuthStore(s => s.user)
 
-  const [dates, setDates] = useState<VirtualDate[]>([])
-  const [loading, setLoading] = useState(true)
-  const [dayNum, setDayNum] = useState(1)
+  const [dates, setDates] = React.useState<DateEvent[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState(false)
 
-  // Schedule form
-  const [showSchedule, setShowSchedule] = useState(false)
-  const [schedType, setSchedType] = useState('VIDEO_CALL')
-  const [schedDate, setSchedDate] = useState('')
-  const [schedTime, setSchedTime] = useState('')
-  const [scheduling, setScheduling] = useState(false)
+  /* Schedule sheet state */
+  const [showSchedule, setShowSchedule] = React.useState(false)
+  const [scheduleType, setScheduleType] = React.useState<'VIDEO' | 'VOICE' | 'IN_PERSON'>('VIDEO')
+  const [scheduleAt, setScheduleAt] = React.useState('')
+  const [scheduleVenue, setScheduleVenue] = React.useState('')
+  const [scheduling, setScheduling] = React.useState(false)
 
-  // Rating form
-  const [ratingDateId, setRatingDateId] = useState<string | null>(null)
-  const [ratingStars, setRatingStars] = useState(0)
-  const [ratingText, setRatingText] = useState('')
-  const [submittingRating, setSubmittingRating] = useState(false)
+  /* Rating sheet state */
+  const [ratingDateId, setRatingDateId] = React.useState<string | null>(null)
+  const [ratingValue, setRatingValue] = React.useState(0)
+  const [ratingReflection, setRatingReflection] = React.useState('')
+  const [submittingRating, setSubmittingRating] = React.useState(false)
 
-  const fetchData = useCallback(async () => {
-    if (!matchId) return
+  /* ─── Data fetching ─── */
+
+  const load = React.useCallback(async () => {
     try {
-      const res = await loveWorldApi.getDates(matchId).catch(() => ({ data: [] }))
-      const arr = Array.isArray(res) ? res : res?.data || []
-      setDates(arr.sort((a: VirtualDate, b: VirtualDate) =>
-        new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()))
-      if (res?.dayNumber) setDayNum(res.dayNumber)
-    } catch { /* silent */ } finally { setLoading(false) }
+      setError(false)
+      const res = await loveWorldApi.getDates(matchId)
+      if (res?.dates) setDates(res.dates)
+      else if (Array.isArray(res)) setDates(res)
+      else setDates([])
+    } catch (e) {
+      logApiFailure('love/dates/fetch', e)
+      setDates([]) // treat API failure as no dates yet
+    } finally {
+      setLoading(false)
+    }
   }, [matchId])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  React.useEffect(() => { load() }, [load])
 
-  const handleSchedule = async () => {
-    if (!matchId || !schedDate || !schedTime) return
+  /* ─── Actions ─── */
+
+  async function handleSchedule() {
+    if (!scheduleAt) return
     setScheduling(true)
     try {
-      const scheduledAt = new Date(`${schedDate}T${schedTime}`).toISOString()
-      await loveWorldApi.scheduleDate(matchId, { dateType: schedType, scheduledAt })
+      await loveWorldApi.scheduleDate(matchId, {
+        dateType: scheduleType,
+        scheduledAt: new Date(scheduleAt).toISOString(),
+      })
       setShowSchedule(false)
-      setSchedDate('')
-      setSchedTime('')
-      await fetchData()
-    } catch { /* silent */ } finally { setScheduling(false) }
+      setScheduleType('VIDEO')
+      setScheduleAt('')
+      setScheduleVenue('')
+      await load()
+    } finally {
+      setScheduling(false)
+    }
   }
 
-  const handleAction = async (dateId: string, action: 'start' | 'end') => {
-    if (!matchId) return
-    try {
-      await loveWorldApi.updateDate(matchId, dateId, action)
-      await fetchData()
-      if (action === 'end') setRatingDateId(dateId)
-    } catch { /* silent */ }
+  async function handleDateAction(dateId: string, action: 'start' | 'end') {
+    await loveWorldApi.updateDate(matchId, dateId, action)
+    await load()
   }
 
-  const handleRate = async () => {
-    if (!matchId || !ratingDateId || ratingStars === 0) return
+  async function handleRate() {
+    if (!ratingDateId || ratingValue < 1) return
     setSubmittingRating(true)
     try {
       await loveWorldApi.rateDate(matchId, ratingDateId, {
-        rating: ratingStars,
-        reflection: ratingText.trim() || undefined,
+        rating: ratingValue,
+        reflection: ratingReflection.trim() || undefined,
       })
       setRatingDateId(null)
-      setRatingStars(0)
-      setRatingText('')
-      await fetchData()
-    } catch { /* silent */ } finally { setSubmittingRating(false) }
+      setRatingValue(0)
+      setRatingReflection('')
+      await load()
+    } finally {
+      setSubmittingRating(false)
+    }
   }
 
-  const typeInfo = (key: string) => DATE_TYPES.find(d => d.key === key) || { key, label: key, icon: '\u2728' }
+  function openRating(dateId: string) {
+    setRatingDateId(dateId)
+    setRatingValue(0)
+    setRatingReflection('')
+  }
 
-  if (loading) return (
-    <div style={{ background: BG, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: GOLD, fontFamily: 'monospace', fontSize: 14 }}>Loading Virtual Dates...</p>
-    </div>
+  /* ─── Derived data ─── */
+
+  const upcoming = dates.filter(d =>
+    d.status === 'SCHEDULED' || d.status === 'CONFIRMED' || d.status === 'IN_PROGRESS'
   )
+  const completed = dates.filter(d => d.status === 'COMPLETED')
+
+  /* ─── Loading ─── */
+
+  if (loading) {
+    return (
+      <RealmProvider realm="ufe">
+        <LWNav
+          title="Dates"
+          backHref={`/dashboard/love/matches/${matchId}`}
+          backLabel="Match"
+          right={<LWBadge variant="accent">Station 3</LWBadge>}
+        />
+        <div style={{ padding: SPACE[4], display: 'flex', flexDirection: 'column', gap: SPACE[3] }}>
+          {[1, 2, 3].map(i => <LWSkeleton key={i} height={96} radius={RADIUS.xl} />)}
+        </div>
+      </RealmProvider>
+    )
+  }
+
+  /* ─── Error ─── */
+
+  if (error) {
+    return (
+      <RealmProvider realm="ufe">
+        <LWNav
+          title="Dates"
+          backHref={`/dashboard/love/matches/${matchId}`}
+          backLabel="Match"
+          right={<LWBadge variant="accent">Station 3</LWBadge>}
+        />
+        <LWEmpty
+          title="Something went wrong"
+          message="Could not load your dates. Please try again."
+          action={
+            <LWButton variant="secondary" onClick={() => { setLoading(true); load() }}>
+              Retry
+            </LWButton>
+          }
+        />
+      </RealmProvider>
+    )
+  }
+
+  /* ─── Render ─── */
 
   return (
-    <div style={{ background: BG, minHeight: '100vh', fontFamily: 'monospace', color: WHITE, paddingBottom: 100 }}>
-      {/* Header */}
-      <div style={{ padding: '16px 16px 12px', borderBottom: `1px solid ${CARD2}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: GOLD, fontSize: 20, cursor: 'pointer', padding: 0 }}>
-            &larr;
-          </button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: 18, color: GOLD, fontFamily: 'monospace' }}>Virtual Dates</h1>
-          </div>
-          <span style={{ fontSize: 11, color: WHITE, opacity: 0.6 }}>Day {dayNum}/14</span>
-        </div>
-        <div style={{ marginTop: 10, height: 4, background: CARD2, borderRadius: 2 }}>
-          <div style={{ height: '100%', width: `${(dayNum / 14) * 100}%`, background: GOLD, borderRadius: 2, transition: 'width 0.3s' }} />
-        </div>
-      </div>
+    <RealmProvider realm="ufe">
+      <LWNav
+        title="Dates"
+        backHref={`/dashboard/love/matches/${matchId}`}
+        backLabel="Match"
+        right={<LWBadge variant="accent">Station 3</LWBadge>}
+      />
 
-      {/* Schedule Button */}
-      <div style={{ padding: '12px 16px' }}>
-        <button onClick={() => setShowSchedule(!showSchedule)}
-          style={{
-            width: '100%', padding: '12px 16px', borderRadius: 12, border: `1px dashed ${GOLD}`,
-            background: showSchedule ? CARD : 'transparent', color: GOLD,
-            fontFamily: 'monospace', fontSize: 14, cursor: 'pointer', fontWeight: 600,
+      <div style={{ padding: `${SPACE[4]}px ${SPACE[4]}px ${SPACE[16]}px`, display: 'flex', flexDirection: 'column', gap: SPACE[5] }}>
+
+        {/* ── Date Types Intro (shown when empty) ── */}
+        {dates.length === 0 && (
+          <>
+            <LWText scale="caption" color="muted" align="center">
+              Build real connection through shared experiences.
+            </LWText>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[3] }}>
+              {(Object.keys(DATE_TYPES) as Array<keyof typeof DATE_TYPES>).map(key => {
+                const dt = DATE_TYPES[key]
+                return (
+                  <LWCard key={key} padding={SPACE[4]}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
+                      <div style={{
+                        width: 48, height: 48, borderRadius: RADIUS.lg,
+                        background: T.accentMuted,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.5rem', flexShrink: 0,
+                      }}>
+                        {dt.icon}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <LWText scale="body" as="span" style={{ fontWeight: 500 }}>{dt.label}</LWText>
+                        <LWText scale="caption" color="muted" as="div" style={{ marginTop: 2 }}>
+                          {dt.description}
+                        </LWText>
+                      </div>
+                    </div>
+                  </LWCard>
+                )
+              })}
+            </div>
+            <LWEmpty
+              title="Plan your first date"
+              message="Choose a date type and schedule a time to connect with your match."
+              action={
+                <LWButton variant="primary" onClick={() => setShowSchedule(true)}>
+                  Plan a Date
+                </LWButton>
+              }
+            />
+          </>
+        )}
+
+        {/* ── Upcoming Dates ── */}
+        {upcoming.length > 0 && (
+          <section>
+            <LWText scale="h3" as="h3" style={{ marginBottom: SPACE[3] }}>Upcoming</LWText>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[3] }}>
+              {upcoming.map(d => (
+                <DateCard
+                  key={d.id}
+                  date={d}
+                  onStart={() => handleDateAction(d.id, 'start')}
+                  onEnd={() => handleDateAction(d.id, 'end')}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Completed Dates ── */}
+        {completed.length > 0 && (
+          <section>
+            <LWText scale="h3" as="h3" style={{ marginBottom: SPACE[3] }}>Completed</LWText>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[3] }}>
+              {completed.map(d => (
+                <DateCard
+                  key={d.id}
+                  date={d}
+                  onRate={d.rating == null ? () => openRating(d.id) : undefined}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Plan a Date FAB (shown when has dates) ── */}
+        {dates.length > 0 && (
+          <div style={{
+            position: 'fixed', bottom: SPACE[6],
+            left: SPACE[4], right: SPACE[4],
+            maxWidth: 448, margin: '0 auto',
           }}>
-          {showSchedule ? 'Cancel' : '+ Schedule New Date'}
-        </button>
+            <LWButton variant="primary" fullWidth onClick={() => setShowSchedule(true)}>
+              Plan a Date
+            </LWButton>
+          </div>
+        )}
       </div>
 
-      {/* Schedule Form */}
-      {showSchedule && (
-        <div style={{ margin: '0 16px 16px', background: CARD, borderRadius: 14, padding: 16 }}>
-          <p style={{ margin: '0 0 12px', fontSize: 13, color: GOLD, fontWeight: 600 }}>Choose Date Type</p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
-            {DATE_TYPES.map(dt => (
-              <button key={dt.key} onClick={() => setSchedType(dt.key)}
+      {/* ═══ Schedule Sheet ═══ */}
+      <LWSheet open={showSchedule} onClose={() => setShowSchedule(false)} title="Plan a Date">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[4] }}>
+
+          {/* Date type selector */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[2] }}>
+            <LWText scale="caption" color="secondary">Type</LWText>
+            <div style={{ display: 'flex', gap: SPACE[2] }}>
+              {(Object.keys(DATE_TYPES) as Array<keyof typeof DATE_TYPES>).map(key => {
+                const dt = DATE_TYPES[key]
+                const selected = scheduleType === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setScheduleType(key)}
+                    style={{
+                      flex: 1, padding: `${SPACE[2]}px ${SPACE[1]}px`,
+                      background: selected ? T.accentMuted : COLOR.elevated,
+                      border: `1px solid ${selected ? T.accent + '40' : COLOR.border}`,
+                      borderRadius: RADIUS.md,
+                      fontFamily: 'inherit', cursor: 'pointer',
+                      ...TYPE.caption,
+                      fontWeight: selected ? 600 : 400,
+                      color: selected ? T.accent : COLOR.textSecondary,
+                      textAlign: 'center', display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', gap: SPACE[1],
+                    }}
+                  >
+                    <span style={{ fontSize: '1.25rem' }}>{dt.icon}</span>
+                    {dt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Date + time picker */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[1] }}>
+            <LWText scale="caption" color="secondary" as="label">Date & Time</LWText>
+            <input
+              type="datetime-local"
+              value={scheduleAt}
+              onChange={e => setScheduleAt(e.target.value)}
+              style={{
+                height: 44, padding: `0 ${SPACE[3]}px`,
+                background: COLOR.elevated,
+                border: `1px solid ${COLOR.border}`,
+                borderRadius: RADIUS.lg,
+                color: COLOR.textPrimary,
+                fontSize: TYPE.body.fontSize,
+                fontFamily: 'inherit', outline: 'none',
+                colorScheme: 'dark',
+              }}
+            />
+          </div>
+
+          {/* Venue (in-person only) */}
+          {scheduleType === 'IN_PERSON' && (
+            <LWInput
+              label="Venue / Location"
+              placeholder="e.g., Jollof Cafe, Victoria Island"
+              value={scheduleVenue}
+              onChange={e => setScheduleVenue(e.target.value)}
+            />
+          )}
+
+          <LWButton
+            variant="primary"
+            fullWidth
+            loading={scheduling}
+            disabled={!scheduleAt}
+            onClick={handleSchedule}
+          >
+            Schedule
+          </LWButton>
+        </div>
+      </LWSheet>
+
+      {/* ═══ Rating Sheet ═══ */}
+      <LWSheet open={!!ratingDateId} onClose={() => setRatingDateId(null)} title="Rate This Date">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SPACE[4] }}>
+
+          <LWText scale="caption" color="secondary">How was the experience?</LWText>
+
+          {/* Star rating */}
+          <div style={{ display: 'flex', gap: SPACE[2] }}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                onClick={() => setRatingValue(n)}
+                aria-label={`Rate ${n} star${n > 1 ? 's' : ''}`}
                 style={{
-                  padding: '10px 8px', borderRadius: 10, border: `1px solid ${schedType === dt.key ? GOLD : CARD2}`,
-                  background: schedType === dt.key ? `${GOLD}22` : CARD2, color: WHITE,
-                  fontFamily: 'monospace', fontSize: 11, cursor: 'pointer', textAlign: 'center',
-                }}>
-                <div style={{ fontSize: 22, marginBottom: 4 }}>{dt.icon}</div>
-                {dt.label}
+                  width: 48, height: 48,
+                  borderRadius: RADIUS.full,
+                  border: `1.5px solid ${ratingValue >= n ? T.accent : COLOR.border}`,
+                  background: ratingValue >= n ? T.accentMuted : 'transparent',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: `all ${DURATION.fast} ${EASE.default}`,
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill={ratingValue >= n ? T.accent : 'none'} stroke={ratingValue >= n ? T.accent : COLOR.textMuted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
               </button>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, opacity: 0.6, display: 'block', marginBottom: 4 }}>Date</label>
-              <input type="date" value={schedDate} onChange={e => setSchedDate(e.target.value)}
-                style={{
-                  width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${CARD2}`,
-                  background: BG, color: WHITE, fontFamily: 'monospace', fontSize: 13, outline: 'none',
-                  boxSizing: 'border-box',
-                }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 11, opacity: 0.6, display: 'block', marginBottom: 4 }}>Time</label>
-              <input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)}
-                style={{
-                  width: '100%', padding: '8px 10px', borderRadius: 8, border: `1px solid ${CARD2}`,
-                  background: BG, color: WHITE, fontFamily: 'monospace', fontSize: 13, outline: 'none',
-                  boxSizing: 'border-box',
-                }} />
-            </div>
-          </div>
-
-          <button onClick={handleSchedule} disabled={scheduling || !schedDate || !schedTime}
-            style={{
-              width: '100%', padding: '12px', borderRadius: 10, background: GOLD, color: BG,
-              border: 'none', fontFamily: 'monospace', fontSize: 14, fontWeight: 700,
-              cursor: scheduling ? 'wait' : 'pointer', opacity: (scheduling || !schedDate || !schedTime) ? 0.5 : 1,
-            }}>
-            {scheduling ? 'Scheduling...' : 'Schedule Date'}
-          </button>
-        </div>
-      )}
-
-      {/* Rating Modal */}
-      {ratingDateId && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-        }}>
-          <div style={{ background: CARD, borderRadius: 16, padding: 24, width: '100%', maxWidth: 360 }}>
-            <h3 style={{ margin: '0 0 16px', fontSize: 16, color: GOLD, fontFamily: 'monospace' }}>Rate Your Date</h3>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 16 }}>
-              {[1, 2, 3, 4, 5].map(star => (
-                <button key={star} onClick={() => setRatingStars(star)}
-                  style={{
-                    background: 'none', border: 'none', fontSize: 32, cursor: 'pointer',
-                    color: star <= ratingStars ? GOLD : CARD2, transition: 'color 0.15s',
-                  }}>
-                  &#9733;
-                </button>
-              ))}
-            </div>
-            <textarea value={ratingText} onChange={e => setRatingText(e.target.value)}
-              placeholder="Share your reflection... (optional)"
+          {/* Reflection */}
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: SPACE[1] }}>
+            <LWText scale="caption" color="secondary" as="label">Reflection (optional)</LWText>
+            <textarea
+              value={ratingReflection}
+              onChange={e => setRatingReflection(e.target.value)}
+              placeholder="What made this date special? What would you do differently?"
               rows={3}
               style={{
-                width: '100%', padding: '10px 12px', borderRadius: 10, border: `1px solid ${CARD2}`,
-                background: BG, color: WHITE, fontFamily: 'monospace', fontSize: 13, outline: 'none',
-                resize: 'none', marginBottom: 14, boxSizing: 'border-box',
-              }} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => { setRatingDateId(null); setRatingStars(0); setRatingText('') }}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 10, background: CARD2, color: WHITE,
-                  border: 'none', fontFamily: 'monospace', fontSize: 13, cursor: 'pointer',
-                }}>
-                Skip
-              </button>
-              <button onClick={handleRate} disabled={submittingRating || ratingStars === 0}
-                style={{
-                  flex: 1, padding: '10px', borderRadius: 10, background: GOLD, color: BG,
-                  border: 'none', fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
-                  cursor: submittingRating ? 'wait' : 'pointer', opacity: (submittingRating || ratingStars === 0) ? 0.5 : 1,
-                }}>
-                {submittingRating ? '...' : 'Submit'}
-              </button>
-            </div>
+                padding: `${SPACE[3]}px ${SPACE[4]}px`,
+                background: COLOR.elevated,
+                border: `1px solid ${COLOR.border}`,
+                borderRadius: RADIUS.lg,
+                color: COLOR.textPrimary,
+                fontSize: TYPE.body.fontSize,
+                lineHeight: TYPE.body.lineHeight,
+                fontFamily: 'inherit', outline: 'none',
+                resize: 'vertical',
+              }}
+            />
           </div>
+
+          <LWButton
+            variant="primary"
+            fullWidth
+            loading={submittingRating}
+            disabled={ratingValue < 1}
+            onClick={handleRate}
+          >
+            Submit Rating
+          </LWButton>
+        </div>
+      </LWSheet>
+    </RealmProvider>
+  )
+}
+
+/* ═════════════════════════════════════════════════════════════
+   DateCard — Renders a single date event
+   ═════════════════════════════════════════════════════════════ */
+
+function DateCard({
+  date,
+  onStart,
+  onEnd,
+  onRate,
+}: {
+  date: DateEvent
+  onStart?: () => void
+  onEnd?: () => void
+  onRate?: () => void
+}) {
+  const dt = DATE_TYPES[date.dateType] || DATE_TYPES.VIDEO
+  const badge = STATUS_BADGE[date.status] || STATUS_BADGE.SCHEDULED
+
+  return (
+    <LWCard padding={SPACE[4]}>
+      {/* Header row: icon + info + badge */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACE[3] }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[3], flex: 1 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: RADIUS.md,
+            background: T.accentMuted,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.25rem', flexShrink: 0,
+          }}>
+            {dt.icon}
+          </div>
+          <div>
+            <LWText scale="body" as="span" style={{ fontWeight: 500 }}>{dt.label}</LWText>
+            <LWText scale="caption" color="muted" as="div" style={{ marginTop: 2 }}>
+              {formatDateTime(date.scheduledAt)}
+            </LWText>
+            {date.venue && (
+              <LWText scale="caption" color="secondary" as="div" style={{ marginTop: 2 }}>
+                {date.venue}
+              </LWText>
+            )}
+          </div>
+        </div>
+        <LWBadge variant={badge.variant}>{badge.label}</LWBadge>
+      </div>
+
+      {/* Rating display for completed dates */}
+      {date.status === 'COMPLETED' && date.rating != null && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACE[2], marginTop: SPACE[3] }}>
+          <LWText scale="caption" color="muted">Rating:</LWText>
+          <div style={{ display: 'flex', gap: 3 }}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <svg key={n} width="14" height="14" viewBox="0 0 24 24"
+                fill={n <= (date.rating || 0) ? T.accent : 'none'}
+                stroke={n <= (date.rating || 0) ? T.accent : COLOR.borderStrong}
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            ))}
+          </div>
+          {date.reflection && (
+            <LWText scale="caption" color="secondary" as="span" style={{ marginLeft: SPACE[1] }}>
+              &mdash; &ldquo;{date.reflection}&rdquo;
+            </LWText>
+          )}
         </div>
       )}
 
-      {/* Dates List */}
-      <div style={{ padding: '0 16px' }}>
-        {dates.length === 0 && !showSchedule && (
-          <div style={{ textAlign: 'center', padding: 40, opacity: 0.5 }}>
-            <p style={{ fontSize: 28, marginBottom: 8 }}>&#128197;</p>
-            <p style={{ fontSize: 13 }}>No dates yet. Schedule your first virtual date!</p>
-          </div>
+      {/* Action buttons based on status */}
+      <div style={{ display: 'flex', gap: SPACE[2], marginTop: SPACE[3], flexWrap: 'wrap' }}>
+        {date.status === 'CONFIRMED' && onStart && (
+          <LWButton size="sm" variant="primary" onClick={onStart}>
+            {date.dateType === 'VIDEO' ? 'Start Video Call' : date.dateType === 'VOICE' ? 'Start Voice Call' : 'Start Date'}
+          </LWButton>
         )}
-        {dates.map(d => {
-          const info = typeInfo(d.dateType)
-          const statusColor = STATUS_COLORS[d.status] || BLUE
-          return (
-            <div key={d.id} style={{
-              background: CARD, borderRadius: 14, padding: 14, marginBottom: 12,
-              borderLeft: `3px solid ${statusColor}`,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <span style={{ fontSize: 28 }}>{info.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{info.label}</div>
-                  <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>
-                    {new Date(d.scheduledAt).toLocaleDateString()} at {new Date(d.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
-                <span style={{
-                  padding: '4px 10px', borderRadius: 8, fontSize: 10, fontWeight: 700,
-                  background: `${statusColor}22`, color: statusColor, textTransform: 'uppercase',
-                }}>
-                  {d.status.replace('_', ' ')}
-                </span>
-              </div>
-
-              {/* Rating display */}
-              {d.status === 'COMPLETED' && d.rating && (
-                <div style={{ marginBottom: 8 }}>
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
-                    {[1, 2, 3, 4, 5].map(s => (
-                      <span key={s} style={{ fontSize: 14, color: s <= d.rating! ? GOLD : CARD2 }}>&#9733;</span>
-                    ))}
-                    {d.partnerRating != null && (
-                      <span style={{ fontSize: 10, color: WHITE, opacity: 0.5, marginLeft: 8, alignSelf: 'center' }}>
-                        Partner: {d.partnerRating}/5
-                      </span>
-                    )}
-                  </div>
-                  {d.reflection && <p style={{ margin: 0, fontSize: 12, opacity: 0.7, fontStyle: 'italic' }}>{d.reflection}</p>}
-                </div>
-              )}
-
-              {/* Action buttons */}
-              <div style={{ display: 'flex', gap: 8 }}>
-                {d.status === 'SCHEDULED' && (
-                  <button onClick={() => handleAction(d.id, 'start')}
-                    style={{
-                      flex: 1, padding: '8px', borderRadius: 8, background: GREEN, color: BG,
-                      border: 'none', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}>
-                    Start Date
-                  </button>
-                )}
-                {d.status === 'IN_PROGRESS' && (
-                  <button onClick={() => handleAction(d.id, 'end')}
-                    style={{
-                      flex: 1, padding: '8px', borderRadius: 8, background: RED, color: WHITE,
-                      border: 'none', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}>
-                    End Date
-                  </button>
-                )}
-                {d.status === 'COMPLETED' && !d.rating && (
-                  <button onClick={() => setRatingDateId(d.id)}
-                    style={{
-                      flex: 1, padding: '8px', borderRadius: 8, background: GOLD, color: BG,
-                      border: 'none', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}>
-                    Rate This Date
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        })}
+        {date.status === 'IN_PROGRESS' && onEnd && (
+          <LWButton size="sm" variant="secondary" onClick={onEnd}>
+            End Date
+          </LWButton>
+        )}
+        {date.status === 'COMPLETED' && date.rating == null && onRate && (
+          <LWButton size="sm" variant="secondary" onClick={onRate}>
+            Rate This Date
+          </LWButton>
+        )}
       </div>
-    </div>
+    </LWCard>
   )
 }

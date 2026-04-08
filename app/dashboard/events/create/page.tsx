@@ -8,6 +8,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { eventsApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { logApiFailure } from '@/lib/flags'
 import type { EventTierLevel, EventType, TicketType, EventTierDraft } from '@/types'
 import { TIER_CONFIG, calcPlatformFee, calcOrganizerReceives } from '@/types'
 
@@ -141,7 +142,7 @@ export default function CreateEventPage() {
     try {
       const res = await eventsApi.create({tierLevel,eventType,title,description,date,endDate,time,venueName,venueAddress,coverEmoji,drumScope,crossChannels,hostAfroId:user?.id??'anonymous',tiers,staff:staff.map(s=>({...s,afroId:s.name})),sponsors,enableStream,enableJollofTV,streamTicketPrice:streamPrice,replayEnabled:replayOn,replayPrice,resaleEnabled:resaleOn,resaleMaxMarkup:resaleMarkup,merchEnabled:merchOn})
       setSuccess((res as any)?.eventId??(res as any)?.id??`EVT-${Date.now().toString(36).toUpperCase()}`)
-    } catch { setSuccess(`EVT-${Date.now().toString(36).toUpperCase()}`) }
+    } catch (e) { logApiFailure('events/create', e); setSuccess(`EVT-${Date.now().toString(36).toUpperCase()}`) }
     setSubmitting(false)
   }
   const canNext = step===0?!!eventType:step===1?!!(title&&date&&venueName):step===2?tiers.length>0:true

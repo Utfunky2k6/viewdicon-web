@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { cowrieFlowApi, rootApi } from '@/lib/api'
 import { VOCAB } from '@/constants/vocabulary'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ── Mock summary data (replaced by live fetch when backend is up) ──
 const MOCK_SUMMARY = {
@@ -54,10 +55,10 @@ const STATUS_CONFIG = {
 export default function CowrieFlowPage() {
   const router = useRouter()
   const { user } = useAuthStore()
-  const afroId = (user as any)?.afroId || 'demo-user'
+  const afroId = user?.afroId?.raw || ''
   const [stats, setStats] = React.useState(INITIAL_STATS)
   const [roots, setRoots] = React.useState(INITIAL_ROOTS)
-  const [summary, setSummary] = React.useState(MOCK_SUMMARY)
+  const [summary, setSummary] = React.useState(USE_MOCKS ? MOCK_SUMMARY : { balance: 0, rootCommission: 0, sprayRevenue: 0, potCommission: 0, channelAds: 0, weeklyPayouts: [0, 0, 0, 0, 0, 0] })
   const [withdrawOpen, setWithdrawOpen] = React.useState(false)
   const [withdrawAmt, setWithdrawAmt] = React.useState('')
   const [withdrawDone, setWithdrawDone] = React.useState(false)
@@ -67,26 +68,26 @@ export default function CowrieFlowPage() {
   React.useEffect(() => {
     cowrieFlowApi.stats(afroId).then(res => {
       if (res?.data) setStats(res.data as typeof INITIAL_STATS)
-    }).catch(() => {/* use mock */})
+    }).catch((e) => { logApiFailure('cowrie-flow/stats', e) })
 
     rootApi.rootsInMe().then(res => {
       if (res?.data) {
         const d = res.data
         setRoots(prev => ({ ...prev, free: d.free ?? prev.free, paid: d.paid ?? prev.paid, ancestral: d.ancestral ?? prev.ancestral }))
       }
-    }).catch(() => {/* use mock */})
+    }).catch((e) => { logApiFailure('cowrie-flow/roots', e) })
 
     // Fetch cowrie-flow summary (Phase 4 backend)
     fetch('/api/cowrie-flow/summary/me')
       .then(r => r.json())
       .then((d: typeof MOCK_SUMMARY) => { if (d?.balance !== undefined) setSummary(d) })
-      .catch(() => {/* keep mock */})
+      .catch((e) => { logApiFailure('cowrie-flow/summary', e) })
   }, [])
 
   const handleWithdraw = () => {
     const amount = Number(withdrawAmt)
     if (!amount || amount > summary.balance) return
-    cowrieFlowApi.withdraw(amount).catch(() => {/* offline */})
+    cowrieFlowApi.withdraw(amount).catch((e) => { logApiFailure('cowrie-flow/withdraw', e) })
     setSummary(prev => ({ ...prev, balance: prev.balance - amount }))
     setWithdrawDone(true)
     setTimeout(() => { setWithdrawOpen(false); setWithdrawDone(false); setWithdrawAmt('') }, 1800)

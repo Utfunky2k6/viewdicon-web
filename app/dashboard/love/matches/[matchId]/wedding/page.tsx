@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ═══════════════════════════════════════════════════════════════════════
 // LOVE WORLD — SACRED UNION PLANNER (AI Wedding Planner)
@@ -102,7 +103,7 @@ export default function WeddingPlannerPage() {
   const [guestCount, setGuestCount] = useState(150)
   const [weddingDate, setWeddingDate] = useState('')
   const [phases, setPhases] = useState<CeremonyPhase[]>(DEFAULT_PHASES)
-  const [contributions, setContributions] = useState<Contribution[]>(MOCK_CONTRIBUTIONS)
+  const [contributions, setContributions] = useState<Contribution[]>(USE_MOCKS ? MOCK_CONTRIBUTIONS : [])
 
   // Accordion
   const [openVendor, setOpenVendor] = useState<string | null>(null)
@@ -129,8 +130,8 @@ export default function WeddingPlannerPage() {
       if (data.weddingDate) setWeddingDate(data.weddingDate.split('T')[0])
       if (data.phases?.length) setPhases(data.phases)
       if (data.contributions?.length) setContributions(data.contributions)
-    } catch {
-      // Keep defaults + mock data
+    } catch (e) {
+      logApiFailure('love/wedding/contributions', e)
     } finally {
       setLoading(false)
     }
@@ -158,8 +159,8 @@ export default function WeddingPlannerPage() {
       if (!res.ok) throw new Error('Failed to save')
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-    } catch {
-      setError('Could not save wedding plan. Please try again.')
+    } catch (e) {
+      logApiFailure('love/wedding/contribute', e)
     } finally {
       setSaving(false)
     }

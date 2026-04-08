@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { AddToPotSheet } from '@/components/jollof/stream-viewer/AddToPotSheet'
 import { jollofTvApi, sesoChatApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ── Types ─────────────────────────────────────────────────────────
 type StreamType = 'market' | 'healing' | 'craft' | 'farm' | 'knowledge' | 'oracle'
@@ -238,7 +239,7 @@ export default function JollofStreamViewer() {
           setStream(mockStream(streamId))
         }
       })
-      .catch(() => setStream(mockStream(streamId)))
+      .catch((e) => { logApiFailure('stream/load', e); if (USE_MOCKS) setStream(mockStream(streamId)) })
       .finally(() => setLoading(false))
   }, [streamId])
 
@@ -340,7 +341,7 @@ export default function JollofStreamViewer() {
     }
     setChatMessages(prev => [...prev, msg])
     setShowSpraySheet(false)
-    jollofTvApi.spray(streamId, sprayAmount).catch(() => {})
+    jollofTvApi.spray(streamId, sprayAmount).catch((e) => logApiFailure('stream/spray', e))
   }
 
   const handleKila = () => {
@@ -349,14 +350,14 @@ export default function JollofStreamViewer() {
     const newHeart = { id: Date.now(), x: 20 + Math.random() * 60 }
     setHearts(prev => [...prev, newHeart])
     setTimeout(() => setHearts(prev => prev.filter(h => h.id !== newHeart.id)), 2000)
-    jollofTvApi.kila(streamId).catch(() => {})
+    jollofTvApi.kila(streamId).catch((e) => logApiFailure('stream/kila', e))
   }
 
   const handleStir = () => {
     if (stirred) return
     setStirred(true)
     setStream(prev => prev ? { ...prev, stirCount: prev.stirCount + 1 } : prev)
-    jollofTvApi.kila(streamId).catch(() => {})
+    jollofTvApi.kila(streamId).catch((e) => logApiFailure('stream/kila', e))
   }
 
   const handleAddToPotFromRail = (productId: string, productName: string, price: number) => {
@@ -962,7 +963,8 @@ export default function JollofStreamViewer() {
               const res = await sesoChatApi.startBusiness(stream.id, `Booking: ${stream.streamerName} — ${stream.title}`)
               const chatId = (res as any)?.chatId ?? (res as any)?.data?.chatId ?? `b-${stream.id}`
               router.push(`/dashboard/chat/${chatId}`)
-            } catch {
+            } catch (e) {
+              logApiFailure('stream/startBusiness', e)
               router.push(`/dashboard/chat/b-${stream.id}`)
             }
           }}
@@ -1042,7 +1044,8 @@ export default function JollofStreamViewer() {
                   const res = await sesoChatApi.startBusiness(stream.id, `Booking: ${stream.streamerName} — ${stream.title}`)
                   const chatId = (res as any)?.chatId ?? (res as any)?.data?.chatId ?? `b-${stream.id}`
                   router.push(`/dashboard/chat/${chatId}`)
-                } catch {
+                } catch (e) {
+                  logApiFailure('stream/startBusiness2', e)
                   router.push(`/dashboard/chat/b-${stream.id}`)
                 }
               }}

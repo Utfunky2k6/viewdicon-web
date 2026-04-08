@@ -7,13 +7,11 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import FamilyTreeBuilder from '@/components/onboarding/FamilyTreeBuilder'
 import { VOCAB } from '@/constants/vocabulary'
-import { sesoChatApi, identityApi, connectionApi } from '@/lib/api'
-import { SKINS } from '@/components/feed/FeedPostCard'
-import { FamilyCircle } from '@/components/chat/FamilyCircle'
+import { sesoChatApi, identityApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
-/* ── inject-once CSS ── */
-const INJECT_ID = 'seso-chat-styles'
-const STYLES = `
+/* ── CSS animations ── */
+const SESO_STYLES = `
 @keyframes sesoPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.3)}}
 @keyframes sesoFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes sesoSlide{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
@@ -28,27 +26,26 @@ const STYLES = `
 .seso-no-scroll{-ms-overflow-style:none;scrollbar-width:none}
 `
 
-/* ── colors ── */
+/* ── colors (design tokens) ── */
 const C = {
-  earth:    '#0a0f08',
-  earthD:   '#060d07',
-  green:    '#1a7c3e',
-  greenL:   '#4ade80',
-  gold:     '#d4a017',
-  goldL:    '#fbbf24',
-  purple:   '#7c3aed',
-  purpleL:  '#c084fc',
-  red:      '#b22222',
-  amber:    '#e07b00',
-  text:     '#f0f7f0',
-  textDim:  'rgba(255,255,255,0.4)',
-  textDim2: 'rgba(255,255,255,0.25)',
+  earth:    'var(--bg)',
+  earthD:   'var(--bg-card)',
+  green:    'var(--green-primary)',
+  greenL:   'var(--nkisi-green)',
+  gold:     'var(--gold)',
+  goldL:    'var(--kente-gold)',
+  purple:   '#6b4fbb',
+  purpleL:  '#a78bfa',
+  red:      'var(--crimson)',
+  amber:    'var(--amber)',
+  text:     'var(--text-primary)',
+  textDim:  'var(--text-secondary)',
+  textDim2: 'var(--text-muted)',
 }
 
 /* ── types ── */
 type Tab = 'all' | 'requests' | 'trusted' | 'business' | 'family'
 type TrustTier = 'inner_fire' | 'village_circle' | 'kingdom'
-type Lang = 'EN' | 'YO' | 'IG' | 'HA' | 'SW' | 'ZU' | 'AR'
 
 interface OnlineContact {
   emoji: string; name: string; status: 'live' | 'away'; color: string
@@ -61,7 +58,7 @@ interface ChatItem {
 }
 
 interface RequestCard {
-  handle: string; emoji: string; village: string; crest: string
+  id: string; handle: string; emoji: string; village: string; crest: string
   nkisi: string; ago: string; message: string
 }
 
@@ -71,16 +68,16 @@ interface BusinessCard {
 }
 
 /* ── data ── */
-const ONLINE: OnlineContact[] = [
+const ONLINE: OnlineContact[] = USE_MOCKS ? [
   { emoji: '🧺', name: 'Chioma',   status: 'live', color: '#e07b00' },
   { emoji: '🌾', name: 'Kofi',     status: 'live', color: C.greenL },
   { emoji: '⚕',  name: 'Dr.Ngozi', status: 'live', color: '#60a5fa' },
   { emoji: '🌳', name: 'Family',   status: 'live', color: C.purpleL },
   { emoji: '⚽', name: 'Bello',    status: 'live', color: '#f472b6' },
   { emoji: '🎓', name: 'Amara',    status: 'away', color: '#818cf8' },
-]
+] : []
 
-const ALL_CHATS: ChatItem[] = [
+const ALL_CHATS: ChatItem[] = USE_MOCKS ? [
   {
     id: 'p-chioma', icon: '🧺', name: 'Chioma Adeyemi',
     lastMsg: '🔊 Voice note \u00b7 0:47', unread: 2, unreadColor: C.greenL,
@@ -107,25 +104,25 @@ const ALL_CHATS: ChatItem[] = [
     lastMsg: 'Your appointment confirmed for Friday', unread: 0,
     tier: '👑 Kingdom', badge: '⚕ Health Village', time: '3h',
   },
-]
+] : []
 
-const REQUESTS: RequestCard[] = [
+const REQUESTS: RequestCard[] = USE_MOCKS ? [
   {
-    handle: 'Agriculture Villager · Crest II', emoji: '🌾', village: 'Agriculture',
+    id: 'req-agri-01', handle: 'Agriculture Villager · Crest II', emoji: '🌾', village: 'Agriculture',
     crest: 'Crest II', nkisi: 'GREEN', ago: '2h ago',
     message: 'I saw your ankara listing in the Commerce feed. I grow the raw cotton — could we discuss bulk supply?',
   },
   {
-    handle: 'Health Practitioner · Crest III', emoji: '⚕', village: 'Health',
+    id: 'req-health-02', handle: 'Health Practitioner · Crest III', emoji: '⚕', village: 'Health',
     crest: 'Crest III', nkisi: 'GREEN', ago: '5h ago',
     message: 'Referred by a mutual contact in Commerce Village. I offer telemedicine consultations.',
   },
   {
-    handle: 'Technology Builder · Crest I', emoji: '💻', village: 'Technology',
+    id: 'req-tech-03', handle: 'Technology Builder · Crest I', emoji: '💻', village: 'Technology',
     crest: 'Crest I', nkisi: 'GREEN', ago: '1d ago',
     message: 'Saw your market tools session — I can build a POS integration for your shop.',
   },
-]
+] : []
 
 const TIER_INFO: Record<TrustTier, { icon: string; label: string; count: number; color: string; perks: string[] }> = {
   inner_fire: {
@@ -158,7 +155,7 @@ const TIER_INFO: Record<TrustTier, { icon: string; label: string; count: number;
   },
 }
 
-const TRUSTED_CHATS: Record<TrustTier, { icon: string; name: string; village: string; status: string }[]> = {
+const TRUSTED_CHATS: Record<TrustTier, { icon: string; name: string; village: string; status: string }[]> = USE_MOCKS ? {
   inner_fire: [
     { icon: '🧺', name: 'Chioma Adeyemi', village: '🧺 Commerce', status: 'live' },
     { icon: '🌾', name: 'Papa Emeka Okonkwo', village: '🌾 Agriculture', status: 'Family' },
@@ -172,9 +169,9 @@ const TRUSTED_CHATS: Record<TrustTier, { icon: string; name: string; village: st
     { icon: '⚕', name: 'Dr. Ngozi Eze', village: '⚕ Health', status: 'live' },
     { icon: '🌾', name: 'Kwame Asante', village: '🌾 Agriculture', status: 'live' },
   ],
-}
+} : { inner_fire: [], village_circle: [], kingdom: [] }
 
-const BIZ_ACTIVE: BusinessCard[] = [
+const BIZ_ACTIVE: BusinessCard[] = USE_MOCKS ? [
   {
     emoji: '🧺', product: 'Ankara Fabric \u00b7 10 yards', sessionId: 'BS-2026-A4K9',
     village: 'Commerce Village', status: 'IN TRANSIT', statusColor: C.amber,
@@ -190,7 +187,7 @@ const BIZ_ACTIVE: BusinessCard[] = [
     village: 'Health Village', status: 'NEGOTIATING', statusColor: '#60a5fa',
     parties: 'Client\u2194Doctor', amount: '₡8,000',
   },
-]
+] : []
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /* MAIN COMPONENT                                                     */
@@ -203,39 +200,27 @@ export default function ChatInboxPage() {
   const [showGate, setShowGate] = React.useState(false)
   const [showLoginBtn, setShowLoginBtn] = React.useState(false)
   const [tab, setTab] = React.useState<Tab>('all')
-  const [activeLang, setActiveLang] = React.useState<Lang>('EN')
   const [search, setSearch] = React.useState('')
   const [activeTier, setActiveTier] = React.useState<TrustTier>('inner_fire')
   const [toast, setToast] = React.useState<string | null>(null)
   const [toastOut, setToastOut] = React.useState(false)
 
-  const [chats, setChats] = React.useState<any[]>([])
-  const [requests, setRequests] = React.useState<any[]>([])
-  const [onlineUsers, setOnlineUsers] = React.useState<any[]>([])
+  const [chats, setChats] = React.useState<ChatItem[]>([])
+  const [requests, setRequests] = React.useState<RequestCard[]>([])
+  const [onlineUsers, setOnlineUsers] = React.useState<OnlineContact[]>([])
   const [chatLoading, setChatLoading] = React.useState(true)
-  const [showWhisper, setShowWhisper] = React.useState(false)
   const [showHandshake, setShowHandshake] = React.useState(false)
   const [handshakeId, setHandshakeId] = React.useState('')
   const [handshakeStep, setHandshakeStep] = React.useState<'enter' | 'sending' | 'sent' | 'error'>('enter')
   const [handshakeError, setHandshakeError] = React.useState('')
 
-  /* inject CSS once */
-  React.useEffect(() => {
-    if (typeof document === 'undefined') return
-    if (document.getElementById(INJECT_ID)) return
-    const s = document.createElement('style')
-    s.id = INJECT_ID
-    s.textContent = STYLES
-    document.head.appendChild(s)
-  }, [])
-
   /* fetch live chat data on mount */
   React.useEffect(() => {
     setChatLoading(true)
     Promise.all([
-      sesoChatApi.listChats().catch(() => ({ ok: false, data: [] })),
-      fetch('/api/seso/requests').then(r => r.ok ? r.json() : { requests: [] }).catch(() => ({ requests: [] })),
-      sesoChatApi.listConnections().catch(() => ({ connections: [] })),
+      sesoChatApi.listChats().catch((e) => { logApiFailure('chat/listChats', e); return { ok: false, data: [] } }),
+      sesoChatApi.listRequests().catch((e) => { logApiFailure('chat/listRequests', e); return { ok: false, data: [] } }),
+      sesoChatApi.listConnections().catch((e) => { logApiFailure('chat/listConnections', e); return { connections: [] } }),
     ]).then(([chatsRes, requestsRes, connectionsRes]: any[]) => {
       setChats(chatsRes.data ?? [])
       setRequests(requestsRes.requests ?? requestsRes.data ?? [])
@@ -264,12 +249,16 @@ export default function ChatInboxPage() {
   }, [])
 
   /* toast helper */
+  const toastTimers = React.useRef<ReturnType<typeof setTimeout>[]>([])
   const flash = React.useCallback((msg: string) => {
+    toastTimers.current.forEach(clearTimeout)
+    toastTimers.current = []
     setToast(msg)
     setToastOut(false)
-    setTimeout(() => { setToastOut(true) }, 1800)
-    setTimeout(() => { setToast(null); setToastOut(false) }, 2200)
+    toastTimers.current.push(setTimeout(() => { setToastOut(true) }, 1800))
+    toastTimers.current.push(setTimeout(() => { setToast(null); setToastOut(false) }, 2200))
   }, [])
+  React.useEffect(() => () => { toastTimers.current.forEach(clearTimeout) }, [])
 
   /* handshake handler */
   const handleHandshake = async () => {
@@ -286,6 +275,23 @@ export default function ChatInboxPage() {
       setHandshakeError((err as Error)?.message || 'Could not reach this AfroID')
     }
   }
+
+  /* stable per-request random metadata (avoids Math.random() in render) */
+  const requestMeta = React.useMemo(() => {
+    const seed = (s: string) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h) }
+    const data = (requests.length > 0 ? requests : (USE_MOCKS ? REQUESTS : [])) as RequestCard[]
+    const meta: Record<string, { trust: number; mutual: number; months: number; sessions: number }> = {}
+    for (const r of data) {
+      const h = seed(r.id)
+      meta[r.id] = {
+        trust: 60 + (h % 35),
+        mutual: 1 + (h % 5),
+        months: 3 + ((h >> 4) % 18),
+        sessions: 5 + ((h >> 8) % 40),
+      }
+    }
+    return meta
+  }, [requests])
 
   /* ── render guards ── */
   if (!isLoaded) return null
@@ -308,7 +314,7 @@ export default function ChatInboxPage() {
           }}>🌳</div>
           <div>
             <h2 style={{
-              fontFamily: 'Sora, sans-serif', fontSize: 13, fontWeight: 900,
+              fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 900,
               color: C.text, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0,
             }}>Kinship Guard</h2>
             <p style={{
@@ -341,7 +347,7 @@ export default function ChatInboxPage() {
           fontSize: 36, marginBottom: 24, boxShadow: '0 0 40px rgba(26,124,62,0.2)',
         }}>💬</div>
         <h2 style={{
-          fontFamily: 'Sora, sans-serif', fontSize: 20, fontWeight: 900,
+          fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 900,
           color: '#f0f7f0', textAlign: 'center', margin: 0, marginBottom: 8,
         }}>Kinship Circle Ready</h2>
         <p style={{
@@ -368,7 +374,7 @@ export default function ChatInboxPage() {
             background: 'linear-gradient(135deg, #1a7c3e, #145f30)',
             border: '1px solid rgba(74,222,128,0.3)',
             color: '#fff', fontSize: 15, fontWeight: 800,
-            fontFamily: 'Sora, sans-serif', cursor: 'pointer',
+            fontFamily: 'var(--font-display)', cursor: 'pointer',
             boxShadow: '0 8px 32px rgba(26,124,62,0.3)',
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}
@@ -387,27 +393,26 @@ export default function ChatInboxPage() {
 
   /* ── tab config ── */
   const TABS: { key: Tab; label: string; count?: number; countColor: string }[] = [
-    { key: 'all',      label: 'All',      count: (chats.length > 0 ? chats : ALL_CHATS).length,            countColor: C.greenL },
-    { key: 'requests', label: 'Requests', count: (requests.length > 0 ? requests : REQUESTS).length,       countColor: '#ef4444' },
+    { key: 'all',      label: 'All',      count: (chats.length > 0 ? chats : (USE_MOCKS ? ALL_CHATS : [])).length,            countColor: C.greenL },
+    { key: 'requests', label: 'Requests', count: (requests.length > 0 ? requests : (USE_MOCKS ? REQUESTS : [])).length,       countColor: '#ef4444' },
     { key: 'trusted',  label: 'Trusted',  countColor: C.greenL },
     { key: 'business', label: 'Business', count: BIZ_ACTIVE.length,                                        countColor: C.goldL },
     { key: 'family',   label: '🌳 Family',                                                                  countColor: C.purpleL },
   ]
 
-  const displayChats = (chats.length > 0 ? chats : ALL_CHATS).filter((c: any) =>
+  const displayChats = (chats.length > 0 ? chats : (USE_MOCKS ? ALL_CHATS : [])).filter((c) =>
     !search ||
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.lastMessage?.toLowerCase().includes(search.toLowerCase()) ||
-    c.lastMsg?.toLowerCase().includes(search.toLowerCase())
+    (c as any).lastMessage?.toLowerCase().includes(search.toLowerCase()) ||
+    (c as any).lastMsg?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const displayRequests = (requests.length > 0 ? requests : REQUESTS).filter((r: any) =>
+  const displayRequests = (requests.length > 0 ? requests : (USE_MOCKS ? REQUESTS : [])).filter((r) =>
     !search ||
     r.handle?.toLowerCase().includes(search.toLowerCase()) ||
     r.message?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const LANGS: Lang[] = ['EN', 'YO', 'IG', 'HA', 'SW', 'ZU', 'AR']
 
   /* ═══════════════════════════════════════════════════════ */
   /* RENDER                                                  */
@@ -415,12 +420,15 @@ export default function ChatInboxPage() {
   return (
     <div className="seso-fade seso-no-scroll" style={{
       minHeight: '100vh', background: C.earthD, color: C.text,
-      fontFamily: 'DM Sans, Inter, sans-serif', maxWidth: 480, margin: '0 auto',
+      fontFamily: 'var(--font-utility)', maxWidth: 480, margin: '0 auto',
       borderLeft: '1px solid rgba(255,255,255,0.04)',
       borderRight: '1px solid rgba(255,255,255,0.04)',
       display: 'flex', flexDirection: 'column', position: 'relative',
       overflowX: 'hidden',
     }}>
+
+      {/* ── Inline CSS animations ── */}
+      <style dangerouslySetInnerHTML={{ __html: SESO_STYLES }} />
 
       {/* ── Adinkra Gye Nyame overlay ── */}
       <div aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, opacity: 0.02, backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%231a7c3e' stroke-linecap='round'%3E%3Cpath d='M50 8 L92 50 L50 92 L8 50 Z' stroke-width='1.2'/%3E%3Cpath d='M50 22 L78 50 L50 78 L22 50 Z' stroke-width='0.8'/%3E%3Cellipse cx='50' cy='50' rx='7' ry='11' stroke-width='1'/%3E%3Ccircle cx='50' cy='50' r='3' fill='%231a7c3e' stroke='none'/%3E%3C/g%3E%3C/svg%3E")`, backgroundSize: '100px 100px', backgroundRepeat: 'repeat' }} />
@@ -435,12 +443,9 @@ export default function ChatInboxPage() {
       }}>
         <div>
           <h1 style={{
-            fontFamily: 'Sora, sans-serif', fontSize: 22, fontWeight: 900,
+            fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 900,
             color: C.greenL, fontStyle: 'italic', margin: 0, lineHeight: 1.2,
           }}>{VOCAB.chat.replace('💬 ', '')} Chat</h1>
-          <p style={{
-            fontSize: 11, color: C.textDim, fontWeight: 500, margin: '3px 0 0 0',
-          }}>Spirit Voice active \u00b7 7 languages</p>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
           <button onClick={() => setShowHandshake(true)} style={{
@@ -464,51 +469,6 @@ export default function ChatInboxPage() {
         </div>
       </div>
 
-      {/* ── SPIRIT VOICE BAR ── */}
-      <div style={{
-        margin: '14px 18px 0 18px', padding: '10px 14px', borderRadius: 14,
-        background: `linear-gradient(135deg, rgba(26,124,62,0.2), rgba(26,124,62,0.08))`,
-        border: `1px solid rgba(26,124,62,0.25)`,
-        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-      }}>
-        {/* pulsing dot + label */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-          <span className="seso-pulse" style={{
-            width: 8, height: 8, borderRadius: '50%', background: C.greenL,
-            display: 'inline-block', boxShadow: `0 0 6px ${C.greenL}`,
-          }} />
-          <span style={{
-            fontSize: 10, fontWeight: 800, color: C.greenL, letterSpacing: '0.08em',
-            textTransform: 'uppercase', fontFamily: 'Sora, sans-serif',
-          }}>SPIRIT VOICE LIVE</span>
-        </div>
-
-        {/* separator */}
-        <div style={{ width: 1, height: 18, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-
-        {/* language pills */}
-        <div style={{
-          display: 'flex', gap: 5, flex: 1, flexWrap: 'wrap', alignItems: 'center',
-        }}>
-          {LANGS.map(lang => {
-            const active = lang === activeLang
-            return (
-              <button key={lang} onClick={() => setActiveLang(lang)} style={{
-                padding: '4px 10px', borderRadius: 99,
-                fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', cursor: 'pointer',
-                background: active ? C.green : 'rgba(255,255,255,0.06)',
-                color: active ? '#fff' : C.textDim,
-                border: active ? `1px solid ${C.greenL}` : '1px solid rgba(255,255,255,0.06)',
-                transition: 'all .2s',
-              }}>{lang}</button>
-            )
-          })}
-        </div>
-
-        {/* mic icon */}
-        <span onClick={() => flash('Spirit Voice activated — tap a language to switch')} style={{ fontSize: 18, flexShrink: 0, cursor: 'pointer' }}>🎙</span>
-      </div>
-
       {/* ── SEARCH BAR ── */}
       <div style={{
         margin: '12px 18px 0 18px', position: 'relative',
@@ -525,7 +485,7 @@ export default function ChatInboxPage() {
             width: '100%', padding: '12px 14px 12px 40px', borderRadius: 14,
             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
             color: C.text, fontSize: 13, fontWeight: 500, outline: 'none',
-            fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box',
+            fontFamily: 'var(--font-utility)', boxSizing: 'border-box',
           }}
         />
       </div>
@@ -549,7 +509,7 @@ export default function ChatInboxPage() {
             }}>
               <span style={{
                 fontSize: 12, fontWeight: 700, color: active ? tabAccent : C.textDim,
-                fontFamily: 'Sora, sans-serif',
+                fontFamily: 'var(--font-display)',
               }}>{t.label}</span>
               {t.count != null && (
                 <span style={{
@@ -565,25 +525,6 @@ export default function ChatInboxPage() {
         })}
       </div>
 
-      {/* ── QUICK CONTACTS ONLINE STRIP ── */}
-      <div style={{ overflowX:'auto', display:'flex', gap:10, padding:'8px 14px', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
-        {[{n:'Adaeze',av:'👩🏾',c:'#4ade80'},{n:'Kofi',av:'👨🏿',c:'#fb923c'},{n:'Fatima',av:'👩🏾‍🦱',c:'#c084fc'},{n:'Emeka',av:'👨🏾',c:'#4ade80'},{n:'Zara',av:'👩🏾',c:'#fb923c'},{n:'Kwame',av:'👨🏿‍🦱',c:'#a3e635'}].map(p=>(
-          <div key={p.n} onClick={() => router.push('/dashboard/chat/p-' + p.n.toLowerCase())} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,flexShrink:0,cursor:'pointer'}}>
-            <div style={{position:'relative',width:44,height:44}}>
-              <div style={{width:44,height:44,borderRadius:'50%',background:'rgba(255,255,255,.08)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22}}>{p.av}</div>
-              <div style={{position:'absolute',bottom:1,right:1,width:10,height:10,borderRadius:'50%',background:p.c,border:'2px solid #0c1009'}}/>
-            </div>
-            <span style={{fontSize:8,color:'rgba(255,255,255,.4)',maxWidth:44,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.n}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ── COMPACT SEARCH (below tabs) ── */}
-      <div style={{padding:'8px 14px 0'}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search messages..."
-          style={{width:'100%',background:'rgba(255,255,255,.06)',border:'1px solid rgba(255,255,255,.1)',borderRadius:12,padding:'8px 12px',color:'#f0f5ee',fontSize:12,outline:'none',boxSizing:'border-box'}} />
-      </div>
-
       {/* ── TAB CONTENT ── */}
       <div className="seso-no-scroll" style={{
         flex: 1, overflowY: 'auto', paddingBottom: 100,
@@ -597,7 +538,7 @@ export default function ChatInboxPage() {
               display: 'flex', gap: 14, padding: '16px 18px 6px 18px',
               overflowX: 'auto',
             }}>
-              {(onlineUsers.length > 0 ? onlineUsers : ONLINE).map((c, i) => (
+              {(onlineUsers.length > 0 ? onlineUsers : (USE_MOCKS ? ONLINE : [])).map((c, i) => (
                 <div key={i} onClick={() => router.push('/dashboard/chat/' + ((c as any).id ?? 'p-' + ((c as any).name ?? '').toLowerCase().replace(/\s+/g, '-')))} style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                   flexShrink: 0, cursor: 'pointer',
@@ -634,7 +575,7 @@ export default function ChatInboxPage() {
               <span style={{
                 fontSize: 10, fontWeight: 800, color: C.textDim2,
                 textTransform: 'uppercase', letterSpacing: '0.1em',
-                fontFamily: 'Sora, sans-serif',
+                fontFamily: 'var(--font-display)',
               }}>Recent Whispers</span>
               <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
             </div>
@@ -748,10 +689,11 @@ export default function ChatInboxPage() {
 
             {/* Request cards */}
             {displayRequests.map((r, i) => {
-              const trustScore = Math.floor(60 + Math.random() * 35) // compatibility score
-              const mutualVillagers = Math.floor(1 + Math.random() * 5)
+              const meta = requestMeta[r.id] || { trust: 75, mutual: 2, months: 6, sessions: 12 }
+              const trustScore = meta.trust
+              const mutualVillagers = meta.mutual
               return (
-              <div key={i} className="seso-slide" style={{
+              <div key={r.id} className="seso-slide" style={{
                 padding: 16, borderRadius: 14, marginBottom: 12,
                 background: 'rgba(255,255,255,0.025)',
                 border: '1px solid rgba(255,255,255,0.05)',
@@ -794,8 +736,8 @@ export default function ChatInboxPage() {
                 {/* Context clues — who is this person? */}
                 <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>👥 {mutualVillagers} mutual villager{mutualVillagers > 1 ? 's' : ''}</span>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>📅 Joined {Math.floor(3 + Math.random() * 18)} months ago</span>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>🔥 {Math.floor(5 + Math.random() * 40)} sessions completed</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>📅 Joined {meta.months} months ago</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: C.textDim, padding: '3px 8px', borderRadius: 99, background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.04)' }}>🔥 {meta.sessions} sessions completed</span>
                 </div>
 
                 {/* message */}
@@ -809,36 +751,33 @@ export default function ChatInboxPage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => {
                     sesoChatApi.respondToWhisper(r.id, 'accept')
-                      .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
-                      .catch(() => {})
-                    flash('Whisper accepted — identity revealed')
+                      .then(() => { setRequests(prev => prev.filter(req => req.id !== r.id)); flash('Whisper accepted — identity revealed') })
+                      .catch((e) => { logApiFailure('chat/whisper/accept', e); flash('Could not accept — try again') })
                   }} style={{
                     flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer',
                     background: C.green, border: `1px solid ${C.greenL}`,
                     color: '#fff', fontSize: 12, fontWeight: 700,
-                    fontFamily: 'Sora, sans-serif',
+                    fontFamily: 'var(--font-display)',
                   }}>✓ Accept Whisper</button>
                   <button onClick={() => {
                     sesoChatApi.respondToWhisper(r.id, 'decline')
-                      .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
-                      .catch(() => {})
-                    flash('Request declined')
+                      .then(() => { setRequests(prev => prev.filter(req => req.id !== r.id)); flash('Request declined') })
+                      .catch((e) => { logApiFailure('chat/whisper/decline', e); flash('Could not decline — try again') })
                   }} style={{
                     flex: 1, padding: '10px 0', borderRadius: 12, cursor: 'pointer',
                     background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
                     color: C.textDim, fontSize: 12, fontWeight: 700,
-                    fontFamily: 'Sora, sans-serif',
+                    fontFamily: 'var(--font-display)',
                   }}>Decline</button>
                   <button onClick={() => {
                     sesoChatApi.blockUser(r.id)
-                      .then(() => setRequests(prev => prev.filter(req => req.id !== r.id)))
-                      .catch(() => {})
-                    flash('User blocked and reported to Nkisi Shield')
+                      .then(() => { setRequests(prev => prev.filter(req => req.id !== r.id)); flash('User blocked and reported to Nkisi Shield') })
+                      .catch((e) => { logApiFailure('chat/user/block', e); flash('Could not block — try again') })
                   }} style={{
                     padding: '10px 14px', borderRadius: 12, cursor: 'pointer',
                     background: 'rgba(178,34,34,0.1)', border: '1px solid rgba(178,34,34,0.25)',
                     color: '#ef4444', fontSize: 12, fontWeight: 700,
-                    fontFamily: 'Sora, sans-serif',
+                    fontFamily: 'var(--font-display)',
                   }}>🚫</button>
                 </div>
               </div>
@@ -868,7 +807,7 @@ export default function ChatInboxPage() {
                     <span style={{ fontSize: 20 }}>{t.icon}</span>
                     <span style={{
                       fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                      letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif',
+                      letterSpacing: '0.06em', fontFamily: 'var(--font-display)',
                       color: active ? (tier === 'inner_fire' ? '#ff6b6b' : tier === 'village_circle' ? C.greenL : C.goldL) : C.textDim,
                     }}>{t.label}</span>
                     <span style={{
@@ -895,7 +834,7 @@ export default function ChatInboxPage() {
                   <div style={{
                     fontSize: 10, fontWeight: 800, color: tTextColor,
                     textTransform: 'uppercase', letterSpacing: '0.08em',
-                    fontFamily: 'Sora, sans-serif', marginBottom: 10,
+                    fontFamily: 'var(--font-display)', marginBottom: 10,
                   }}>{t.icon} {t.label} Privileges</div>
                   {t.perks.map((p, i) => (
                     <div key={i} style={{
@@ -957,8 +896,8 @@ export default function ChatInboxPage() {
               <span style={{
                 fontSize: 11, fontWeight: 800, color: C.textDim2,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
-                fontFamily: 'Sora, sans-serif',
-              }}>Active Sessions (3)</span>
+                fontFamily: 'var(--font-display)',
+              }}>Active Sessions ({BIZ_ACTIVE.length})</span>
               <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
             </div>
 
@@ -1000,7 +939,7 @@ export default function ChatInboxPage() {
                   </div>
                   <div style={{
                     fontSize: 15, fontWeight: 800, color: C.goldL,
-                    fontFamily: 'Sora, sans-serif',
+                    fontFamily: 'var(--font-display)',
                   }}>{b.amount}</div>
                 </div>
               </div>
@@ -1013,7 +952,7 @@ export default function ChatInboxPage() {
               <span style={{
                 fontSize: 11, fontWeight: 800, color: C.textDim2,
                 textTransform: 'uppercase', letterSpacing: '0.08em',
-                fontFamily: 'Sora, sans-serif',
+                fontFamily: 'var(--font-display)',
               }}>Escrow History</span>
               <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.05)' }} />
             </div>
@@ -1050,8 +989,51 @@ export default function ChatInboxPage() {
 
         {/* ════════════════════════════ TAB 4: FAMILY ════════════════════════════ */}
         {tab === 'family' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <FamilyCircle />
+          <div className="seso-fade" style={{ padding: '20px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Idile entry card — taps through to the full tree */}
+            <button onClick={() => router.push('/dashboard/profile/idile/family-tree')} style={{
+              display: 'flex', alignItems: 'center', gap: 16, padding: '18px 16px',
+              borderRadius: 16, background: 'rgba(74,222,128,0.06)',
+              border: '1.5px solid rgba(74,222,128,0.18)', cursor: 'pointer', textAlign: 'left', width: '100%',
+            }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(74,222,128,0.12)',
+                border: '1px solid rgba(74,222,128,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>🌳</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.greenL, fontFamily: 'var(--font-display)', marginBottom: 3 }}>Idile Family Tree</div>
+                <div style={{ fontSize: 11, color: C.textDim, fontFamily: 'var(--font-utility)', lineHeight: 1.5 }}>Your lineage, bonds and generations. Tap to view and manage your family tree.</div>
+              </div>
+              <span style={{ fontSize: 18, color: C.textDim2 }}>›</span>
+            </button>
+
+            {/* Family chat thread */}
+            <button onClick={() => router.push('/dashboard/chat/f-family-default')} style={{
+              display: 'flex', alignItems: 'center', gap: 16, padding: '18px 16px',
+              borderRadius: 16, background: 'rgba(167,139,250,0.06)',
+              border: '1.5px solid rgba(167,139,250,0.18)', cursor: 'pointer', textAlign: 'left', width: '100%',
+            }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(167,139,250,0.12)',
+                border: '1px solid rgba(167,139,250,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>💬</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#a78bfa', fontFamily: 'var(--font-display)', marginBottom: 3 }}>Family Circle Chat</div>
+                <div style={{ fontSize: 11, color: C.textDim, fontFamily: 'var(--font-utility)', lineHeight: 1.5 }}>Encrypted group chat with your verified family members.</div>
+              </div>
+              <span style={{ fontSize: 18, color: C.textDim2 }}>›</span>
+            </button>
+
+            {/* Blood-call SOS */}
+            <button onClick={() => router.push('/dashboard/chat/f-family-default?bloodCall=1')} style={{
+              display: 'flex', alignItems: 'center', gap: 16, padding: '18px 16px',
+              borderRadius: 16, background: 'rgba(239,68,68,0.04)',
+              border: '1.5px solid rgba(239,68,68,0.15)', cursor: 'pointer', textAlign: 'left', width: '100%',
+            }}>
+              <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0 }}>🚨</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: '#ef4444', fontFamily: 'var(--font-display)', marginBottom: 3 }}>Blood-Call SOS</div>
+                <div style={{ fontSize: 11, color: C.textDim, fontFamily: 'var(--font-utility)', lineHeight: 1.5 }}>Emergency alert sent to your entire family circle instantly.</div>
+              </div>
+              <span style={{ fontSize: 18, color: C.textDim2 }}>›</span>
+            </button>
           </div>
         )}
 
@@ -1064,7 +1046,7 @@ export default function ChatInboxPage() {
           padding: '12px 24px', borderRadius: 14, zIndex: 999,
           background: 'rgba(26,124,62,0.95)', border: `1px solid ${C.greenL}`,
           color: '#fff', fontSize: 13, fontWeight: 700,
-          fontFamily: 'Sora, sans-serif', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          fontFamily: 'var(--font-display)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           whiteSpace: 'nowrap',
         }}>{toast}</div>
       )}
@@ -1086,7 +1068,7 @@ export default function ChatInboxPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(26,124,62,.15)', border: '1px solid rgba(26,124,62,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤝</div>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 900, color: C.greenL, fontFamily: 'Sora, sans-serif' }}>Trust Handshake</div>
+                <div style={{ fontSize: 15, fontWeight: 900, color: C.greenL, fontFamily: 'var(--font-display)' }}>Trust Handshake</div>
                 <div style={{ fontSize: 10, color: C.textDim, marginTop: 1 }}>Connect using their AfroID — like BBM PIN</div>
               </div>
             </div>
@@ -1137,7 +1119,7 @@ export default function ChatInboxPage() {
                 style={{
                   width: '100%', padding: '14px 0', borderRadius: 14, border: 'none',
                   fontSize: 14, fontWeight: 800, cursor: handshakeId.trim() ? 'pointer' : 'not-allowed',
-                  fontFamily: 'Sora, sans-serif', transition: 'all .3s',
+                  fontFamily: 'var(--font-display)', transition: 'all .3s',
                   background: handshakeStep === 'sending'
                     ? 'rgba(26,124,62,.3)'
                     : handshakeId.trim()

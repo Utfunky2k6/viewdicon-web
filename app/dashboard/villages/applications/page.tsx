@@ -25,15 +25,17 @@ const STATUS_META: Record<TransferApp['status'], { color: string; bg: string; la
   DENIED:       { color: '#ef4444', bg: 'rgba(239,68,68,.12)',   label: 'Denied',       emoji: '❌' },
 }
 
-function daysAgo(ts: number): string {
-  const diff = Math.floor((Date.now() - ts) / 86_400_000)
+function daysAgo(ts: number, now: number): string {
+  if (!now) return ''
+  const diff = Math.floor((now - ts) / 86_400_000)
   if (diff === 0) return 'Today'
   if (diff === 1) return '1 day ago'
   return `${diff} days ago`
 }
 
-function daysRemaining(submittedAt: number, cooldownDays: number): number {
-  const elapsed = Math.floor((Date.now() - submittedAt) / 86_400_000)
+function daysRemaining(submittedAt: number, cooldownDays: number, now: number): number {
+  if (!now) return cooldownDays
+  const elapsed = Math.floor((now - submittedAt) / 86_400_000)
   return Math.max(0, cooldownDays - elapsed)
 }
 
@@ -41,6 +43,11 @@ function daysRemaining(submittedAt: number, cooldownDays: number): number {
 export default function TransferApplicationsPage() {
   const router = useRouter()
   const [apps, setApps] = React.useState<TransferApp[]>([])
+  const [now, setNow] = React.useState(0)
+
+  React.useEffect(() => {
+    setNow(Date.now())
+  }, [])
 
   React.useEffect(() => {
     try {
@@ -125,7 +132,7 @@ export default function TransferApplicationsPage() {
               const meta = STATUS_META[app.status]
               const fromVillage = VILLAGE_BY_ID[app.fromVillageId]
               const toVillage   = VILLAGE_BY_ID[app.toVillageId]
-              const remaining   = daysRemaining(app.submittedAt, app.cooldownDays)
+              const remaining   = daysRemaining(app.submittedAt, app.cooldownDays, now)
               const isActive    = app.status === 'SUBMITTED' || app.status === 'UNDER_REVIEW' || app.status === 'COOLING'
 
               return (
@@ -213,7 +220,7 @@ export default function TransferApplicationsPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 10, color: 'rgba(255,255,255,.35)' }}>Submitted</span>
                       <span style={{ fontSize: 10, fontWeight: 600, color: '#f0f7f0' }}>
-                        {daysAgo(app.submittedAt)}
+                        {daysAgo(app.submittedAt, now)}
                         {' · '}
                         {new Date(app.submittedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>

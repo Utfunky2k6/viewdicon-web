@@ -8,6 +8,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
 import { TOOL_REGISTRY, type ToolDefinition } from '@/constants/tools'
 import { ROLE_REGISTRY } from '@/constants/role-registry'
+import { logApiFailure } from '@/lib/flags'
 
 /* ── Village-specific default tools — supplement roles that only have the 3 generic tools ── */
 // ── Canonical 8 tools per village — first role's tools from spec ──
@@ -458,14 +459,14 @@ export default function VillageDetailPage() {
         }
         setApiToolMap(map)
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('village/fetch', e))
 
     fetch(`/api/v1/villages/${villageId}/stats`)
       .then(r => r.ok ? r.json() : null)
       .then((data: { ok: boolean; data: { memberCount: number; toolCount: number; activeSessionCount: number } } | null) => {
         if (data?.data) setLiveStats(data.data)
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('village/fetch', e))
 
     // Fetch full village cultural data
     fetch(`/api/v1/villages/${villageId}`)
@@ -473,7 +474,7 @@ export default function VillageDetailPage() {
       .then((data: { ok: boolean; data: Record<string, unknown> } | null) => {
         if (data?.data) setLiveVillage(data.data as any)
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('village/fetch', e))
   }, [villageId])
 
   const flash = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2000) }
@@ -569,7 +570,7 @@ export default function VillageDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ villageId, roleKey: 'citizen', isPrimary: true }),
-      }).catch(() => {})
+      }).catch((e) => logApiFailure('village/action', e))
     }
   }
 
@@ -602,7 +603,7 @@ export default function VillageDetailPage() {
           userAfroId,
           villageId, roleKey, toolKey: tool.key,
         }),
-      }).catch(() => {})
+      }).catch((e) => logApiFailure('village/action', e))
     }
     router.push(`/dashboard/tools/${tool.key}?${p.toString()}`)
   }

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { TOOL_REGISTRY, type ToolDefinition } from '@/constants/tools'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
 import { useVillageStore } from '@/stores/villageStore'
+import { logApiFailure } from '@/lib/flags'
 
 // ═══════════════════════════════════════════════════════════════════════
 // AI-POWERED TOOL LAUNCHER
@@ -484,7 +485,7 @@ function ToolLauncherInner() {
           setSubmitting(false)
           return
         }
-      } catch {}
+      } catch (e) { logApiFailure('sessions/new/submit', e) }
       // Fallback: mock session
       setSubmitted({ id: genId(), code: genCode() })
     } else {

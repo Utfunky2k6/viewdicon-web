@@ -13,6 +13,7 @@ import { KumbukaTimeline } from '@/components/profile/KumbukaTimeline'
 import { getRankFromXP, getXPProgress } from '@/constants/ranks'
 import { authApi } from '@/lib/api'
 import { ALL_VILLAGES } from '@/lib/villages-data'
+import { logApiFailure } from '@/lib/flags'
 
 // ── Skin banner style configurations (no hardcoded user data) ──────────────
 const SKIN_BANNER: Record<string, {
@@ -206,7 +207,8 @@ export default function ProfilePage() {
           }
           setUser(merged)
         }
-      } catch {
+      } catch (e) {
+        logApiFailure('profile/authApi.me', e)
         // Backend offline or not authenticated — use cached store data
       }
     }

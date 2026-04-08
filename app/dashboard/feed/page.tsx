@@ -18,6 +18,8 @@ import { FeedPostCard, VillageSquare, GriotCard, SKINS, toDisplay } from '@/comp
 import type { Skin, ViewMode } from '@/components/feed/FeedPostCard'
 import { CreateSheet } from '@/components/feed/CreateSheet'
 import { MarketCryCard, MOCK_MARKET_CRIES } from '@/components/ads/MarketCryCard'
+import { MarketDayClock } from '@/components/feed/MarketDayClock'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'soro-styles'
@@ -87,7 +89,9 @@ export default function SoroFeedPage() {
   const [sort,     setSort]     = React.useState<SortMode>('hot')
   const [createOpen, setCreateOpen] = React.useState(false)
   const [feedLive, setFeedLive] = React.useState(false)
-  const [livePosts, setLivePosts] = React.useState<CanonicalPost[]>(MOCK_POSTS)
+  const [livePosts, setLivePosts] = React.useState<CanonicalPost[]>(USE_MOCKS ? MOCK_POSTS : [])
+  const [motionPosts, setMotionPosts] = React.useState<CanonicalPost[]>(USE_MOCKS ? MOCK_MOTION_POSTS : [])
+  const [discoverPosts, setDiscoverPosts] = React.useState<CanonicalPost[]>(USE_MOCKS ? MOCK_DISCOVER_POSTS : [])
   const [dismissedGates, setDismissedGates] = React.useState<Set<number>>(new Set())
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -118,27 +122,55 @@ export default function SoroFeedPage() {
         if (!Array.isArray(rows) || rows.length === 0) return
         const mapped = rows.map(p => mapBackendPost(p as Record<string, unknown>))
         const liveIds = new Set(mapped.map(p => p.id))
-        setLivePosts([...mapped, ...MOCK_POSTS.filter(p => !liveIds.has(p.id))])
+        setLivePosts(USE_MOCKS ? [...mapped, ...MOCK_POSTS.filter(p => !liveIds.has(p.id))] : mapped)
         setFeedLive(true)
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('feed/villageFeed', e))
   }, [skin, sort, geo])
+
+  /* ── Fetch real motion posts (TikTok-style) ── */
+  React.useEffect(() => {
+    sorosokeApi.discoverMotion()
+      .then((r: any) => {
+        const rows = r?.data
+        if (!Array.isArray(rows) || rows.length === 0) return
+        const mapped = rows.map((p: Record<string, unknown>) => mapBackendPost(p))
+        const existingIds = new Set(mapped.map((p: CanonicalPost) => p.id))
+        setMotionPosts(USE_MOCKS ? [...mapped, ...MOCK_MOTION_POSTS.filter(p => !existingIds.has(p.id))] : mapped)
+      })
+      .catch((e) => logApiFailure('feed/discoverMotion', e))
+  }, [])
+
+  /* ── Fetch real cross-village discover posts ── */
+  React.useEffect(() => {
+    sorosokeApi.discoverTrending()
+      .then((r: any) => {
+        const rows = r?.data
+        if (!Array.isArray(rows) || rows.length === 0) return
+        const mapped = rows.map((p: Record<string, unknown>) => mapBackendPost(p))
+        const existingIds = new Set(mapped.map((p: CanonicalPost) => p.id))
+        setDiscoverPosts(USE_MOCKS ? [...mapped, ...MOCK_DISCOVER_POSTS.filter(p => !existingIds.has(p.id))] : mapped)
+      })
+      .catch((e) => logApiFailure('feed/discoverTrending', e))
+  }, [])
 
   /* ── Filter + sort — geo-scoped; gallery/voice/spotlight render inline by post type ── */
   const filteredPosts = React.useMemo(() => {
-    // DISCOVER: cross-village, all skins, all geos — react-only layer
+    // DISCOVER: cross-village, all skins, all geos — real trending posts
     if (subTab === 'discover') {
       const liveIds = new Set(livePosts.map(p => p.id))
-      const extras = MOCK_DISCOVER_POSTS.filter(p => !liveIds.has(p.id))
+      const extras = discoverPosts.filter(p => !liveIds.has(p.id))
       return [...livePosts, ...extras].sort((a, b) => b.heatScore - a.heatScore)
     }
 
     let ps = livePosts.filter(p => p.skinContext === skin)
 
-    // Always inject gallery mocks (IMAGE_JOURNAL) into the main feed pool
-    const existingIds = new Set(ps.map(p => p.id))
-    const galleryMocks = MOCK_GALLERY_POSTS.filter(p => !existingIds.has(p.id))
-    ps = [...ps, ...galleryMocks]
+    // Inject gallery mocks (IMAGE_JOURNAL) only when USE_MOCKS is enabled
+    if (USE_MOCKS) {
+      const existingIds = new Set(ps.map(p => p.id))
+      const galleryMocks = MOCK_GALLERY_POSTS.filter(p => !existingIds.has(p.id))
+      ps = [...ps, ...galleryMocks]
+    }
 
     // Apply geographic scope filter — posts must match the active geo lens
     const allowedGeos = GEO_ALLOW[geo]
@@ -180,8 +212,9 @@ export default function SoroFeedPage() {
     return { post: d, viewMode: vm }
   }), [filteredPosts, subTab])
 
-  const hour = new Date().getHours()
-  const isNightMarket = hour >= 18
+  const [isNightMarket, setIsNightMarket] = React.useState(false)
+  const [nightHoursLeft, setNightHoursLeft] = React.useState(0)
+  React.useEffect(() => { const h = new Date().getHours(); setIsNightMarket(h >= 18); setNightHoursLeft(23 - h) }, [])
   const skinCfg = SKINS[skin]
 
   const switchDrumMode = (mode: DrumMode) => {
@@ -262,6 +295,9 @@ export default function SoroFeedPage() {
           <a href="/dashboard/ai" style={{ padding: '5px 10px', borderRadius: 8, background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)', color: '#f97316', fontSize: 9, fontWeight: 700, fontFamily: "'Space Grotesk',sans-serif", textDecoration: 'none' }}>Ask ☀️</a>
         </div>
 
+        {/* ── Market Day Clock ── */}
+        <MarketDayClock />
+
         {/* ── Dual drum toggle ── */}
         <div style={{ padding:'8px 16px 6px',display:'flex',alignItems:'center',gap:10 }}>
           <div style={{ flex:1,display:'flex',background:'rgba(255,255,255,.05)',borderRadius:99,padding:3,border:'1px solid rgba(255,255,255,.08)',position:'relative',overflow:'hidden' }}>
@@ -321,9 +357,9 @@ export default function SoroFeedPage() {
       {/* ── Motion feed ── */}
       {subTab === 'motion' && (
         <div style={{ flex:1 }}>
-          <MotionFeed posts={MOCK_MOTION_POSTS} onInteract={(type, id) => {
+          <MotionFeed posts={motionPosts} onInteract={(type, id) => {
             if (type === 'comment') {
-              sorosokeApi.comments(id).catch(() => {})
+              sorosokeApi.comments(id).catch((e) => logApiFailure('feed/comments', e))
               return
             }
             const actions: Record<string, ((id: string) => Promise<unknown>) | undefined> = {
@@ -333,7 +369,7 @@ export default function SoroFeedPage() {
               ubuntu: (id) => sorosokeApi.ubuntu(id),
               spray:  (id) => sorosokeApi.spray(id, { amount: 50 }),
             }
-            actions[type]?.(id)?.catch(() => {})
+            actions[type]?.(id)?.catch((e) => logApiFailure('feed/interact', e))
           }} />
         </div>
       )}
@@ -349,7 +385,7 @@ export default function SoroFeedPage() {
                 <div style={{ fontFamily:'Sora, sans-serif',fontSize:13,fontWeight:800,color:'#fbbf24' }}>Night Market Open</div>
                 <div style={{ fontSize:10,color:'rgba(212,160,23,.6)',marginTop:2 }}>Commerce posts get +15 heat · Until midnight</div>
               </div>
-              <div style={{ fontFamily:'Sora, sans-serif',fontSize:18,fontWeight:900,color:'#fbbf24',flexShrink:0 }}>{23 - new Date().getHours()}h left</div>
+              <div style={{ fontFamily:'Sora, sans-serif',fontSize:18,fontWeight:900,color:'#fbbf24',flexShrink:0 }}>{nightHoursLeft}h left</div>
             </div>
           )}
 
@@ -393,7 +429,7 @@ export default function SoroFeedPage() {
               <React.Fragment key={post.id}>
                 <FeedPostCard post={post} viewMode={viewMode} />
                 {/* Market Cry ad injection: every 5th post, not in Discover mode */}
-                {(idx + 1) % 5 === 0 && subTab !== 'discover' && idx / 5 < MOCK_MARKET_CRIES.length && (
+                {USE_MOCKS && (idx + 1) % 5 === 0 && subTab !== 'discover' && idx / 5 < MOCK_MARKET_CRIES.length && (
                   <MarketCryCard ad={MOCK_MARKET_CRIES[Math.floor(idx / 5)]} />
                 )}
                 {/* Village Gate Rest Stop — every 20 posts (anti-dark-pattern) */}

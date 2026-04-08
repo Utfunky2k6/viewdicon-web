@@ -2,6 +2,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { loveWorldApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 import { useAuthStore } from '@/stores/authStore'
 
 const GENOTYPES = [
@@ -35,7 +36,7 @@ export default function GenotypePage() {
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
-    loveWorldApi.getGenotype().then(r => { setCurrent(r); setSelected(r?.genotype || ''); setVerif(r?.verification || 'self_declared'); setLabUrl(r?.labDocUrl || '') }).catch(() => {}).finally(() => setLoading(false))
+    loveWorldApi.getGenotype().then(r => { setCurrent(r); setSelected(r?.genotype || ''); setVerif(r?.verification || 'self_declared'); setLabUrl(r?.labDocUrl || '') }).catch((e) => logApiFailure('love/genotype', e)).finally(() => setLoading(false))
   }, [])
 
   const badgeColor = (g: string) => GENOTYPES.find(x => x.value === g)?.color || '#888'
@@ -47,7 +48,7 @@ export default function GenotypePage() {
       if (current?.genotype) await loveWorldApi.updateGenotype(data)
       else await loveWorldApi.submitGenotype(data)
       setCurrent({ ...current, ...data })
-    } catch {}
+    } catch (e) { logApiFailure('love/genotype/save', e) }
     setSaving(false)
   }
 

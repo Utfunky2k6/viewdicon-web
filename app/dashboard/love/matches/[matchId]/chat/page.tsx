@@ -1,236 +1,504 @@
+/**
+ * UFE -- Station 2: Guided Chat
+ *
+ * Structured conversation between two matched people.
+ * iMessage-clean, WhatsApp-focused. AI signals visible but not intrusive.
+ *
+ * Design tokens only. No inline fetchApi. No local color maps.
+ */
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import { loveWorldApi } from '../../../../../../lib/api'
-import { useAuthStore } from '../../../../../../stores/authStore'
+import * as React from 'react'
+import { useParams } from 'next/navigation'
+import { COLOR, TYPE, SPACE, RADIUS, DURATION, EASE, REALM } from '@/components/love-world/tokens'
+import { RealmProvider, LWText, LWNav, LWBadge, LWSkeleton } from '@/components/love-world/primitives'
+import { usePolling } from '@/components/love-world/hooks'
+import { loveWorldApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
+
+/* ─── Constants ─── */
+
+const T = REALM.ufe
+const POLL_INTERVAL = 3000
+
+/* ─── Types ─── */
 
 interface ChatMessage {
-  id: string; senderAfroId: string; senderName?: string; content: string
-  isIcebreaker?: boolean; icebreakerPrompt?: string
-  flagResult?: { type: string; message: string } | null
+  id: string
+  senderId: string
+  content: string
   createdAt: string
+  type: 'TEXT' | 'VOICE' | 'SYSTEM' | 'AI_SIGNAL'
 }
-interface Icebreaker { id: string; prompt: string; category?: string }
 
-const GOLD = '#D4AF37'
-const BG = '#0A0A0F'
-const CARD = '#111118'
-const CARD2 = '#1A1A25'
-const GREEN = '#00C853'
-const RED = '#FF3B30'
-const WHITE = '#FFFFFF'
-const BLUE = '#4A90D9'
+/* ─── Helpers ─── */
+
+function formatDateSeparator(dateStr: string, now: Date): string {
+  const d = new Date(dateStr)
+  const diff = Math.floor((now.getTime() - d.getTime()) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Yesterday'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function formatTime(dateStr: string): string {
+  return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+function isSameDay(a: string, b: string): boolean {
+  const da = new Date(a)
+  const db = new Date(b)
+  return (
+    da.getFullYear() === db.getFullYear() &&
+    da.getMonth() === db.getMonth() &&
+    da.getDate() === db.getDate()
+  )
+}
+
+/* ─── Main component ─── */
 
 export default function GuidedChatPage() {
-  const { matchId } = useParams<{ matchId: string }>()
-  const router = useRouter()
-  const user = useAuthStore(s => s.user)
-  const myAfroId = user?.afroId || ''
+  const { matchId } = useParams() as { matchId: string }
 
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [icebreakers, setIcebreakers] = useState<Icebreaker[]>([])
-  const [loading, setLoading] = useState(true)
-  const [sending, setSending] = useState(false)
-  const [text, setText] = useState('')
-  const [selectedIce, setSelectedIce] = useState<Icebreaker | null>(null)
-  const [iceOpen, setIceOpen] = useState(false)
-  const [dayNum, setDayNum] = useState(1)
-  const [flagBanner, setFlagBanner] = useState<string | null>(null)
+  const [messages, setMessages] = React.useState<ChatMessage[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [input, setInput] = React.useState('')
+  const [sending, setSending] = React.useState(false)
+  const [myId, setMyId] = React.useState('')
+  const [partnerName, setPartnerName] = React.useState('')
+  const [icebreakers, setIcebreakers] = React.useState<string[]>([])
 
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [clientNow, setClientNow] = React.useState<Date>(() => new Date(0))
 
-  const iceUsedCount = messages.filter(m => m.senderAfroId === myAfroId && m.isIcebreaker).length
+  /* ── Data loading ── */
 
-  const fetchData = useCallback(async () => {
-    if (!matchId) return
+  const loadMessages = React.useCallback(async () => {
     try {
-      const [msgRes, iceRes] = await Promise.all([
-        loveWorldApi.getChatMessages(matchId).catch(() => ({ data: [] })),
-        loveWorldApi.getIcebreakers(matchId).catch(() => ({ data: [] })),
-      ])
-      const msgArr = Array.isArray(msgRes) ? msgRes : msgRes?.data || []
-      setMessages(msgArr.sort((a: ChatMessage, b: ChatMessage) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()))
-      setIcebreakers(Array.isArray(iceRes) ? iceRes : iceRes?.data || [])
-      if (msgRes?.dayNumber) setDayNum(msgRes.dayNumber)
-      // Check last messages for flags
-      const flagged = msgArr.find((m: ChatMessage) => m.flagResult)
-      if (flagged?.flagResult) setFlagBanner(flagged.flagResult.message)
-    } catch { /* silent */ } finally { setLoading(false) }
+      const res = await loveWorldApi.getChatMessages(matchId)
+      if (res?.messages) setMessages(res.messages)
+    } catch (e) { logApiFailure('love/chat/messages', e) }
   }, [matchId])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  const loadInitial = React.useCallback(async () => {
+    const [chatRes, matchRes, iceRes] = await Promise.allSettled([
+      loveWorldApi.getChatMessages(matchId),
+      loveWorldApi.getMatch(matchId),
+      loveWorldApi.getIcebreakers(matchId),
+    ])
 
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (chatRes.status === 'fulfilled' && chatRes.value?.messages) {
+      setMessages(chatRes.value.messages)
+    }
+
+    if (matchRes.status === 'fulfilled') {
+      const m = matchRes.value?.match || matchRes.value
+      if (m) {
+        setMyId(m.userId || m.myId || '')
+        setPartnerName(m.partnerName || m.partner?.name || 'Partner')
+      }
+    }
+
+    if (iceRes.status === 'fulfilled' && iceRes.value?.icebreakers) {
+      setIcebreakers(iceRes.value.icebreakers.slice(0, 3))
+    }
+
+    setLoading(false)
+  }, [matchId])
+
+  React.useEffect(() => { loadInitial() }, [loadInitial])
+  React.useEffect(() => { setClientNow(new Date()) }, [])
+
+  /* ── Real-time polling ── */
+
+  usePolling(loadMessages, POLL_INTERVAL, !loading)
+
+  /* ── Auto-scroll on new messages ── */
+
+  React.useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [messages])
 
-  const handleSend = async () => {
-    if (!matchId || !text.trim()) return
+  /* ── Send message ── */
+
+  async function handleSend(text?: string) {
+    const content = (text || input).trim()
+    if (!content || sending) return
+
     setSending(true)
-    setFlagBanner(null)
+    setInput('')
+
+    // Optimistic update
+    const tempMsg: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      senderId: myId,
+      content,
+      createdAt: new Date().toISOString(),
+      type: 'TEXT',
+    }
+    setMessages(prev => [...prev, tempMsg])
+
     try {
-      const res = await loveWorldApi.sendChatMessage(matchId, {
-        content: text.trim(),
-        isIcebreaker: !!selectedIce,
-        icebreakerPrompt: selectedIce?.prompt,
-      })
-      setText('')
-      setSelectedIce(null)
-      // If the response contains a flag
-      if (res?.flagResult) setFlagBanner(res.flagResult.message)
-      await fetchData()
-    } catch { /* silent */ } finally { setSending(false) }
+      await loveWorldApi.sendChatMessage(matchId, { content })
+      await loadMessages()
+    } catch (e) { logApiFailure('love/chat/send', e) }
+
+    setSending(false)
+    inputRef.current?.focus()
   }
 
-  const pickIcebreaker = (ice: Icebreaker) => {
-    setSelectedIce(ice)
-    setText(ice.prompt)
-    setIceOpen(false)
+  function handleIcebreaker(prompt: string) {
+    setInput(prompt)
+    inputRef.current?.focus()
   }
 
-  if (loading) return (
-    <div style={{ background: BG, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: GOLD, fontFamily: 'monospace', fontSize: 14 }}>Loading Guided Chat...</p>
-    </div>
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  /* ── Loading state ── */
+
+  if (loading) {
+    return (
+      <RealmProvider realm="ufe">
+        <LWNav
+          title="Chat"
+          backHref={`/dashboard/love/matches/${matchId}`}
+          backLabel="Match"
+        />
+        <div style={{
+          padding: SPACE[4],
+          display: 'flex',
+          flexDirection: 'column',
+          gap: SPACE[3],
+        }}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                justifyContent: i % 2 ? 'flex-start' : 'flex-end',
+              }}
+            >
+              <LWSkeleton
+                width={i % 3 === 0 ? '45%' : '65%'}
+                height={i === 3 ? 64 : 48}
+                radius={RADIUS.lg}
+              />
+            </div>
+          ))}
+        </div>
+      </RealmProvider>
+    )
+  }
+
+  /* ── Render helpers ── */
+
+  function renderDateSeparator(dateStr: string) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        padding: `${SPACE[3]}px 0`,
+      }}>
+        <LWText
+          scale="micro"
+          color="muted"
+          as="span"
+          style={{
+            display: 'inline-block',
+            padding: `${SPACE[1]}px ${SPACE[3]}px`,
+            background: 'rgba(255,255,255,0.04)',
+            borderRadius: RADIUS.full,
+          }}
+        >
+          {formatDateSeparator(dateStr, clientNow)}
+        </LWText>
+      </div>
+    )
+  }
+
+  function renderSystemMessage(msg: ChatMessage) {
+    return (
+      <div
+        key={msg.id}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: `${SPACE[2]}px 0`,
+        }}
+      >
+        <LWText
+          scale="micro"
+          color="muted"
+          as="span"
+          style={{
+            display: 'inline-block',
+            padding: `${SPACE[1]}px ${SPACE[3]}px`,
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: RADIUS.full,
+          }}
+        >
+          {msg.content}
+        </LWText>
+      </div>
+    )
+  }
+
+  function renderAiSignal(msg: ChatMessage) {
+    return (
+      <div
+        key={msg.id}
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: `${SPACE[2]}px 0`,
+        }}
+      >
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: SPACE[1.5],
+          padding: `${SPACE[1]}px ${SPACE[3]}px`,
+          background: 'rgba(255,255,255,0.03)',
+          border: `1px solid ${T.accent}20`,
+          borderRadius: RADIUS.full,
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+              stroke={T.accent}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <LWText
+            scale="micro"
+            as="span"
+            style={{ color: T.accent, opacity: 0.85 }}
+          >
+            {msg.content}
+          </LWText>
+        </div>
+      </div>
+    )
+  }
+
+  function renderBubble(msg: ChatMessage) {
+    const isMine = msg.senderId === myId
+
+    return (
+      <div
+        key={msg.id}
+        style={{
+          display: 'flex',
+          justifyContent: isMine ? 'flex-end' : 'flex-start',
+          animation: `lw-fade-in ${DURATION.fast} ${EASE.default}`,
+        }}
+      >
+        <div style={{
+          maxWidth: '75%',
+          padding: `${SPACE[2]}px ${SPACE[3]}px`,
+          borderRadius: isMine
+            ? `${RADIUS.lg} ${RADIUS.lg} ${RADIUS.sm} ${RADIUS.lg}`
+            : `${RADIUS.lg} ${RADIUS.lg} ${RADIUS.lg} ${RADIUS.sm}`,
+          background: isMine ? T.accent : COLOR.elevated,
+          color: isMine ? COLOR.textInverse : COLOR.textPrimary,
+        }}>
+          <LWText scale="body" as="span" style={{ color: 'inherit' }}>
+            {msg.content}
+          </LWText>
+          <div style={{
+            ...TYPE.micro,
+            color: isMine ? 'rgba(0,0,0,0.45)' : COLOR.textMuted,
+            textAlign: 'right' as const,
+            marginTop: SPACE[0.5],
+          }}>
+            {formatTime(msg.createdAt)}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  function renderMessages() {
+    const elements: React.ReactNode[] = []
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i]
+      const prev = i > 0 ? messages[i - 1] : null
+
+      // Date separator when crossing day boundary
+      if (!prev || !isSameDay(prev.createdAt, msg.createdAt)) {
+        elements.push(
+          <React.Fragment key={`sep-${msg.id}`}>
+            {renderDateSeparator(msg.createdAt)}
+          </React.Fragment>
+        )
+      }
+
+      // Render by type
+      if (msg.type === 'SYSTEM') {
+        elements.push(renderSystemMessage(msg))
+      } else if (msg.type === 'AI_SIGNAL') {
+        elements.push(renderAiSignal(msg))
+      } else {
+        elements.push(renderBubble(msg))
+      }
+    }
+
+    return elements
+  }
+
+  /* ── Icebreakers (shown when no messages exist) ── */
+
+  function renderIcebreakers() {
+    if (messages.length > 0 || icebreakers.length === 0) return null
+
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        gap: SPACE[3],
+        padding: `${SPACE[10]}px ${SPACE[4]}px`,
+      }}>
+        <LWText scale="caption" color="muted" align="center">
+          Start with an icebreaker
+        </LWText>
+        {icebreakers.map((ib, i) => (
+          <button
+            key={i}
+            onClick={() => handleIcebreaker(ib)}
+            style={{
+              padding: `${SPACE[2]}px ${SPACE[4]}px`,
+              background: T.accentMuted,
+              border: `1px solid ${T.accent}20`,
+              borderRadius: RADIUS.lg,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              ...TYPE.caption,
+              color: T.accent,
+              textAlign: 'center',
+              maxWidth: 280,
+              transition: `all ${DURATION.fast} ${EASE.default}`,
+            }}
+          >
+            {ib}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  /* ── Send icon ── */
+
+  const hasText = input.trim().length > 0
+
+  const sendIcon = (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 
+  /* ── Main layout ── */
+
   return (
-    <div style={{ background: BG, minHeight: '100vh', fontFamily: 'monospace', color: WHITE, display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Header */}
-      <div style={{ padding: '16px 16px 10px', borderBottom: `1px solid ${CARD2}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: GOLD, fontSize: 20, cursor: 'pointer', padding: 0 }}>
-            &larr;
-          </button>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: 18, color: GOLD, fontFamily: 'monospace' }}>Guided Chat</h1>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: WHITE, opacity: 0.6 }}>Day {dayNum}/5</span>
-            <span style={{ background: CARD2, padding: '4px 10px', borderRadius: 8, fontSize: 11, color: BLUE }}>
-              Icebreakers: {iceUsedCount}
-            </span>
-          </div>
+    <RealmProvider realm="ufe">
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100dvh',
+      }}>
+        {/* Header */}
+        <LWNav
+          title={partnerName}
+          backHref={`/dashboard/love/matches/${matchId}`}
+          backLabel="Match"
+          right={<LWBadge variant="accent">Station 2</LWBadge>}
+        />
+
+        {/* Messages area */}
+        <div
+          ref={scrollRef}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: `${SPACE[4]}px ${SPACE[4]}px ${SPACE[2]}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: SPACE[2],
+          }}
+        >
+          {renderIcebreakers()}
+          {renderMessages()}
         </div>
 
-        {/* Day progress bar */}
-        <div style={{ marginTop: 10, height: 4, background: CARD2, borderRadius: 2 }}>
-          <div style={{ height: '100%', width: `${(dayNum / 5) * 100}%`, background: GOLD, borderRadius: 2, transition: 'width 0.3s' }} />
-        </div>
-      </div>
-
-      {/* Flag banner */}
-      {flagBanner && (
-        <div style={{ padding: '10px 16px', background: RED, color: WHITE, fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>&#9888;</span>
-          <span style={{ flex: 1 }}>{flagBanner}</span>
-          <button onClick={() => setFlagBanner(null)} style={{ background: 'none', border: 'none', color: WHITE, fontSize: 16, cursor: 'pointer' }}>x</button>
-        </div>
-      )}
-
-      {/* Icebreaker strip (collapsible) */}
-      {icebreakers.length > 0 && (
-        <div style={{ borderBottom: `1px solid ${CARD2}` }}>
-          <button onClick={() => setIceOpen(!iceOpen)}
-            style={{
-              width: '100%', background: CARD, border: 'none', padding: '10px 16px',
-              color: BLUE, fontFamily: 'monospace', fontSize: 12, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
-            }}>
-            <span>&#9733;</span>
-            <span style={{ flex: 1 }}>Icebreaker Prompts ({icebreakers.length})</span>
-            <span style={{ transform: iceOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>&#9660;</span>
-          </button>
-          {iceOpen && (
-            <div style={{ display: 'flex', gap: 8, padding: '8px 16px 12px', overflowX: 'auto' }}>
-              {icebreakers.map(ice => (
-                <button key={ice.id} onClick={() => pickIcebreaker(ice)}
-                  style={{
-                    flex: '0 0 auto', maxWidth: 200, padding: '8px 12px', borderRadius: 10,
-                    background: CARD2, border: `1px solid ${BLUE}33`, color: WHITE,
-                    fontFamily: 'monospace', fontSize: 11, cursor: 'pointer', textAlign: 'left', lineHeight: 1.4,
-                  }}>
-                  <span style={{ color: BLUE, marginRight: 4 }}>&#9733;</span>{ice.prompt}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Messages */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, opacity: 0.5 }}>
-            <p style={{ fontSize: 28, marginBottom: 8 }}>&#128172;</p>
-            <p style={{ fontSize: 13 }}>Start the conversation! Try an icebreaker above.</p>
-          </div>
-        )}
-        {messages.map(msg => {
-          const isMine = msg.senderAfroId === myAfroId
-          return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start' }}>
-              <div style={{
-                maxWidth: '78%', padding: '10px 14px', borderRadius: 14,
-                background: isMine ? GOLD : CARD,
-                color: isMine ? BG : WHITE,
-                borderBottomRightRadius: isMine ? 4 : 14,
-                borderBottomLeftRadius: isMine ? 14 : 4,
-                border: msg.isIcebreaker ? `1px solid ${BLUE}` : 'none',
-              }}>
-                {!isMine && msg.senderName && (
-                  <div style={{ fontSize: 10, color: BLUE, marginBottom: 4, fontWeight: 600 }}>{msg.senderName}</div>
-                )}
-                {msg.isIcebreaker && (
-                  <div style={{ fontSize: 10, color: isMine ? BG : BLUE, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4, opacity: 0.8 }}>
-                    <span>&#9733;</span> Icebreaker
-                  </div>
-                )}
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{msg.content}</p>
-                <div style={{ fontSize: 9, opacity: 0.5, marginTop: 4, textAlign: 'right' }}>
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Composer */}
-      <div style={{ borderTop: `1px solid ${CARD2}`, padding: 14, background: CARD }}>
-        {selectedIce && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
-            background: `${BLUE}22`, padding: '6px 10px', borderRadius: 8, fontSize: 11, color: BLUE,
-          }}>
-            <span>&#9733;</span>
-            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {selectedIce.prompt}
-            </span>
-            <button onClick={() => { setSelectedIce(null); setText('') }}
-              style={{ background: 'none', border: 'none', color: RED, fontSize: 14, cursor: 'pointer', padding: 0 }}>x</button>
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={text} onChange={e => setText(e.target.value)}
+        {/* Input bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: SPACE[2],
+          padding: `${SPACE[2]}px ${SPACE[3]}px`,
+          borderTop: `1px solid ${COLOR.border}`,
+          background: T.surface,
+        }}>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            onKeyDown={e => e.key === 'Enter' && handleSend()}
             style={{
-              flex: 1, padding: '10px 14px', borderRadius: 10, border: `1px solid ${CARD2}`,
-              background: BG, color: WHITE, fontFamily: 'monospace', fontSize: 13, outline: 'none',
-            }} />
-          <button onClick={handleSend} disabled={sending || !text.trim()}
+              flex: 1,
+              height: 40,
+              padding: `0 ${SPACE[3]}px`,
+              background: COLOR.elevated,
+              border: `1px solid ${COLOR.border}`,
+              borderRadius: RADIUS.full,
+              color: COLOR.textPrimary,
+              fontSize: TYPE.body.fontSize,
+              fontFamily: 'inherit',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={() => handleSend()}
+            disabled={!hasText || sending}
             style={{
-              padding: '10px 18px', borderRadius: 10, background: GOLD, color: BG,
-              border: 'none', fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
-              cursor: sending ? 'wait' : 'pointer', opacity: (sending || !text.trim()) ? 0.5 : 1,
-            }}>
-            {sending ? '...' : 'Send'}
+              width: 40,
+              height: 40,
+              borderRadius: RADIUS.full,
+              border: 'none',
+              background: hasText ? T.accent : COLOR.borderStrong,
+              color: hasText ? COLOR.textInverse : COLOR.textMuted,
+              cursor: hasText ? 'pointer' : 'default',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: `all ${DURATION.fast} ${EASE.default}`,
+            }}
+          >
+            {sendIcon}
           </button>
         </div>
       </div>
-    </div>
+    </RealmProvider>
   )
 }

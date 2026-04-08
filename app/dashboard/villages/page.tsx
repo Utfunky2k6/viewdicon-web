@@ -7,6 +7,7 @@ import { useVillageStore } from '@/stores/villageStore'
 import { type CanonicalVillage } from '@/constants/villages'
 import { VillageFlagBg } from '@/components/village/VillageFlagBg'
 import { villageApi } from '@/lib/api'
+import { logApiFailure } from '@/lib/flags'
 
 // ── Category filter ────────────────────────────────────────────
 type Cat = 'all' | 'economy' | 'people' | 'creative' | 'civic' | 'spirit'
@@ -215,7 +216,7 @@ export default function VillagesPage() {
             setActiveVillage(me.villageId)
           }
         })
-        .catch(() => {})
+        .catch((e) => logApiFailure('villages/authMe', e))
     }
     // Load live member counts from village-registry
     fetch('/api/villages')
@@ -230,7 +231,7 @@ export default function VillagesPage() {
         })
         if (Object.keys(counts).length > 0) { setMemberCounts(counts); setRegistryLive(true) }
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('villages/memberCounts', e))
   }, [])
 
   // Sync joined state with active village from store
@@ -256,7 +257,7 @@ export default function VillagesPage() {
       setJoinedIds(prev => { const n = new Set(prev); n.delete(id); return n })
       if (activeVillageId === id) setActiveVillage(null)
       // Persist leave to village-registry
-      villageApi.leave(id).catch(() => {})
+      villageApi.leave(id).catch((e) => logApiFailure('villages/leave', e))
       return
     }
 
@@ -268,7 +269,7 @@ export default function VillagesPage() {
     setJoinedIds(prev => { const n = new Set(prev); n.add(id); return n })
     setActiveVillage(id)
     // Persist join to village-registry
-    villageApi.join(id).catch(() => {})
+    villageApi.join(id).catch((e) => logApiFailure('villages/join', e))
   }
 
   const handleOpen = (id: string) => {

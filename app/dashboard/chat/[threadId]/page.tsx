@@ -8,8 +8,10 @@ import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { VOCAB } from '@/constants/vocabulary'
 import { sesoChatApi, orishaApi, sorosokeApi, escrowApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 import { useSkinStore, SKIN_META } from '@/stores/skinStore'
 import { getRankFromXP } from '@/constants/ranks'
+import { useLanguage } from '@/hooks/useLanguage'
 
 /* ── inject-once CSS ── */
 const INJECT_ID = 'seso-thread-styles'
@@ -52,26 +54,41 @@ const STYLES = `
 @keyframes stCallSlide{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
 @keyframes stCallFade{from{opacity:0}to{opacity:1}}
 @keyframes stWave{0%,100%{height:4px}50%{height:18px}}
+@keyframes stCeremonyRing1{0%{transform:scale(1) rotate(0deg);opacity:.6}50%{transform:scale(1.18) rotate(180deg);opacity:1}100%{transform:scale(1) rotate(360deg);opacity:.6}}
+@keyframes stCeremonyRing2{0%{transform:scale(1) rotate(360deg);opacity:.4}50%{transform:scale(1.12) rotate(180deg);opacity:.8}100%{transform:scale(1) rotate(0deg);opacity:.4}}
+@keyframes stCeremonyRing3{0%{transform:scale(.95) rotate(0deg);opacity:.3}100%{transform:scale(1.25) rotate(360deg);opacity:0}}
+@keyframes stDrumPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(212,160,23,.7)}50%{transform:scale(1.06);box-shadow:0 0 0 24px rgba(212,160,23,0)}}
+@keyframes stKente{0%{background-position:0 0}100%{background-position:80px 80px}}
+@keyframes stReveal{from{filter:blur(12px) brightness(.5)}to{filter:blur(0) brightness(1)}}
+@keyframes stBlur{from{filter:blur(0)}to{filter:blur(10px) brightness(.6)}}
+@keyframes stSwipeHint{0%{transform:translateX(0)}40%{transform:translateX(-8px)}60%{transform:translateX(4px)}100%{transform:translateX(0)}}
+@keyframes stMilestone{from{opacity:0;transform:scale(.85) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .st-ring{animation:stRing 1.5s ease-in-out infinite}
 .st-call-pulse{animation:stCallPulse 1.5s ease infinite}
 .st-call-slide{animation:stCallSlide .35s ease both}
 .st-call-fade{animation:stCallFade .25s ease both}
+.st-ceremony-ring-1{animation:stCeremonyRing1 3s linear infinite}
+.st-ceremony-ring-2{animation:stCeremonyRing2 4s linear infinite}
+.st-ceremony-ring-3{animation:stCeremonyRing3 2s ease-out infinite}
+.st-drum-pulse{animation:stDrumPulse 1.2s ease infinite}
+.st-milestone{animation:stMilestone .4s cubic-bezier(.34,1.56,.64,1) both}
+.st-blur-reveal{transition:filter .4s ease}
+.st-blurred{filter:blur(8px) brightness(.5);user-select:none}
 `
 
-/* ── palette ── */
+/* ── palette (CSS-var driven) ── */
 const C = {
-  earth: '#0a0f08', earthD: '#060d07',
-  green: '#1a7c3e', greenL: '#4ade80',
-  gold: '#d4a017', goldL: '#fbbf24',
-  purple: '#7c3aed', purpleL: '#c084fc',
-  red: '#b22222', redL: '#ef4444',
-  amber: '#e07b00', blue: '#3b82f6', blueL: '#60a5fa',
-  text: '#f0f7f0', textDim: 'rgba(255,255,255,0.4)', textDim2: 'rgba(255,255,255,0.25)',
+  earth: 'var(--bg)', earthD: 'var(--bg-card)',
+  green: 'var(--green-primary)', greenL: 'var(--nkisi-green)',
+  gold: 'var(--gold)', goldL: 'var(--kente-gold)',
+  purple: '#6b4fbb', purpleL: '#a78bfa',
+  red: 'var(--crimson)', redL: '#fca5a5',
+  amber: 'var(--amber)', blue: '#3b82f6', blueL: '#93c5fd',
+  text: 'var(--text-primary)', textDim: 'var(--text-secondary)', textDim2: 'var(--text-muted)',
 }
 
 /* ── types ── */
 type ChatType = 'personal' | 'business' | 'group' | 'family'
-type Lang = 'EN' | 'YO' | 'IG' | 'HA' | 'SW' | 'ZU' | 'AR'
 type FamilyTab = 'chat' | 'tree' | 'vault' | 'cowrie'
 
 interface Msg {
@@ -105,6 +122,11 @@ interface Msg {
   feedHeat?: number
   translatedText?: string
   senderXp?: number
+  /* Hold-to-Reveal & self-destruct */
+  isGloryBlurred?: boolean     /* sender marked this as blur-required */
+  destructSec?: number         /* 0 = off, n = auto-delete after n seconds of viewing */
+  milestoneTag?: string        /* e.g. "First Voice Note 🎙" */
+  swipeReveal?: string         /* quick-reply text shown on swipe */
 }
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -171,6 +193,7 @@ export default function ChatThreadPage() {
   const params = useParams()
   const router = useRouter()
   const threadId = (params.threadId as string) || ''
+  const { code: userLangCode, name: userLangName } = useLanguage()
 
   /* detect chat type from prefix */
   const chatType: ChatType = threadId.startsWith('b-') ? 'business'
@@ -181,9 +204,8 @@ export default function ChatThreadPage() {
   const contact = getContactInfo(chatType)
 
   /* state */
-  const [messages, setMessages] = React.useState<Msg[]>(() => getMockMessages(chatType))
+  const [messages, setMessages] = React.useState<Msg[]>(() => USE_MOCKS ? getMockMessages(chatType) : [])
   const [input, setInput] = React.useState('')
-  const [activeLang, setActiveLang] = React.useState<Lang>('EN')
   const [showTranslation, setShowTranslation] = React.useState<Record<string, boolean>>({})
   const [toast, setToast] = React.useState<string | null>(null)
   const [toastOut, setToastOut] = React.useState(false)
@@ -197,6 +219,8 @@ export default function ChatThreadPage() {
   const [callCamOff, setCallCamOff] = React.useState(false)
   const [callCamFacing, setCallCamFacing] = React.useState<'user'|'environment'>('user')
   const [callSpeaker, setCallSpeaker] = React.useState(false)
+  const callVideoRef = React.useRef<HTMLVideoElement>(null)
+  const callStreamRef = React.useRef<MediaStream | null>(null)
   const [callTimer, setCallTimer] = React.useState(0)
   const callIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
@@ -223,6 +247,34 @@ export default function ChatThreadPage() {
   const [showTrustBanner, setShowTrustBanner] = React.useState(false)
   const [translatingId, setTranslatingId] = React.useState<string | null>(null)
   const [drumToVillageMsg, setDrumToVillageMsg] = React.useState<Msg | null>(null)
+
+  /* ── Hold-to-Reveal (Glory Lane) ── */
+  const [holdRevealEnabled, setHoldRevealEnabled] = React.useState(() => {
+    try { return localStorage.getItem('seso_glory_lane') === 'true' } catch { return false }
+  })
+  const [revealedMsgs, setRevealedMsgs] = React.useState<Set<string>>(new Set())
+  const [holdingMsgId, setHoldingMsgId] = React.useState<string | null>(null)
+  const holdRevealRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  /* ── African Call UI ── */
+  type CallMode = 'standard' | 'circle' | 'whisper'
+  const [callMode, setCallMode] = React.useState<CallMode>('standard')
+  const [showCallModeSheet, setShowCallModeSheet] = React.useState(false)
+
+  /* ── Journey Milestones ── */
+  const [milestones, setMilestones] = React.useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem(`seso_milestones_${chatType}`) || '{}') } catch { return {} }
+  })
+
+  /* ── Swipe gesture state ── */
+  const [swipeX, setSwipeX] = React.useState(0)
+  const [swipeMsgId, setSwipeMsgId] = React.useState<string | null>(null)
+  const [showQuickReplies, setShowQuickReplies] = React.useState(false)
+  const [showMediaActions, setShowMediaActions] = React.useState(false)
+  const swipeTouchStart = React.useRef(0)
+
+  /* ── Vanish mode ── */
+  const [vanishMode, setVanishMode] = React.useState(false)
 
   /* ── business escrow state machine ── */
   type EscrowStatus = 'OPEN' | 'LOCKED' | 'IN_TRANSIT' | 'DELIVERED' | 'COMPLETE' | 'SEALED' | 'DISPUTED'
@@ -279,8 +331,8 @@ export default function ChatThreadPage() {
         setMessages(mapped)
       }
       // If API returns empty/fails, keep mock messages (already set as initial state)
-    }).catch(() => {
-      // Keep mock messages as fallback — no-op
+    }).catch((e) => {
+      logApiFailure('chat/thread/listMessages', e)
     })
   }, [threadId])
 
@@ -307,30 +359,83 @@ export default function ChatThreadPage() {
     return () => { if (callIntervalRef.current) clearInterval(callIntervalRef.current) }
   }, [callState])
 
-  /* simulate incoming call after 8s (demo) */
+  /* real camera for video calls */
   React.useEffect(() => {
-    if (chatType !== 'personal' && chatType !== 'family') return
-    const t = setTimeout(() => {
-      if (callState === 'idle') setCallState('ringing-in')
-    }, 8000)
-    return () => clearTimeout(t)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (callState !== 'video') {
+      callStreamRef.current?.getTracks().forEach(t => t.stop())
+      callStreamRef.current = null
+      return
+    }
+    let cancelled = false
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: callCamFacing, width: 320 }, audio: true })
+      .then(stream => {
+        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return }
+        callStreamRef.current = stream
+        if (callVideoRef.current) callVideoRef.current.srcObject = stream
+      }).catch(() => {})
+    return () => { cancelled = true; callStreamRef.current?.getTracks().forEach(t => t.stop()); callStreamRef.current = null }
+  }, [callState, callCamFacing])
 
   const startCall = (type: 'video' | 'audio') => {
     setCallState('ringing-out')
     setTimeout(() => setCallState(type), 2500)
   }
-  const endCall = () => { setCallState('idle'); setCallMuted(false); setCallCamOff(false); setCallSpeaker(false) }
+  const endCall = () => { setCallState('idle'); setCallMode('standard'); setCallMuted(false); setCallCamOff(false); setCallSpeaker(false); callStreamRef.current?.getTracks().forEach(t => t.stop()); callStreamRef.current = null }
   const acceptCall = (type: 'video' | 'audio') => setCallState(type)
   const fmtTime = (s: number) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
 
+  /* ── milestone tracker ── */
+  const markMilestone = React.useCallback((tag: string, msgId: string) => {
+    setMilestones(prev => {
+      if (prev[tag]) return prev
+      const next = { ...prev, [tag]: true }
+      try { localStorage.setItem(`seso_milestones_${chatType}`, JSON.stringify(next)) } catch {}
+      setMessages(m => m.map(msg => msg.id === msgId ? { ...msg, milestoneTag: tag } : msg))
+      return next
+    })
+  }, [chatType])
+
+  /* ── hold-to-reveal helpers ── */
+  const startRevealHold = React.useCallback((msgId: string) => {
+    setHoldingMsgId(msgId)
+    holdRevealRef.current = setTimeout(() => {
+      setRevealedMsgs(prev => { const s = new Set(prev); s.add(msgId); return s })
+      try { navigator.vibrate?.(30) } catch {}
+    }, 350)
+  }, [])
+  const cancelRevealHold = React.useCallback(() => {
+    setHoldingMsgId(null)
+    if (holdRevealRef.current) clearTimeout(holdRevealRef.current)
+  }, [])
+  React.useEffect(() => () => { if (holdRevealRef.current) clearTimeout(holdRevealRef.current) }, [])
+
+  /* ── swipe gesture helpers ── */
+  const onSwipeTouchStart = (e: React.TouchEvent, msgId: string) => {
+    swipeTouchStart.current = e.touches[0].clientX
+    setSwipeMsgId(msgId)
+    setSwipeX(0)
+  }
+  const onSwipeTouchMove = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - swipeTouchStart.current
+    setSwipeX(Math.max(-80, Math.min(80, dx)))
+  }
+  const onSwipeTouchEnd = () => {
+    if (swipeX > 50) { setShowQuickReplies(true); try { navigator.vibrate?.(20) } catch {} }
+    if (swipeX < -50) { setShowMediaActions(true); try { navigator.vibrate?.(20) } catch {} }
+    setSwipeX(0); setSwipeMsgId(null)
+  }
+
   /* toast helper */
+  const toastTimers = React.useRef<ReturnType<typeof setTimeout>[]>([])
   const flash = React.useCallback((msg: string) => {
+    toastTimers.current.forEach(clearTimeout)
+    toastTimers.current = []
     setToast(msg)
     setToastOut(false)
-    setTimeout(() => setToastOut(true), 1800)
-    setTimeout(() => { setToast(null); setToastOut(false) }, 2200)
+    toastTimers.current.push(setTimeout(() => setToastOut(true), 1800))
+    toastTimers.current.push(setTimeout(() => { setToast(null); setToastOut(false) }, 2200))
   }, [])
+  React.useEffect(() => () => { toastTimers.current.forEach(clearTimeout) }, [])
 
   /* long-press / message actions */
   const openActions = (msg: Msg) => { if (msg.type === 'system') return; setActionMsg(msg) }
@@ -366,20 +471,32 @@ export default function ChatThreadPage() {
   const handleSend = () => {
     if (!input.trim()) return
     const body = replyTo ? `\u21a9 ${replyTo.sender}: "${replyTo.content?.slice(0, 40)}${(replyTo.content?.length ?? 0) > 40 ? '\u2026' : ''}"\n${input.trim()}` : input.trim()
+    const msgId = `m-${Date.now()}`
     const newMsg: Msg = {
-      id: `m-${Date.now()}`, type: 'text', sender: 'Me', isMe: true,
+      id: msgId, type: 'text', sender: 'Me', isMe: true,
       content: body,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isGloryBlurred: holdRevealEnabled,
+      destructSec: vanishMode ? 30 : undefined,
       ...(chatType === 'business' ? { senderRole: 'BUYER' as const } : {}),
     }
-    setMessages(prev => [...prev, newMsg])
+    setMessages(prev => {
+      const isFirst = !prev.some(m => m.isMe && m.type === 'text')
+      if (isFirst) { newMsg.milestoneTag = '✦ First Message'; }
+      return [...prev, newMsg]
+    })
     setInput('')
     setReplyTo(null)
 
-    /* wire API: send message to backend (fire-and-forget with fallback) */
-    sesoChatApi.sendMessage(threadId, { body, type: 'text' }).catch(() => {
-      // API failed — message already added locally, no-op
-    })
+    /* wire API */
+    sesoChatApi.sendMessage(threadId, { body, type: 'text' }).catch((e) => logApiFailure('chat/sendMessage', e))
+
+    /* vanish mode: auto-delete after destructSec */
+    if (vanishMode) {
+      setTimeout(() => {
+        setMessages(prev => prev.filter(m => m.id !== msgId))
+      }, 30000)
+    }
 
     /* mock reply */
     setTyping(true)
@@ -392,7 +509,7 @@ export default function ChatThreadPage() {
         family: { id: `r-${Date.now()}`, type: 'text', sender: 'Mama', localName: 'Iya', isMe: false, content: 'Thank you, my child. We are waiting for you. 🙏', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
       }
       setMessages(prev => [...prev, replies[chatType]])
-    }, 1500 + Math.random() * 1000)
+    }, 1500 + ((Date.now() % 1000) / 1000) * 1000)
   }
 
   /* theme colors per type */
@@ -403,8 +520,6 @@ export default function ChatThreadPage() {
     : chatType === 'group'
     ? { bg: C.earthD, accent: C.green, accentL: C.greenL, bubbleMe: C.green, bubbleThem: '#0d140e', borderAccent: 'rgba(26,124,62,0.25)' }
     : { bg: C.earthD, accent: C.green, accentL: C.greenL, bubbleMe: C.green, bubbleThem: '#0d140e', borderAccent: 'rgba(26,124,62,0.25)' }
-
-  const LANGS: Lang[] = ['EN', 'YO', 'IG', 'HA', 'SW', 'ZU', 'AR']
 
   /* role colors for business */
   const roleColor = (role?: string) => {
@@ -422,6 +537,26 @@ export default function ChatThreadPage() {
   /* ═══════════════════════════════════════════════════════════════ */
   const renderMessage = (msg: Msg, idx: number) => {
     const delay = `${Math.min(idx * 0.04, 0.4)}s`
+    const isSwipingThis = swipeMsgId === msg.id
+    const swipeOffset = isSwipingThis ? swipeX : 0
+
+    /* ── Milestone banner ── */
+    const milestoneBanner = msg.milestoneTag ? (
+      <div className="st-milestone" style={{
+        textAlign: 'center', padding: '8px 20px', margin: '10px 0 4px',
+      }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '5px 16px', borderRadius: 99,
+          background: 'linear-gradient(135deg, rgba(212,160,23,0.15), rgba(26,124,62,0.1))',
+          border: '1px solid rgba(212,160,23,0.3)',
+          fontSize: 10, fontWeight: 800, color: C.goldL,
+          fontFamily: 'var(--font-display)', letterSpacing: '0.06em',
+        }}>
+          {msg.milestoneTag}
+        </span>
+      </div>
+    ) : null
 
     /* system event */
     if (msg.type === 'system') {
@@ -431,7 +566,7 @@ export default function ChatThreadPage() {
             display: 'inline-block', fontSize: 10, fontWeight: 800, padding: '4px 14px', borderRadius: 99,
             background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
             color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.06em',
-            fontFamily: 'Sora, sans-serif',
+            fontFamily: 'var(--font-display)',
           }}>{msg.content}</span>
         </div>
       )
@@ -445,7 +580,7 @@ export default function ChatThreadPage() {
           padding: '12px 16px', borderRadius: 14,
           background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.2)',
         }}>
-          <div style={{ fontSize: 9, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif', marginBottom: 6 }}>🦅 Griot Insight</div>
+          <div style={{ fontSize: 9, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)', marginBottom: 6 }}>🦅 Griot Insight</div>
           <p style={{ fontSize: 13, color: C.goldL, fontStyle: 'italic', lineHeight: 1.6, margin: 0, fontWeight: 500 }}>{msg.content}</p>
         </div>
       )
@@ -500,7 +635,7 @@ export default function ChatThreadPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <span style={{ fontSize: 28 }}>🚨</span>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 14, textTransform: 'uppercase', fontFamily: 'Sora, sans-serif', color: '#fff', letterSpacing: '0.05em' }}>BLOOD-CALL SOS</div>
+              <div style={{ fontWeight: 900, fontSize: 14, textTransform: 'uppercase', fontFamily: 'var(--font-display)', color: '#fff', letterSpacing: '0.05em' }}>BLOOD-CALL SOS</div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>{msg.sender} ({msg.localName}) Needs Help</div>
             </div>
           </div>
@@ -510,7 +645,7 @@ export default function ChatThreadPage() {
           <button onClick={() => flash('GPS tracking initiated')} style={{
             width: '100%', padding: 12, background: '#fff', color: '#b91c1c', border: 'none',
             borderRadius: 99, fontWeight: 800, fontSize: 13, cursor: 'pointer',
-            fontFamily: 'Sora, sans-serif',
+            fontFamily: 'var(--font-display)',
           }}>View Live GPS & Respond</button>
         </div>
       )
@@ -526,7 +661,7 @@ export default function ChatThreadPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <span style={{ fontSize: 24 }}>🏛</span>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 14, color: C.text, fontFamily: 'Sora, sans-serif' }}>Ancestral Vault Unlock</div>
+              <div style={{ fontWeight: 800, fontSize: 14, color: C.text, fontFamily: 'var(--font-display)' }}>Ancestral Vault Unlock</div>
               <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>Requested by {msg.sender}</div>
             </div>
           </div>
@@ -561,7 +696,7 @@ export default function ChatThreadPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <span style={{ fontSize: 24 }}>🥁</span>
             <div>
-              <div style={{ fontWeight: 900, fontSize: 13, textTransform: 'uppercase', fontFamily: 'Sora, sans-serif', color: '#fff', letterSpacing: '0.05em' }}>RECOVERY REQUEST</div>
+              <div style={{ fontWeight: 900, fontSize: 13, textTransform: 'uppercase', fontFamily: 'var(--font-display)', color: '#fff', letterSpacing: '0.05em' }}>RECOVERY REQUEST</div>
               <div style={{ fontSize: 12, color: '#e9d5ff', fontWeight: 500 }}>{msg.sender} is requesting account recovery</div>
             </div>
           </div>
@@ -633,10 +768,10 @@ export default function ChatThreadPage() {
             }}>{msg.tradeStatus}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 16, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>{msg.tradeAmount}</span>
+            <span style={{ fontSize: 16, fontWeight: 900, color: C.goldL, fontFamily: 'var(--font-display)' }}>{msg.tradeAmount}</span>
             <button onClick={() => flash(VOCAB.openTrade)} style={{
               padding: '8px 16px', borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
-              color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+              color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
             }}>{VOCAB.openTrade}</button>
           </div>
         </div>
@@ -675,7 +810,7 @@ export default function ChatThreadPage() {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 2, height: 16 }}>
                     {Array.from({ length: 16 }).map((_, i) => (
-                      <div key={i} style={{ width: 2, borderRadius: 1, background: msg.isMe ? 'rgba(255,255,255,0.5)' : `${theme.accentL}60`, height: `${15 + Math.random() * 85}%` }} />
+                      <div key={i} style={{ width: 2, borderRadius: 1, background: msg.isMe ? 'rgba(255,255,255,0.5)' : `${theme.accentL}60`, height: `${15 + ((i * 37 + 13) % 85)}%` }} />
                     ))}
                   </div>
                   <span style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>{msg.voiceSec}s · Spirit Voice Ready</span>
@@ -720,7 +855,7 @@ export default function ChatThreadPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 24 }}>🐚</span>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>₡{msg.cowrieAmt?.toLocaleString()}</div>
+                <div style={{ fontSize: 16, fontWeight: 900, color: C.goldL, fontFamily: 'var(--font-display)' }}>₡{msg.cowrieAmt?.toLocaleString()}</div>
                 <div style={{ fontSize: 9, fontWeight: 800, color: C.greenL, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{msg.cowrieStatus}</div>
               </div>
             </div>
@@ -747,7 +882,7 @@ export default function ChatThreadPage() {
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
                 <span style={{ fontSize: 10 }}>💻</span>
-                <span style={{ fontSize: 9, fontWeight: 800, color: '#8be9fd', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif' }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: '#8be9fd', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-display)' }}>
                   {msg.codeLanguage || 'Code'} Drum Circle
                 </span>
                 <div style={{ flex: 1 }} />
@@ -799,8 +934,8 @@ export default function ChatThreadPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
               }}>🐚</div>
               <div>
-                <div style={{ fontSize: 9, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif' }}>Cowrie Transfer</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#fbbf24', fontFamily: 'Sora, sans-serif', marginTop: 2 }}>₡{msg.cowrieAmt?.toLocaleString()}</div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)' }}>Cowrie Transfer</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#fbbf24', fontFamily: 'var(--font-display)', marginTop: 2 }}>₡{msg.cowrieAmt?.toLocaleString()}</div>
               </div>
             </div>
             {msg.content && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 8, fontStyle: 'italic' }}>{msg.content}</div>}
@@ -902,7 +1037,7 @@ export default function ChatThreadPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span style={{ fontSize: 18 }}>🧙</span>
-            <span style={{ fontSize: 9, fontWeight: 800, color: C.purpleL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif' }}>Griot AI Wisdom</span>
+            <span style={{ fontSize: 9, fontWeight: 800, color: C.purpleL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)' }}>Griot AI Wisdom</span>
           </div>
           <p style={{ fontSize: 13, color: '#e9d5ff', fontStyle: 'italic', lineHeight: 1.7, margin: 0, fontWeight: 500 }}>{msg.content}</p>
           <div style={{ fontSize: 9, color: C.textDim2, fontWeight: 600, marginTop: 6, textAlign: 'right' }}>{msg.time}</div>
@@ -913,11 +1048,21 @@ export default function ChatThreadPage() {
     /* ── regular text bubble ── */
     const msgReactions = reactions[msg.id] || []
     const isStarred = starred.has(msg.id)
+    /* Glory Lane blur — sender opt-in OR global setting for their messages */
+    const isBlurred = holdRevealEnabled && !msg.isMe && !revealedMsgs.has(msg.id) && (msg.isGloryBlurred !== false)
     return (
-      <div key={msg.id} className="st-bubble" style={{
-        animationDelay: delay, display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start',
-        padding: '4px 18px',
-      }}>
+      <>
+        {milestoneBanner}
+        <div key={msg.id} className="st-bubble" style={{
+          animationDelay: delay, display: 'flex', justifyContent: msg.isMe ? 'flex-end' : 'flex-start',
+          padding: '4px 18px',
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isSwipingThis ? 'none' : 'transform .2s ease',
+        }}
+          onTouchStart={e => onSwipeTouchStart(e, msg.id)}
+          onTouchMove={onSwipeTouchMove}
+          onTouchEnd={onSwipeTouchEnd}
+        >
         <div style={{ maxWidth: '80%' }}>
           {/* sender label */}
           {!msg.isMe && (
@@ -943,26 +1088,51 @@ export default function ChatThreadPage() {
             </div>
           )}
 
-          {/* bubble — long press activates action menu */}
+          {/* bubble — long press = action menu, hold-to-reveal on blurred */}
           <div
-            onMouseDown={() => startLP(msg)}
-            onMouseUp={cancelLP}
-            onMouseLeave={cancelLP}
-            onTouchStart={() => startLP(msg)}
-            onTouchEnd={cancelLP}
-            onContextMenu={e => { e.preventDefault(); openActions(msg) }}
+            onMouseDown={() => { if (isBlurred) startRevealHold(msg.id); else startLP(msg) }}
+            onMouseUp={() => { cancelRevealHold(); cancelLP() }}
+            onMouseLeave={() => { cancelRevealHold(); cancelLP() }}
+            onTouchStart={() => { if (isBlurred) startRevealHold(msg.id); else startLP(msg) }}
+            onTouchEnd={() => { cancelRevealHold(); cancelLP() }}
+            onContextMenu={e => { e.preventDefault(); if (!isBlurred) openActions(msg) }}
             style={{
               padding: '10px 14px', borderRadius: 18,
               borderTopLeftRadius: msg.isMe ? 18 : 4, borderTopRightRadius: msg.isMe ? 4 : 18,
               background: msg.isMe ? theme.bubbleMe : theme.bubbleThem,
               border: `1px solid ${msg.isMe ? 'transparent' : 'rgba(255,255,255,0.06)'}`,
               boxShadow: msg.isMe ? `0 4px 12px rgba(0,0,0,0.15)` : 'none',
-              cursor: 'pointer', userSelect: 'none',
+              cursor: isBlurred ? 'cell' : 'pointer', userSelect: 'none',
               outline: isStarred ? `1.5px solid ${C.goldL}40` : 'none',
+              position: 'relative', overflow: 'hidden',
             }}
           >
             {isStarred && <span style={{ fontSize: 8, color: C.goldL, display: 'block', marginBottom: 3 }}>⭐ Starred</span>}
-            <p style={{ fontSize: 14, lineHeight: 1.55, margin: 0, color: msg.isMe ? '#f0f7f0' : C.text, fontWeight: 500, fontFamily: 'Inter, sans-serif', whiteSpace: 'pre-wrap' }}>{msg.content}</p>
+            {msg.destructSec && (
+              <span style={{ fontSize: 8, color: C.amber, display: 'block', marginBottom: 3, fontWeight: 800 }}>⏳ Vanish · {msg.destructSec}s</span>
+            )}
+            <p className="st-blur-reveal" style={{
+              fontSize: 14, lineHeight: 1.55, margin: 0,
+              color: msg.isMe ? '#f0f7f0' : C.text, fontWeight: 500,
+              fontFamily: 'var(--font-body)', whiteSpace: 'pre-wrap',
+              filter: isBlurred ? `blur(8px) brightness(.5)` : 'none',
+              transition: 'filter .35s ease',
+              pointerEvents: isBlurred ? 'none' : 'auto',
+            }}>{msg.content}</p>
+            {/* Glory Lane reveal hint */}
+            {isBlurred && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 18,
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.7)',
+                  padding: '4px 12px', borderRadius: 99,
+                  background: 'rgba(0,0,0,0.4)',
+                  pointerEvents: 'none', fontFamily: 'var(--font-display)',
+                }}>{holdingMsgId === msg.id ? '🔓 Revealing...' : '👁 Hold to Reveal'}</span>
+              </div>
+            )}
           </div>
 
           {/* reaction pills */}
@@ -998,10 +1168,11 @@ export default function ChatThreadPage() {
                   <button onClick={() => {
                     if (translatingId === msg.id) return
                     setTranslatingId(msg.id)
-                    sesoChatApi.translate(msg.id, 'en').then((res: any) => {
+                    sesoChatApi.translate(msg.id, userLangCode).then((res: any) => {
                       const translated = res?.translatedText || res?.data?.translatedText || 'Translation unavailable'
                       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, translatedText: translated } : m))
-                    }).catch(() => {
+                    }).catch((e) => {
+                      logApiFailure('chat/translate', e)
                       setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, translatedText: '(Translation failed)' } : m))
                     }).finally(() => setTranslatingId(null))
                   }} style={{
@@ -1030,6 +1201,7 @@ export default function ChatThreadPage() {
           </div>
         </div>
       </div>
+      </>
     )
   }
 
@@ -1071,9 +1243,9 @@ export default function ChatThreadPage() {
         ))}
       </div>
       <div style={{ fontSize: 10, color: C.textDim2, fontWeight: 600, textAlign: 'center' }}>7 verified bloodline members · Quorum 2 of 3</div>
-      <button onClick={() => router.push('/dashboard/family-tree')} style={{
+      <button onClick={() => router.push('/dashboard/profile/idile/family-tree')} style={{
         padding: '10px 24px', borderRadius: 12, background: C.purple, border: `1px solid ${C.purpleL}`,
-        color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+        color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)',
       }}>Edit Family Tree →</button>
     </div>
   )
@@ -1082,7 +1254,7 @@ export default function ChatThreadPage() {
     <div className="st-fade" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* quorum status */}
       <div style={{ padding: 14, borderRadius: 14, background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.2)' }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: C.purpleL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif', marginBottom: 8 }}>🔐 Vault Quorum Status</div>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.purpleL, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)', marginBottom: 8 }}>🔐 Vault Quorum Status</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1, height: 6, background: 'rgba(0,0,0,0.3)', borderRadius: 99, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: '33%', background: C.purpleL, borderRadius: 99 }} />
@@ -1126,13 +1298,13 @@ export default function ChatThreadPage() {
         background: 'linear-gradient(135deg, rgba(124,58,237,0.15), rgba(212,160,23,0.1))',
         border: '1px solid rgba(124,58,237,0.25)',
       }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'Sora, sans-serif', marginBottom: 6 }}>Family Cowrie Pot</div>
-        <div style={{ fontSize: 32, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>₡847,500</div>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-display)', marginBottom: 6 }}>Family Cowrie Pot</div>
+        <div style={{ fontSize: 32, fontWeight: 900, color: C.goldL, fontFamily: 'var(--font-display)' }}>₡847,500</div>
         <div style={{ fontSize: 11, color: C.textDim, fontWeight: 600, marginTop: 4 }}>Across 7 members · 3 Ajo circles active</div>
       </div>
 
       {/* ajo circles */}
-      <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'Sora, sans-serif' }}>Active Ajo Circles</div>
+      <div style={{ fontSize: 10, fontWeight: 800, color: C.textDim2, textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: 'var(--font-display)' }}>Active Ajo Circles</div>
       {[
         { name: 'Monthly Savings', amount: '₡150,000 / month', members: 5, next: 'Your turn: April' },
         { name: 'Emergency Fund', amount: '₡50,000', members: 7, next: 'Pot: ₡350,000' },
@@ -1161,7 +1333,7 @@ export default function ChatThreadPage() {
   return (
     <div className="st-fade st-no-scroll" style={{
       height: '100vh', display: 'flex', flexDirection: 'column',
-      background: theme.bg, color: C.text, fontFamily: 'DM Sans, Inter, sans-serif',
+      background: theme.bg, color: C.text, fontFamily: 'var(--font-utility)',
       maxWidth: 480, margin: '0 auto',
       borderLeft: '1px solid rgba(255,255,255,0.04)', borderRight: '1px solid rgba(255,255,255,0.04)',
       position: 'relative', overflow: 'hidden',
@@ -1189,12 +1361,22 @@ export default function ChatThreadPage() {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{
-            fontFamily: 'Sora, sans-serif', fontSize: 13, fontWeight: 800, color: C.text,
+            fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 800, color: C.text,
             margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{contact.name}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2, flexWrap: 'wrap' }}>
             <div className="st-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: C.greenL, boxShadow: `0 0 4px ${C.greenL}` }} />
             <span style={{ fontSize: 10, color: C.textDim, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{contact.subtitle}{contact.members ? ` · ${contact.members} members` : ''}</span>
+            {chatType === 'business' && (
+              <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 6px', borderRadius: 3, background: 'rgba(212,160,23,0.1)', color: C.goldL, border: '1px solid rgba(212,160,23,0.2)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ESCROW</span>
+            )}
+            {chatType === 'family' && (
+              <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 6px', borderRadius: 3, background: 'rgba(124,58,237,0.1)', color: C.purpleL, border: '1px solid rgba(124,58,237,0.2)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>KINSHIP</span>
+            )}
+            {chatType === 'group' && (
+              <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 6px', borderRadius: 3, background: 'rgba(26,124,62,0.1)', color: C.greenL, border: '1px solid rgba(26,124,62,0.2)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>VILLAGE</span>
+            )}
+            <span style={{ fontSize: 8, color: C.textDim2, fontWeight: 600 }}>E2E</span>
           </div>
         </div>
 
@@ -1209,7 +1391,7 @@ export default function ChatThreadPage() {
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               }
               setMessages(prev => [...prev, bcMsg])
-              sesoChatApi.sendMessage(threadId, { body: 'BLOOD-CALL SOS', type: 'BLOOD_CALL' }).catch(() => {})
+              sesoChatApi.sendMessage(threadId, { body: 'BLOOD-CALL SOS', type: 'BLOOD_CALL' }).catch((e) => logApiFailure('chat/bloodCall', e))
               flash('🩸 Blood Call sent to family')
             }} style={{
               width: 32, height: 32, borderRadius: '50%',
@@ -1252,7 +1434,8 @@ export default function ChatThreadPage() {
                   sesoChatApi.startBusiness(participantId, 'trade').then((res: any) => {
                     const bizId = res?.chatId || res?.data?.chatId || `b-new-${Date.now()}`
                     router.push(`/dashboard/chat/${bizId}`)
-                  }).catch(() => {
+                  }).catch((e) => {
+                    logApiFailure('chat/startBusiness', e)
                     router.push(`/dashboard/chat/b-new-${Date.now()}`)
                   })
                   flash('🤝 Opening Trade Session...')
@@ -1271,6 +1454,42 @@ export default function ChatThreadPage() {
                   background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
                   cursor: 'pointer', color: C.text, fontSize: 13, fontWeight: 600,
                 }}>🔇 Mute</button>
+                <button onClick={() => {
+                  const next = !holdRevealEnabled
+                  setHoldRevealEnabled(next)
+                  try { localStorage.setItem('seso_glory_lane', String(next)) } catch {}
+                  setShowHeaderMenu(false)
+                  flash(next ? '👁 Glory Lane ON — messages blurred until held' : '👁 Glory Lane OFF')
+                }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer', color: holdRevealEnabled ? C.gold : C.text, fontSize: 13, fontWeight: 600,
+                }}>
+                  <span>👁 Glory Lane</span>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: holdRevealEnabled ? 'rgba(212,160,23,0.2)' : 'rgba(255,255,255,0.06)', color: holdRevealEnabled ? C.goldL : C.textDim }}>{holdRevealEnabled ? 'ON' : 'OFF'}</span>
+                </button>
+                <button onClick={() => {
+                  setVanishMode(v => !v)
+                  setShowHeaderMenu(false)
+                  flash(vanishMode ? '🔥 Vanish Mode OFF' : '🔥 Vanish Mode ON — messages delete in 30s')
+                }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer', color: vanishMode ? C.red : C.text, fontSize: 13, fontWeight: 600,
+                }}>
+                  <span>🔥 Vanish Mode</span>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: vanishMode ? 'rgba(220,38,38,0.2)' : 'rgba(255,255,255,0.06)', color: vanishMode ? C.redL : C.textDim }}>{vanishMode ? 'ON' : 'OFF'}</span>
+                </button>
+                <button onClick={() => { setShowCallModeSheet(true); setShowHeaderMenu(false) }} style={{
+                  width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'none', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                  cursor: 'pointer', color: C.text, fontSize: 13, fontWeight: 600,
+                }}>
+                  <span>🥁 Call Mode</span>
+                  <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: 'rgba(74,222,128,0.12)', color: C.greenL }}>
+                    {callMode === 'circle' ? 'Story Circle' : callMode === 'whisper' ? 'Whisper' : 'Standard'}
+                  </span>
+                </button>
                 <button onClick={() => { setShowHeaderMenu(false); router.push('/dashboard/chat/settings') }} style={{
                   width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10,
                   background: 'none', border: 'none',
@@ -1282,68 +1501,8 @@ export default function ChatThreadPage() {
         </div>
       </div>
 
-      {/* ═══ CONTEXT BAR — FEATURE 12: Skin Context Display ═══ */}
-      <div style={{
-        padding: '6px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)', flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {/* Skin badge */}
-          <span style={{
-            fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
-            background: `${skinMeta.color}18`, color: skinMeta.color,
-            border: `1px solid ${skinMeta.color}35`,
-            textTransform: 'uppercase', letterSpacing: '0.04em',
-          }}>{skinMeta.emoji} {skinMeta.label.toUpperCase()}</span>
-          {chatType === 'business' && (
-            <span style={{
-              fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
-              background: 'rgba(212,160,23,0.1)', color: C.goldL, border: '1px solid rgba(212,160,23,0.2)',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>🔒 ESCROW ACTIVE · ₡42,000</span>
-          )}
-          {chatType === 'family' && (
-            <span style={{
-              fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
-              background: 'rgba(124,58,237,0.1)', color: C.purpleL, border: '1px solid rgba(124,58,237,0.2)',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>🔐 KINSHIP ENCRYPTED</span>
-          )}
-          {chatType === 'group' && (
-            <span style={{
-              fontSize: 9, fontWeight: 800, padding: '2px 8px', borderRadius: 4,
-              background: 'rgba(26,124,62,0.1)', color: C.greenL, border: '1px solid rgba(26,124,62,0.2)',
-              textTransform: 'uppercase', letterSpacing: '0.04em',
-            }}>🧺 COMMERCE VILLAGE</span>
-          )}
-        </div>
-        <span style={{ fontSize: 9, color: C.textDim2, fontWeight: 600 }}>E2E AES-256</span>
-      </div>
       {/* Skin accent bar */}
       <div style={{ height: 2, background: `linear-gradient(to right, ${skinMeta.color}, transparent)`, flexShrink: 0 }} />
-
-      {/* ═══ SPIRIT VOICE BAR ═══ */}
-      <div style={{
-        padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8,
-        borderBottom: '1px solid rgba(255,255,255,0.04)', background: `linear-gradient(135deg, ${theme.borderAccent}, transparent)`,
-        flexShrink: 0, overflowX: 'auto',
-      }} className="st-no-scroll">
-        <span className="st-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: C.greenL, boxShadow: `0 0 4px ${C.greenL}`, flexShrink: 0 }} />
-        <span style={{ fontSize: 9, fontWeight: 800, color: C.greenL, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif', flexShrink: 0 }}>SPIRIT VOICE</span>
-        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
-        <div style={{ display: 'flex', gap: 4, flex: 1 }}>
-          {LANGS.map(lang => (
-            <button key={lang} onClick={() => setActiveLang(lang)} style={{
-              padding: '3px 8px', borderRadius: 99, fontSize: 9, fontWeight: 700, cursor: 'pointer',
-              background: lang === activeLang ? C.green : 'rgba(255,255,255,0.04)',
-              color: lang === activeLang ? '#fff' : C.textDim2,
-              border: lang === activeLang ? `1px solid ${C.greenL}` : '1px solid transparent',
-              transition: 'all .15s', flexShrink: 0,
-            }}>{lang}</button>
-          ))}
-        </div>
-        <span style={{ fontSize: 15, cursor: 'pointer', flexShrink: 0 }}>🎙</span>
-      </div>
 
       {/* ═══ FAMILY SUB-TABS (family type only) ═══ */}
       {chatType === 'family' && (
@@ -1360,7 +1519,7 @@ export default function ChatThreadPage() {
               flex: 1, padding: '10px 0', cursor: 'pointer', background: 'none', border: 'none',
               borderBottom: familyTab === t.key ? `2px solid ${C.purpleL}` : '2px solid transparent',
               fontSize: 11, fontWeight: 700, color: familyTab === t.key ? C.purpleL : C.textDim,
-              fontFamily: 'Sora, sans-serif', transition: 'all .15s',
+              fontFamily: 'var(--font-display)', transition: 'all .15s',
             }}>{t.label}</button>
           ))}
         </div>
@@ -1398,10 +1557,10 @@ export default function ChatThreadPage() {
           {/* Labels */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'Sora, sans-serif' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: C.goldL, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-display)' }}>
                 {escrowStatus === 'DISPUTED' ? '⚖ DISPUTED' : escrowStatus.replace('_', ' ')}
               </div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: C.goldL, fontFamily: 'Sora, sans-serif' }}>₡{escrowAmount.toLocaleString()}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: C.goldL, fontFamily: 'var(--font-display)' }}>₡{escrowAmount.toLocaleString()}</div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 9, color: C.textDim2 }}>Session BS-2026-A4K9</div>
@@ -1421,7 +1580,7 @@ export default function ChatThreadPage() {
             {escrowStatus === 'OPEN' && (
               <button onClick={async () => {
                 setEscrowLoading(true)
-                try { await escrowApi.create({ buyerAccountId: 'me', sellerAccountId: 'seller', amount: escrowAmount, currency: 'CWR', description: contact.subtitle, proofOfHandType: 'PHOTO' }) } catch {}
+                try { await escrowApi.create({ buyerAccountId: 'me', sellerAccountId: 'seller', amount: escrowAmount, currency: 'CWR', description: contact.subtitle, proofOfHandType: 'PHOTO' }) } catch (e) { logApiFailure('chat/escrow/create', e) }
                 setEscrowStatus('LOCKED')
                 setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: `🔒 ₡${escrowAmount.toLocaleString()} locked in escrow`, time: '' }])
                 setEscrowLoading(false)
@@ -1440,7 +1599,7 @@ export default function ChatThreadPage() {
             {(escrowStatus === 'IN_TRANSIT' || escrowStatus === 'DELIVERED') && (
               <button onClick={async () => {
                 setEscrowLoading(true)
-                try { await escrowApi.approve('session-escrow', 'buyer') } catch {}
+                try { await escrowApi.approve('session-escrow', 'buyer') } catch (e) { logApiFailure('chat/escrow/approve', e) }
                 setEscrowStatus(escrowStatus === 'IN_TRANSIT' ? 'DELIVERED' : 'COMPLETE')
                 setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: escrowStatus === 'IN_TRANSIT' ? '📦 Delivery confirmed by buyer' : '✅ Session complete — releasing cowries', time: '' }])
                 setEscrowLoading(false)
@@ -1453,7 +1612,7 @@ export default function ChatThreadPage() {
             {escrowStatus === 'COMPLETE' && (
               <button onClick={async () => {
                 setEscrowLoading(true)
-                try { await escrowApi.release('session-escrow') } catch {}
+                try { await escrowApi.release('session-escrow') } catch (e) { logApiFailure('chat/escrow/release', e) }
                 setEscrowStatus('SEALED')
                 setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: `🏛 ₡${escrowAmount.toLocaleString()} released to seller. Session SEALED.`, time: '' }])
                 setEscrowLoading(false)
@@ -1470,7 +1629,7 @@ export default function ChatThreadPage() {
             )}
             {escrowStatus !== 'SEALED' && escrowStatus !== 'DISPUTED' && (
               <button onClick={async () => {
-                try { await escrowApi.dispute('session-escrow', 'Goods not as described') } catch {}
+                try { await escrowApi.dispute('session-escrow', 'Goods not as described') } catch (e) { logApiFailure('chat/escrow/dispute', e) }
                 setEscrowStatus('DISPUTED')
                 setMessages(m => [...m, { id: `sys-${Date.now()}`, type: 'system', sender: '', isMe: false, content: '⚖ Dispute opened — Elder review initiated', time: '' }])
                 flash('⚖ Dispute filed')
@@ -1503,7 +1662,7 @@ export default function ChatThreadPage() {
             </div>
             <button onClick={() => {
               setShowTrustBanner(false)
-              sesoChatApi.updateTrust(threadId, 'inner_fire').catch(() => {})
+              sesoChatApi.updateTrust(threadId, 'inner_fire').catch((e) => logApiFailure('chat/updateTrust', e))
               flash('Trust upgraded to Inner Fire!')
             }} style={{
               padding: '6px 14px', borderRadius: 10, background: C.green, border: `1px solid ${C.greenL}`,
@@ -1514,14 +1673,6 @@ export default function ChatThreadPage() {
             }}>✕</button>
           </div>
         )}
-        {/* family decorative spinning rings */}
-        {chatType === 'family' && (
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.06 }}>
-            <div className="st-spin-slow" style={{ width: 260, height: 260, border: `2px solid ${C.goldL}`, borderRadius: '50%', position: 'absolute' }} />
-            <div className="st-spin-r-slow" style={{ width: 200, height: 200, border: `1px solid ${C.goldL}`, borderRadius: '50%', position: 'absolute' }} />
-          </div>
-        )}
-
         {/* render family sub-tabs or messages */}
         {chatType === 'family' && familyTab === 'tree' ? renderFamilyTree()
           : chatType === 'family' && familyTab === 'vault' ? renderFamilyVault()
@@ -1592,7 +1743,8 @@ export default function ChatThreadPage() {
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               }
               setMessages(prev => [...prev, wisdomMsg])
-            }).catch(() => {
+            }).catch((e) => {
+              logApiFailure('chat/griot/wisdom', e)
               const fallbackMsg: Msg = {
                 id: `gw-${Date.now()}`, type: 'griot_insight', sender: 'Griot AI', isMe: false,
                 content: '"If you want to go fast, go alone. If you want to go far, go together." -- African proverb',
@@ -1606,30 +1758,6 @@ export default function ChatThreadPage() {
             color: C.purpleL, whiteSpace: 'nowrap', flexShrink: 0,
             opacity: griotLoading ? 0.5 : 1,
           }}>{griotLoading ? '🧙 Loading...' : '🧙 Griot Wisdom'}</button>
-
-          {/* FEATURE 8: Location Pin */}
-          <button onClick={() => {
-            if (!navigator.geolocation) { flash('Geolocation not supported'); return }
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                const locMsg: Msg = {
-                  id: `loc-${Date.now()}`, type: 'location_pin', sender: 'Me', isMe: true,
-                  lat: pos.coords.latitude, lng: pos.coords.longitude,
-                  content: `Location: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`,
-                  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                }
-                setMessages(prev => [...prev, locMsg])
-                sesoChatApi.sendMessage(threadId, { body: `📍 ${pos.coords.latitude},${pos.coords.longitude}`, type: 'LOCATION_PIN' }).catch(() => {})
-                flash('📍 Location shared')
-              },
-              () => flash('📍 Location permission denied'),
-              { enableHighAccuracy: true }
-            )
-          }} style={{
-            padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
-            color: C.textDim, whiteSpace: 'nowrap', flexShrink: 0,
-          }}>📍 Share Path</button>
 
           <button onClick={() => flash(VOCAB.tip)} style={{
             padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
@@ -1645,22 +1773,14 @@ export default function ChatThreadPage() {
             }}>⚖ Propose Trade</button>
           )}
 
-          {chatType === 'family' && (
-            <button onClick={() => flash(VOCAB.sendBloodCall)} style={{
-              padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-              background: 'rgba(178,34,34,0.08)', border: '1px solid rgba(178,34,34,0.15)',
-              color: C.redL, whiteSpace: 'nowrap', flexShrink: 0,
-            }}>{VOCAB.bloodCall}</button>
-          )}
+          {/* Vanish mode pill */}
+          <button onClick={() => setVanishMode(v => !v)} style={{
+            padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
+            background: vanishMode ? 'rgba(220,38,38,0.15)' : 'rgba(255,255,255,0.04)',
+            border: `1px solid ${vanishMode ? 'rgba(220,38,38,0.3)' : 'rgba(255,255,255,0.06)'}`,
+            color: vanishMode ? C.redL : C.textDim2, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>🔥 {vanishMode ? 'Vanish ON' : 'Vanish'}</button>
 
-          {/* FEATURE 10: In-Chat Poll (group threads) */}
-          {chatType === 'group' && (
-            <button onClick={() => setShowPollCreator(true)} style={{
-              padding: '5px 12px', borderRadius: 99, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-              background: 'rgba(26,124,62,0.08)', border: '1px solid rgba(26,124,62,0.15)',
-              color: C.greenL, whiteSpace: 'nowrap', flexShrink: 0,
-            }}>📊 Create Poll</button>
-          )}
         </div>
 
         {/* input row */}
@@ -1681,7 +1801,7 @@ export default function ChatThreadPage() {
                 width: '100%', padding: '10px 40px 10px 14px', borderRadius: 20,
                 background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)',
                 color: C.text, fontSize: 14, fontWeight: 500, outline: 'none', resize: 'none', maxHeight: 80,
-                fontFamily: 'Inter, DM Sans, sans-serif', boxSizing: 'border-box',
+                fontFamily: 'var(--font-body)', boxSizing: 'border-box',
               }}
             />
             <button onClick={() => flash('😊 Emoji keyboard')} style={{
@@ -1713,26 +1833,25 @@ export default function ChatThreadPage() {
             background: '#1a1f1a', border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
           }}>
-            {/* quick reactions row — FEATURE 13: Kila, Drum, Ubuntu */}
+            {/* African cultural reactions — Adinkra symbols + village expressions */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: 6, padding: '14px 16px 10px' }}>
               {[
-                { emoji: '⭐', label: 'Kila' },
-                { emoji: '🥁', label: 'Drum' },
-                { emoji: '🤝', label: 'Ubuntu' },
-                { emoji: '❤️', label: '' },
-                { emoji: '😂', label: '' },
-                { emoji: '🔥', label: '' },
+                { sym: '🥁', label: 'Drum', meaning: 'I hear you' },
+                { sym: '⭐', label: 'Kila', meaning: 'Respected' },
+                { sym: '🤝', label: 'Ubuntu', meaning: 'Together' },
+                { sym: '🔥', label: 'Ọkun', meaning: 'Fire spirit' },
+                { sym: '🌿', label: 'Mmere', meaning: 'Growth' },
+                { sym: '🐚', label: 'Cowrie', meaning: 'Wealth' },
               ].map((r, i) => (
-                <button key={r.emoji} className="st-react-in" onClick={() => {
-                  addReact(actionMsg.id, r.emoji)
-                  /* FEATURE 13: Wire to sesoChatApi.react */
-                  sesoChatApi.react(actionMsg.id, r.emoji).catch(() => {})
-                }} style={{
+                <button key={r.sym} className="st-react-in" onClick={() => {
+                  addReact(actionMsg!.id, r.sym)
+                  sesoChatApi.react(actionMsg!.id, r.sym).catch((e) => logApiFailure('chat/react', e))
+                }} title={`${r.label} — "${r.meaning}"`} style={{
                   width: 40, height: 40, borderRadius: '50%', fontSize: 20, cursor: 'pointer',
                   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  animationDelay: `${i * 0.04}s`,
-                }}>{r.emoji}</button>
+                  animationDelay: `${i * 0.04}s`, flexDirection: 'column',
+                }}>{r.sym}</button>
               ))}
             </div>
             <div style={{ height: 1, background: 'rgba(255,255,255,0.06)' }} />
@@ -1809,7 +1928,7 @@ export default function ChatThreadPage() {
             background: '#1a1f1a', border: '1px solid rgba(255,255,255,0.08)',
             boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
           }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'Sora, sans-serif', marginBottom: 4 }}>Forward Message</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'var(--font-display)', marginBottom: 4 }}>Forward Message</div>
             <div style={{ fontSize: 11, color: C.textDim, marginBottom: 14, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               &ldquo;{forwardMsg.content?.slice(0, 50)}{(forwardMsg.content?.length ?? 0) > 50 ? '...' : ''}&rdquo;
             </div>
@@ -1850,7 +1969,7 @@ export default function ChatThreadPage() {
           }}>
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               <span style={{ fontSize: 36 }}>🐚</span>
-              <div style={{ fontSize: 14, fontWeight: 800, color: C.goldL, fontFamily: 'Sora, sans-serif', marginTop: 8 }}>Send Cowrie</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.goldL, fontFamily: 'var(--font-display)', marginTop: 8 }}>Send Cowrie</div>
             </div>
             <input
               value={cowrieAmount} onChange={e => setCowrieAmount(e.target.value.replace(/[^0-9]/g, ''))}
@@ -1858,7 +1977,7 @@ export default function ChatThreadPage() {
               style={{
                 width: '100%', padding: '14px', borderRadius: 12, textAlign: 'center',
                 background: 'rgba(212,160,23,0.06)', border: '1px solid rgba(212,160,23,0.2)',
-                color: C.goldL, fontSize: 22, fontWeight: 900, fontFamily: 'Sora, sans-serif',
+                color: C.goldL, fontSize: 22, fontWeight: 900, fontFamily: 'var(--font-display)',
                 outline: 'none', boxSizing: 'border-box',
               }}
             />
@@ -1876,7 +1995,7 @@ export default function ChatThreadPage() {
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 }
                 setMessages(prev => [...prev, msg])
-                sesoChatApi.sendMessage(threadId, { body: `COWRIE_TRANSFER:${amt}`, type: 'COWRIE_TRANSFER' }).catch(() => {})
+                sesoChatApi.sendMessage(threadId, { body: `COWRIE_TRANSFER:${amt}`, type: 'COWRIE_TRANSFER' }).catch((e) => logApiFailure('chat/cowrieTransfer', e))
                 setShowCowrieInput(false)
                 setCowrieAmount('')
                 flash(`₡${amt.toLocaleString()} sent`)
@@ -1902,7 +2021,7 @@ export default function ChatThreadPage() {
             background: '#1a1f1a', border: '1px solid rgba(26,124,62,0.25)',
             boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
           }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'Sora, sans-serif', marginBottom: 14 }}>📊 Create Poll</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'var(--font-display)', marginBottom: 14 }}>📊 Create Poll</div>
             <input
               value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
               placeholder="Ask a question..."
@@ -1937,7 +2056,7 @@ export default function ChatThreadPage() {
                   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 }
                 setMessages(prev => [...prev, pollMsg])
-                sesoChatApi.sendMessage(threadId, { body: JSON.stringify({ question: pollQuestion, options: validOpts }), type: 'POLL' }).catch(() => {})
+                sesoChatApi.sendMessage(threadId, { body: JSON.stringify({ question: pollQuestion, options: validOpts }), type: 'POLL' }).catch((e) => logApiFailure('chat/pollSend', e))
                 setShowPollCreator(false)
                 setPollQuestion('')
                 setPollOpts(['', '', '', ''])
@@ -1962,7 +2081,7 @@ export default function ChatThreadPage() {
             background: '#1a1f1a', border: '1px solid rgba(26,124,62,0.25)',
             boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
           }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'Sora, sans-serif', marginBottom: 6 }}>🥁 Drum to Village</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, fontFamily: 'var(--font-display)', marginBottom: 6 }}>🥁 Drum to Village</div>
             <div style={{ fontSize: 11, color: C.textDim, marginBottom: 14, lineHeight: 1.5 }}>Share this message to the Soro Soke Feed?</div>
             <div style={{
               padding: '10px 14px', borderRadius: 12, marginBottom: 14,
@@ -1980,7 +2099,7 @@ export default function ChatThreadPage() {
                   villageId: 'commerce',
                   skinContext: activeSkin,
                   type: 'TEXT_DRUM',
-                }).catch(() => {})
+                }).catch((e) => logApiFailure('chat/drumToVillage', e))
                 setDrumToVillageMsg(null)
                 flash('🥁 Drummed to Village Feed!')
               }} style={{
@@ -1999,98 +2118,167 @@ export default function ChatThreadPage() {
           padding: '12px 24px', borderRadius: 14, zIndex: 999,
           background: `${theme.accent}ee`, border: `1px solid ${theme.accentL}`,
           color: '#fff', fontSize: 13, fontWeight: 700,
-          fontFamily: 'Sora, sans-serif', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          fontFamily: 'var(--font-display)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           whiteSpace: 'nowrap',
         }}>{toast}</div>
       )}
 
-      {/* ═══ INCOMING CALL OVERLAY ═══ */}
+      {/* ═══ INCOMING CALL — AFRICAN CEREMONY RING UI ═══ */}
       {callState === 'ringing-in' && (
         <div className="st-call-fade" style={{
-          position:'fixed', inset:0, zIndex:1000, background:'linear-gradient(180deg,#060d07 0%,#0a1a0b 40%,#091608 100%)',
-          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:20,
+          position:'fixed', inset:0, zIndex:1000,
+          background:'linear-gradient(180deg, #060d07 0%, #0a160a 50%, #060d07 100%)',
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:0,
+          overflow:'hidden',
         }}>
-          <div style={{ position:'absolute', top:40, width:'100%', textAlign:'center' }}>
-            <p style={{ fontSize:12, color:'rgba(255,255,255,.5)', fontWeight:600, letterSpacing:'.08em' }}>INCOMING CALL</p>
+          {/* Kente stripe top */}
+          <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%)' }} />
+
+          {/* Adinkra background pattern */}
+          <div style={{ position:'absolute', inset:0, opacity:0.04, backgroundImage:`url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23d4a017' stroke-width='1'%3E%3Ccircle cx='40' cy='40' r='28'/%3E%3Ccircle cx='40' cy='40' r='18'/%3E%3Cpath d='M40 12 L40 68 M12 40 L68 40 M20 20 L60 60 M20 60 L60 20'/%3E%3C/g%3E%3C/svg%3E")`, backgroundSize:'80px 80px' }} />
+
+          <div style={{ position:'absolute', top:44, width:'100%', textAlign:'center' }}>
+            <p style={{ fontSize:10, color:'rgba(212,160,23,.7)', fontWeight:800, letterSpacing:'.14em', fontFamily:'var(--font-display)', textTransform:'uppercase' }}>
+              Incoming {callMode === 'circle' ? 'Story Circle' : callMode === 'whisper' ? 'Whisper Call' : 'Voice Call'}
+            </p>
           </div>
-          {/* Avatar pulse */}
-          <div className="st-call-pulse" style={{
-            width:110, height:110, borderRadius:'50%', background:`linear-gradient(135deg,${theme.accent},${theme.accentL})`,
-            display:'flex', alignItems:'center', justifyContent:'center', fontSize:48,
-            boxShadow:`0 0 40px ${theme.accent}44`,
-          }}>
-            {contact.emoji || '👤'}
+
+          {/* Ceremony rings */}
+          <div style={{ position:'relative', width:220, height:220, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:32 }}>
+            {/* Ring 3 outer */}
+            <div className="st-ceremony-ring-3" style={{
+              position:'absolute', width:210, height:210, borderRadius:'50%',
+              border:'1.5px dashed rgba(212,160,23,.2)', pointerEvents:'none',
+            }} />
+            {/* Ring 2 */}
+            <div className="st-ceremony-ring-2" style={{
+              position:'absolute', width:175, height:175, borderRadius:'50%',
+              border:'2px solid rgba(212,160,23,.35)',
+              background:'radial-gradient(circle, rgba(212,160,23,.03) 0%, transparent 70%)',
+              pointerEvents:'none',
+            }}/>
+            {/* Ring 1 */}
+            <div className="st-ceremony-ring-1" style={{
+              position:'absolute', width:140, height:140, borderRadius:'50%',
+              border:'2.5px solid rgba(26,124,62,.5)',
+              background:'radial-gradient(circle, rgba(26,124,62,.06) 0%, transparent 70%)',
+              pointerEvents:'none',
+            }}/>
+            {/* Avatar */}
+            <div className="st-drum-pulse" style={{
+              width:100, height:100, borderRadius:'50%', zIndex:2,
+              background:`linear-gradient(135deg, ${theme.accent}, ${theme.accentL})`,
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:46,
+              boxShadow:`0 0 0 0 ${theme.accent}66, 0 8px 32px rgba(0,0,0,.5)`,
+              border:'3px solid rgba(255,255,255,.15)',
+            }}>{contact.emoji || '👤'}</div>
           </div>
-          <div style={{ textAlign:'center' }}>
-            <p style={{ fontSize:22, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora, sans-serif', marginBottom:4 }}>{contact.name}</p>
-            <p className="st-ring" style={{ fontSize:13, color:C.greenL }}>Ringing...</p>
+
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <p style={{ fontSize:24, fontWeight:900, color:'#f0f7f0', fontFamily:'var(--font-display)', marginBottom:4 }}>{contact.name}</p>
+            <p className="st-ring" style={{ fontSize:13, color:C.goldL, fontWeight:600 }}>Calling from the village...</p>
           </div>
-          {/* Accept / Decline buttons */}
-          <div style={{ display:'flex', gap:40, marginTop:30 }}>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-              <button onClick={() => endCall()} style={{
-                width:64, height:64, borderRadius:'50%', background:'linear-gradient(135deg,#ef4444,#dc2626)',
-                border:'none', fontSize:26, cursor:'pointer', color:'#fff',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                boxShadow:'0 4px 20px rgba(239,68,68,.4)',
-              }}>✕</button>
-              <span style={{ fontSize:11, color:'#ef4444', fontWeight:600 }}>Decline</span>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-              <button onClick={() => acceptCall('audio')} style={{
-                width:64, height:64, borderRadius:'50%', background:'linear-gradient(135deg,#16a34a,#22c55e)',
-                border:'none', fontSize:26, cursor:'pointer', color:'#fff',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                boxShadow:'0 4px 20px rgba(74,222,128,.4)',
-              }}>📞</button>
-              <span style={{ fontSize:11, color:C.greenL, fontWeight:600 }}>Audio</span>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-              <button onClick={() => acceptCall('video')} style={{
-                width:64, height:64, borderRadius:'50%', background:'linear-gradient(135deg,#2563eb,#3b82f6)',
-                border:'none', fontSize:26, cursor:'pointer', color:'#fff',
-                display:'flex', alignItems:'center', justifyContent:'center',
-                boxShadow:'0 4px 20px rgba(59,130,246,.4)',
-              }}>📹</button>
-              <span style={{ fontSize:11, color:'#60a5fa', fontWeight:600 }}>Video</span>
-            </div>
+
+          {/* Decline / Audio / Video buttons */}
+          <div style={{ display:'flex', gap:32, alignItems:'center' }}>
+            {[
+              { emoji:'✕', label:'Decline', bg:'linear-gradient(135deg,#ef4444,#b91c1c)', shadow:'rgba(239,68,68,.45)', act: () => endCall() },
+              { emoji:'📞', label:'Audio', bg:'linear-gradient(135deg,#16a34a,#14532d)', shadow:'rgba(74,222,128,.45)', act: () => acceptCall('audio') },
+              { emoji:'📹', label:'Video', bg:'linear-gradient(135deg,#2563eb,#1d4ed8)', shadow:'rgba(59,130,246,.45)', act: () => acceptCall('video') },
+            ].map((btn, i) => (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                <button onClick={btn.act} style={{
+                  width:68, height:68, borderRadius:'50%', background:btn.bg, border:'none',
+                  fontSize:28, cursor:'pointer', color:'#fff',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  boxShadow:`0 6px 28px ${btn.shadow}`,
+                }}>{btn.emoji}</button>
+                <span style={{ fontSize:11, color:'rgba(255,255,255,.6)', fontWeight:600 }}>{btn.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ═══ OUTBOUND RINGING ═══ */}
+      {/* ═══ OUTBOUND RINGING — AFRICAN CEREMONY UI ═══ */}
       {callState === 'ringing-out' && (
         <div className="st-call-fade" style={{
-          position:'fixed', inset:0, zIndex:1000, background:'linear-gradient(180deg,#060d07,#0a1a0b)',
-          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16,
+          position:'fixed', inset:0, zIndex:1000,
+          background:'linear-gradient(180deg, #060d07 0%, #0a160a 50%, #060d07 100%)',
+          display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+          overflow:'hidden',
         }}>
-          <div className="st-call-pulse" style={{
-            width:100, height:100, borderRadius:'50%', background:`linear-gradient(135deg,${theme.accent},${theme.accentL})`,
-            display:'flex', alignItems:'center', justifyContent:'center', fontSize:44,
-          }}>{contact.emoji || '👤'}</div>
-          <p style={{ fontSize:20, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora, sans-serif' }}>{contact.name}</p>
-          <p className="st-ring" style={{ fontSize:13, color:C.greenL }}>Calling...</p>
+          {/* Kente stripe top */}
+          <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%)' }} />
+          {/* Adinkra SVG background */}
+          <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', opacity:0.03, pointerEvents:'none' }} aria-hidden="true">
+            <defs>
+              <pattern id="adinkra-out" x="0" y="0" width="70" height="70" patternUnits="userSpaceOnUse">
+                <circle cx="35" cy="35" r="25" fill="none" stroke="#d4a017" strokeWidth="1.5"/>
+                <line x1="35" y1="10" x2="35" y2="60" stroke="#d4a017" strokeWidth="1"/>
+                <line x1="10" y1="35" x2="60" y2="35" stroke="#d4a017" strokeWidth="1"/>
+                <line x1="17" y1="17" x2="53" y2="53" stroke="#d4a017" strokeWidth=".7"/>
+                <line x1="53" y1="17" x2="17" y2="53" stroke="#d4a017" strokeWidth=".7"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#adinkra-out)"/>
+          </svg>
+          {/* 3 ceremony rings */}
+          <div style={{ position:'relative', width:220, height:220, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <div className="st-ceremony-ring-1" style={{ position:'absolute', width:210, height:210, borderRadius:'50%', border:'2px solid rgba(212,160,23,.45)', boxShadow:'0 0 30px rgba(212,160,23,.1)' }} />
+            <div className="st-ceremony-ring-2" style={{ position:'absolute', width:170, height:170, borderRadius:'50%', border:'2px dashed rgba(26,124,62,.55)', boxShadow:'0 0 20px rgba(26,124,62,.08)' }} />
+            <div className="st-ceremony-ring-3" style={{ position:'absolute', width:130, height:130, borderRadius:'50%', border:'1px solid rgba(178,34,34,.35)' }} />
+            {/* drum-pulse avatar */}
+            <div className="st-drum-pulse" style={{
+              width:90, height:90, borderRadius:'50%',
+              background:`linear-gradient(135deg,${theme.accent},${theme.accentL})`,
+              display:'flex', alignItems:'center', justifyContent:'center', fontSize:40,
+              border:'2px solid rgba(212,160,23,.35)',
+            }}>{contact.emoji || '👤'}</div>
+          </div>
+          <div style={{ textAlign:'center', marginTop:24, gap:6, display:'flex', flexDirection:'column', alignItems:'center' }}>
+            <p style={{ fontSize:22, fontWeight:800, color:'#f0f5ee', fontFamily:'var(--font-display)', margin:0 }}>{contact.name}</p>
+            <p className="st-ring" style={{ fontSize:12, color:'rgba(212,160,23,.8)', fontWeight:700, letterSpacing:'.12em', textTransform:'uppercase', fontFamily:'var(--font-display)' }}>
+              {callMode === 'circle' ? '🌐 Opening Story Circle...' : callMode === 'whisper' ? '🤫 Opening Whisper...' : '📞 Calling...'}
+            </p>
+          </div>
           <button onClick={endCall} style={{
-            marginTop:40, width:60, height:60, borderRadius:'50%',
-            background:'linear-gradient(135deg,#ef4444,#dc2626)', border:'none',
-            fontSize:24, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
-            boxShadow:'0 4px 20px rgba(239,68,68,.4)',
+            marginTop:40, width:64, height:64, borderRadius:'50%',
+            background:'linear-gradient(135deg,#ef4444,#dc2626)', border:'2px solid rgba(239,68,68,.3)',
+            fontSize:26, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 6px 28px rgba(239,68,68,.45)',
           }}>✕</button>
-          <span style={{ fontSize:11, color:'#ef4444', fontWeight:600 }}>Cancel</span>
+          <span style={{ fontSize:11, color:'rgba(239,68,68,.7)', fontWeight:700, marginTop:8, letterSpacing:'.06em' }}>CANCEL</span>
+          {/* Kente bottom stripe */}
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#1a1a1a 0%,#b22222 25%,#d4a017 50%,#1a7c3e 75%,#1a1a1a)' }} />
         </div>
       )}
 
-      {/* ═══ ACTIVE CALL (VIDEO / AUDIO) ═══ */}
+      {/* ═══ ACTIVE CALL (VIDEO / AUDIO) — AFRICAN CEREMONY ═══ */}
       {(callState === 'video' || callState === 'audio') && (
         <div className="st-call-slide" style={{
           position:'fixed', inset:0, zIndex:1000,
           background: callState === 'video'
             ? 'linear-gradient(180deg,#0f2d14 0%,#091608 50%,#060d07 100%)'
             : 'linear-gradient(180deg,#060d07,#0a1a0b)',
-          display:'flex', flexDirection:'column',
+          display:'flex', flexDirection:'column', overflow:'hidden',
         }}>
+          {/* Kente stripe top */}
+          <div style={{ position:'absolute', top:0, left:0, right:0, height:3, background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%)', zIndex:2 }} />
+          {/* Adinkra background pattern (very subtle) */}
+          <svg style={{ position:'absolute', inset:0, width:'100%', height:'100%', opacity:0.025, pointerEvents:'none', zIndex:0 }} aria-hidden="true">
+            <defs>
+              <pattern id="adinkra-call" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#4ade80" strokeWidth="1"/>
+                <line x1="30" y1="8" x2="30" y2="52" stroke="#4ade80" strokeWidth=".8"/>
+                <line x1="8" y1="30" x2="52" y2="30" stroke="#4ade80" strokeWidth=".8"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#adinkra-call)"/>
+          </svg>
+
           {/* Top bar */}
-          <div style={{ padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <div style={{ padding:'16px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'relative', zIndex:1, marginTop:3 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:C.greenL }} />
               <span style={{ fontSize:12, color:C.greenL, fontWeight:700, fontFamily:'monospace' }}>{fmtTime(callTimer)}</span>
@@ -2104,43 +2292,73 @@ export default function ChatThreadPage() {
           </div>
 
           {/* Main area */}
-          <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
+          <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, position:'relative', zIndex:1 }}>
             {callState === 'video' ? (
               <>
-                {/* Simulated video feed */}
-                <div style={{
-                  width:'90%', maxWidth:360, aspectRatio:'3/4', borderRadius:24,
-                  background:'linear-gradient(135deg,#1a4a1f,#0f2d14)', border:'2px solid rgba(74,222,128,.15)',
-                  display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden',
-                }}>
-                  <div style={{ fontSize:80, opacity:.3 }}>{contact.emoji || '👤'}</div>
-                  <p style={{ position:'absolute', bottom:16, left:16, fontSize:14, fontWeight:700, color:'#f0f7f0' }}>{contact.name}</p>
-                  {/* PiP (self cam) */}
-                  {!callCamOff && (
-                    <div style={{
-                      position:'absolute', top:12, right:12, width:80, height:100, borderRadius:14,
-                      background:'linear-gradient(135deg,#0a1a0b,#060d07)', border:'1px solid rgba(255,255,255,.1)',
-                      display:'flex', alignItems:'center', justifyContent:'center', fontSize:28,
-                    }}>🙂</div>
-                  )}
+                {/* Video feed with tribal art border */}
+                <div style={{ position:'relative', width:'90%', maxWidth:360 }}>
+                  {/* Tribal art SVG corner decorations */}
+                  <svg style={{ position:'absolute', top:-8, left:-8, width:40, height:40, zIndex:3, pointerEvents:'none' }} viewBox="0 0 40 40">
+                    <path d="M2 38 L2 2 L38 2" fill="none" stroke="#d4a017" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="2" cy="2" r="3" fill="#d4a017" opacity=".7"/>
+                    <path d="M10 2 L10 10 L2 10" fill="none" stroke="#d4a017" strokeWidth="1" opacity=".5"/>
+                  </svg>
+                  <svg style={{ position:'absolute', top:-8, right:-8, width:40, height:40, zIndex:3, pointerEvents:'none', transform:'scaleX(-1)' }} viewBox="0 0 40 40">
+                    <path d="M2 38 L2 2 L38 2" fill="none" stroke="#d4a017" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="2" cy="2" r="3" fill="#d4a017" opacity=".7"/>
+                    <path d="M10 2 L10 10 L2 10" fill="none" stroke="#d4a017" strokeWidth="1" opacity=".5"/>
+                  </svg>
+                  <svg style={{ position:'absolute', bottom:-8, left:-8, width:40, height:40, zIndex:3, pointerEvents:'none', transform:'scaleY(-1)' }} viewBox="0 0 40 40">
+                    <path d="M2 38 L2 2 L38 2" fill="none" stroke="#d4a017" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="2" cy="2" r="3" fill="#d4a017" opacity=".7"/>
+                  </svg>
+                  <svg style={{ position:'absolute', bottom:-8, right:-8, width:40, height:40, zIndex:3, pointerEvents:'none', transform:'scale(-1,-1)' }} viewBox="0 0 40 40">
+                    <path d="M2 38 L2 2 L38 2" fill="none" stroke="#d4a017" strokeWidth="2.5" strokeLinecap="round"/>
+                    <circle cx="2" cy="2" r="3" fill="#d4a017" opacity=".7"/>
+                  </svg>
+                  <div style={{
+                    aspectRatio:'3/4', borderRadius:20,
+                    background:'linear-gradient(135deg,#1a4a1f,#0f2d14)',
+                    border:'1.5px solid rgba(212,160,23,.2)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    position:'relative', overflow:'hidden',
+                  }}>
+                    <div style={{ fontSize:80, opacity:.25 }}>{contact.emoji || '👤'}</div>
+                    <p style={{ position:'absolute', bottom:16, left:16, fontSize:14, fontWeight:700, color:'#f0f7f0' }}>{contact.name}</p>
+                    {!callCamOff && (
+                      <div style={{
+                        position:'absolute', top:12, right:12, width:80, height:100, borderRadius:12,
+                        background:'linear-gradient(135deg,#0a1a0b,#060d07)',
+                        border:'1px solid rgba(212,160,23,.25)', overflow:'hidden',
+                      }}>
+                        <video ref={callVideoRef} autoPlay playsInline muted style={{ width:'100%', height:'100%', objectFit:'cover', transform:'scaleX(-1)' }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
               <>
-                {/* Audio call view */}
-                <div style={{
-                  width:120, height:120, borderRadius:'50%', background:`linear-gradient(135deg,${theme.accent},${theme.accentL})`,
-                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:52,
-                  boxShadow:`0 0 50px ${theme.accent}33`,
-                }}>{contact.emoji || '👤'}</div>
-                <p style={{ fontSize:20, fontWeight:800, color:'#f0f7f0', fontFamily:'Sora, sans-serif' }}>{contact.name}</p>
+                {/* Audio call — ceremony ring around avatar */}
+                <div style={{ position:'relative', width:200, height:200, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div className="st-ceremony-ring-1" style={{ position:'absolute', width:196, height:196, borderRadius:'50%', border:'2px solid rgba(212,160,23,.4)' }} />
+                  <div className="st-ceremony-ring-2" style={{ position:'absolute', width:158, height:158, borderRadius:'50%', border:'1.5px dashed rgba(26,124,62,.45)' }} />
+                  <div className="st-drum-pulse" style={{
+                    width:110, height:110, borderRadius:'50%',
+                    background:`linear-gradient(135deg,${theme.accent},${theme.accentL})`,
+                    display:'flex', alignItems:'center', justifyContent:'center', fontSize:50,
+                    border:'2px solid rgba(212,160,23,.3)',
+                    boxShadow:`0 0 40px ${theme.accent}33`,
+                  }}>{contact.emoji || '👤'}</div>
+                </div>
+                <p style={{ fontSize:20, fontWeight:800, color:'#f0f5ee', fontFamily:'var(--font-display)', margin:0 }}>{contact.name}</p>
                 {/* Audio waveform */}
-                <div style={{ display:'flex', gap:3, alignItems:'flex-end', height:24 }}>
-                  {Array.from({length:12}).map((_,i)=>(
+                <div style={{ display:'flex', gap:3, alignItems:'flex-end', height:28 }}>
+                  {Array.from({length:14}).map((_,i)=>(
                     <div key={i} style={{
-                      width:3, borderRadius:2, background:C.greenL,
-                      animation:`stWave ${0.3+Math.random()*0.5}s ease-in-out infinite alternate`,
-                      animationDelay:`${i*0.08}s`, height:4,
+                      width:3, borderRadius:2, background:`linear-gradient(180deg,${C.greenL},rgba(74,222,128,.3))`,
+                      animation:`stWave ${0.3+(((i*37+13)%50)/100)}s ease-in-out infinite alternate`,
+                      animationDelay:`${i*0.07}s`, height:4,
                     }}/>
                   ))}
                 </div>
@@ -2148,46 +2366,179 @@ export default function ChatThreadPage() {
             )}
           </div>
 
-          {/* Call controls */}
-          <div style={{
-            padding:'24px 0 40px', display:'flex', justifyContent:'center', gap:16,
-            background:'linear-gradient(transparent,rgba(0,0,0,.4))',
+          {/* Kente-patterned controls bar */}
+          <div style={{ position:'relative', flexShrink:0 }}>
+            {/* Kente accent line above controls */}
+            <div style={{ height:2, background:'linear-gradient(90deg,transparent,#1a7c3e 20%,#d4a017 50%,#b22222 80%,transparent)' }} />
+            <div style={{
+              padding:'20px 0 36px', display:'flex', justifyContent:'center', gap:14,
+              background:'linear-gradient(transparent,rgba(0,0,0,.55))',
+            }}>
+              {/* Mute */}
+              <button onClick={() => setCallMuted(!callMuted)} style={{
+                width:56, height:56, borderRadius:'50%', border:`1.5px solid ${callMuted ? 'rgba(239,68,68,.4)' : 'rgba(255,255,255,.12)'}`, cursor:'pointer',
+                background: callMuted ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.07)',
+                color:'#fff', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center',
+                boxShadow: callMuted ? '0 0 18px rgba(239,68,68,.3)' : 'none',
+              }}>{callMuted ? '🔇' : '🎙'}</button>
+              {/* Speaker */}
+              <button onClick={() => setCallSpeaker(!callSpeaker)} style={{
+                width:56, height:56, borderRadius:'50%', border:`1.5px solid ${callSpeaker ? 'rgba(59,130,246,.4)' : 'rgba(255,255,255,.12)'}`, cursor:'pointer',
+                background: callSpeaker ? 'rgba(59,130,246,.18)' : 'rgba(255,255,255,.07)',
+                color:'#fff', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center',
+              }}>{callSpeaker ? '🔊' : '🔈'}</button>
+              {callState === 'video' && (
+                <>
+                  <button onClick={() => setCallCamOff(!callCamOff)} style={{
+                    width:56, height:56, borderRadius:'50%', border:`1.5px solid ${callCamOff ? 'rgba(239,68,68,.4)' : 'rgba(255,255,255,.12)'}`, cursor:'pointer',
+                    background: callCamOff ? 'rgba(239,68,68,.2)' : 'rgba(255,255,255,.07)',
+                    color:'#fff', fontSize:22, display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>📷</button>
+                  <button onClick={() => setCallCamFacing(f => f === 'user' ? 'environment' : 'user')} style={{
+                    width:56, height:56, borderRadius:'50%', border:'1.5px solid rgba(124,58,237,.35)', cursor:'pointer',
+                    background: callCamFacing === 'environment' ? 'rgba(124,58,237,.3)' : 'rgba(255,255,255,.07)', color:'#fff', fontSize:22,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>🔄</button>
+                </>
+              )}
+              {/* End call */}
+              <button onClick={endCall} style={{
+                width:56, height:56, borderRadius:'50%', border:'none', cursor:'pointer',
+                background:'linear-gradient(135deg,#ef4444,#dc2626)', color:'#fff', fontSize:24,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                boxShadow:'0 6px 28px rgba(239,68,68,.45)',
+              }}>✕</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SWIPE RIGHT: CULTURAL QUICK REPLIES ═══ */}
+      {showQuickReplies && (
+        <div onClick={() => setShowQuickReplies(false)} style={{
+          position:'fixed', inset:0, zIndex:850, background:'rgba(0,0,0,0.55)',
+          display:'flex', alignItems:'flex-end',
+        }}>
+          <div className="st-attach-in" onClick={e => e.stopPropagation()} style={{
+            width:'100%', borderRadius:'20px 20px 0 0', background:'#1a1f1a',
+            border:'1px solid rgba(255,255,255,0.08)', padding:'0 0 32px',
+            boxShadow:'0 -12px 40px rgba(0,0,0,0.5)',
           }}>
-            {/* Mute */}
-            <button onClick={() => setCallMuted(!callMuted)} style={{
-              width:52, height:52, borderRadius:'50%', border:'none', cursor:'pointer',
-              background: callMuted ? '#ef4444' : 'rgba(255,255,255,.1)',
-              color:'#fff', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center',
-            }}>{callMuted ? '🔇' : '🎙'}</button>
-            {/* Speaker */}
-            <button onClick={() => setCallSpeaker(!callSpeaker)} style={{
-              width:52, height:52, borderRadius:'50%', border:'none', cursor:'pointer',
-              background: callSpeaker ? 'rgba(59,130,246,.3)' : 'rgba(255,255,255,.1)',
-              color:'#fff', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center',
-            }}>{callSpeaker ? '🔊' : '🔈'}</button>
-            {callState === 'video' && (
-              <>
-                {/* Camera toggle */}
-                <button onClick={() => setCallCamOff(!callCamOff)} style={{
-                  width:52, height:52, borderRadius:'50%', border:'none', cursor:'pointer',
-                  background: callCamOff ? '#ef4444' : 'rgba(255,255,255,.1)',
-                  color:'#fff', fontSize:20, display:'flex', alignItems:'center', justifyContent:'center',
-                }}>📷</button>
-                {/* Flip camera */}
-                <button onClick={() => setCallCamFacing(f => f === 'user' ? 'environment' : 'user')} style={{
-                  width:52, height:52, borderRadius:'50%', border:'none', cursor:'pointer',
-                  background: callCamFacing === 'environment' ? 'rgba(124,58,237,.4)' : 'rgba(255,255,255,.1)', color:'#fff', fontSize:20,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                }}>🔄</button>
-              </>
-            )}
-            {/* End call */}
-            <button onClick={endCall} style={{
-              width:52, height:52, borderRadius:'50%', border:'none', cursor:'pointer',
-              background:'linear-gradient(135deg,#ef4444,#dc2626)', color:'#fff', fontSize:22,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              boxShadow:'0 4px 20px rgba(239,68,68,.4)',
-            }}>✕</button>
+            {/* Kente stripe */}
+            <div style={{ height:3, borderRadius:'20px 20px 0 0', background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%)' }} />
+            <div style={{ padding:'14px 18px 10px', fontSize:11, fontWeight:800, color:'rgba(212,160,23,.8)', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:'var(--font-display)' }}>
+              🥁 Quick Replies
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+              {[
+                { text: 'I hear you 🥁', sub: 'Ubuntu response' },
+                { text: 'My strength, Ọkun! 🔥', sub: 'Spirit affirmation' },
+                { text: 'Let\'s talk more, together 🤝', sub: 'Ubuntu invitation' },
+                { text: 'When are you free? 🌿', sub: 'Courteous inquiry' },
+                { text: 'The elders are wise on this 👴', sub: 'Deferral with respect' },
+                { text: 'Sending love and kola 🥜', sub: 'Traditional warmth' },
+                { text: 'Asante! 🙏', sub: 'Gratitude — Swahili' },
+              ].map((item, i) => (
+                <button key={i} onClick={() => {
+                  setInput(item.text)
+                  setShowQuickReplies(false)
+                }} style={{
+                  padding:'12px 18px', background:'none', border:'none', cursor:'pointer', textAlign:'left',
+                  borderBottom:'1px solid rgba(255,255,255,0.03)', display:'flex', flexDirection:'column', gap:2,
+                }}>
+                  <span style={{ fontSize:14, fontWeight:600, color:C.text }}>{item.text}</span>
+                  <span style={{ fontSize:10, color:C.textDim2 }}>{item.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SWIPE LEFT: MEDIA ACTIONS ═══ */}
+      {showMediaActions && (
+        <div onClick={() => setShowMediaActions(false)} style={{
+          position:'fixed', inset:0, zIndex:850, background:'rgba(0,0,0,0.55)',
+          display:'flex', alignItems:'flex-end',
+        }}>
+          <div className="st-attach-in" onClick={e => e.stopPropagation()} style={{
+            width:'100%', borderRadius:'20px 20px 0 0', background:'#1a1f1a',
+            border:'1px solid rgba(255,255,255,0.08)', padding:'0 0 32px',
+            boxShadow:'0 -12px 40px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ height:3, borderRadius:'20px 20px 0 0', background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%)' }} />
+            <div style={{ padding:'14px 18px 10px', fontSize:11, fontWeight:800, color:'rgba(212,160,23,.8)', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:'var(--font-display)' }}>
+              📎 Share Media
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:1 }}>
+              {[
+                { icon:'📸', label:'Photo', color:'rgba(59,130,246,.15)', border:'rgba(59,130,246,.25)' },
+                { icon:'🎙', label:'Voice Burst', color:'rgba(74,222,128,.1)', border:'rgba(74,222,128,.2)' },
+                { icon:'📍', label:'Location', color:'rgba(239,68,68,.1)', border:'rgba(239,68,68,.2)' },
+                { icon:'₡', label:'Send Cowrie', color:'rgba(212,160,23,.12)', border:'rgba(212,160,23,.25)' },
+                { icon:'🏘', label:'Village Post', color:'rgba(124,58,237,.1)', border:'rgba(124,58,237,.2)' },
+                { icon:'📄', label:'File', color:'rgba(255,255,255,.04)', border:'rgba(255,255,255,.08)' },
+              ].map((item, i) => (
+                <button key={i} onClick={() => {
+                  flash(`${item.icon} ${item.label} — coming soon`)
+                  setShowMediaActions(false)
+                }} style={{
+                  padding:'18px 8px', background:item.color, border:`1px solid ${item.border}`,
+                  cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:6,
+                  margin:4, borderRadius:12,
+                }}>
+                  <span style={{ fontSize:26 }}>{item.icon}</span>
+                  <span style={{ fontSize:10, fontWeight:700, color:C.textDim }}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CALL MODE SELECTOR SHEET ═══ */}
+      {showCallModeSheet && (
+        <div onClick={() => setShowCallModeSheet(false)} style={{
+          position:'fixed', inset:0, zIndex:900, background:'rgba(0,0,0,0.6)',
+          display:'flex', alignItems:'flex-end',
+        }}>
+          <div className="st-attach-in" onClick={e => e.stopPropagation()} style={{
+            width:'100%', borderRadius:'20px 20px 0 0', background:'#141914',
+            border:'1px solid rgba(255,255,255,0.08)', padding:'0 0 36px',
+            boxShadow:'0 -16px 50px rgba(0,0,0,0.6)',
+          }}>
+            <div style={{ height:3, borderRadius:'20px 20px 0 0', background:'linear-gradient(90deg,#1a7c3e 0%,#1a7c3e 25%,#d4a017 25%,#d4a017 50%,#b22222 50%,#b22222 75%,#1a1a1a 75%)' }} />
+            <div style={{ padding:'16px 20px 10px', fontSize:11, fontWeight:800, color:'rgba(212,160,23,.8)', letterSpacing:'.12em', textTransform:'uppercase', fontFamily:'var(--font-display)' }}>
+              🥁 Choose Call Mode
+            </div>
+            {[
+              { mode: 'standard' as CallMode, icon: '📞', title: 'Standard', desc: 'Regular encrypted voice or video call' },
+              { mode: 'circle' as CallMode, icon: '🌐', title: 'Story Circle', desc: 'Share your world in a cultural story format' },
+              { mode: 'whisper' as CallMode, icon: '🤫', title: 'Whisper Call', desc: 'Low-energy intimate conversation mode' },
+            ].map(item => (
+              <button key={item.mode} onClick={() => {
+                setCallMode(item.mode)
+                setShowCallModeSheet(false)
+                flash(`${item.icon} ${item.title} mode selected`)
+              }} style={{
+                width:'100%', padding:'14px 20px', background:'none', border:'none', cursor:'pointer',
+                display:'flex', alignItems:'center', gap:14, textAlign:'left',
+                borderBottom:'1px solid rgba(255,255,255,0.04)',
+                borderLeft: callMode === item.mode ? `3px solid ${C.greenL}` : '3px solid transparent',
+              }}>
+                <span style={{
+                  width:46, height:46, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:22, background: callMode === item.mode ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${callMode === item.mode ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                  flexShrink:0,
+                }}>{item.icon}</span>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:700, color: callMode === item.mode ? C.greenL : C.text }}>{item.title}</div>
+                  <div style={{ fontSize:11, color:C.textDim2, marginTop:2 }}>{item.desc}</div>
+                </div>
+                {callMode === item.mode && <span style={{ marginLeft:'auto', color:C.greenL, fontSize:16 }}>✓</span>}
+              </button>
+            ))}
           </div>
         </div>
       )}

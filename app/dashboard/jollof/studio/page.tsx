@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 /* ── Inject-once CSS ── */
 const CSS_ID = 'griot-studio-css'
@@ -93,8 +94,7 @@ const TOP_PROGRAMS = [
 ]
 
 /* ── Calendar helpers ── */
-function getDayStrip(): { date: Date; label: string; dayNum: number }[] {
-  const today = new Date()
+function getDayStrip(today: Date): { date: Date; label: string; dayNum: number }[] {
   return Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(today)
     d.setDate(today.getDate() + i)
@@ -195,7 +195,7 @@ const S = {
 export default function GriotCreatorStudio() {
   const router = useRouter()
   const user = useAuthStore(s => s.user)
-  const userId = user?.id || 'demo-user'
+  const userId = user?.id || ''
   const displayName = user?.displayName || 'Creator'
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const joinedAt = user?.joinedAt ? new Date(user.joinedAt).getFullYear() : 2024
@@ -210,6 +210,7 @@ export default function GriotCreatorStudio() {
   const [loading, setLoading] = React.useState(false)
   const [programLoading, setProgramLoading] = React.useState(false)
   const [allChannels, setAllChannels] = React.useState<any[]>([])
+  const [clientNow, setClientNow] = React.useState<Date>(new Date(0))
 
   /* ── Dynamic channel map (API-backed, fallback to 3 legacy) ── */
   const CHANNELS_MAP = React.useMemo(() => {
@@ -225,7 +226,7 @@ export default function GriotCreatorStudio() {
 
   /* ── Schedule slot mock ── */
   type ScheduleSlot = { time: string; program: string; channel: string; available: boolean }
-  const SCHEDULE_DAYS: ScheduleSlot[][] = getDayStrip().map((_, di) => {
+  const SCHEDULE_DAYS: ScheduleSlot[][] = getDayStrip(clientNow).map((_, di) => {
     const isToday = di === 0
     return [
       { time: '07:00', program: isToday ? 'Morning Oracle Hour' : '', channel: 'MAIN_TV',   available: !isToday },
@@ -259,6 +260,8 @@ export default function GriotCreatorStudio() {
     document.head.appendChild(s)
   }, [])
 
+  React.useEffect(() => { setClientNow(new Date()) }, [])
+
   /* ── Fetch channels ── */
   React.useEffect(() => {
     jollofTvApi.channels()
@@ -266,7 +269,7 @@ export default function GriotCreatorStudio() {
         const list = (r as any)?.channels ?? []
         if (Array.isArray(list) && list.length > 0) setAllChannels(list)
       })
-      .catch(() => { /* keep fallback */ })
+      .catch((e) => logApiFailure('studio/channels', e))
   }, [])
 
   /* ── Fetch programs ── */
@@ -285,8 +288,9 @@ export default function GriotCreatorStudio() {
           ])
         }
       })
-      .catch(() => {
-        setPrograms([
+      .catch((e) => {
+        logApiFailure('studio/programs', e)
+        if (USE_MOCKS) setPrograms([
           { id: 'pr1', channelId: 'MAIN_TV',          title: 'Tech Africa Weekly',       hostId: userId, startTime: '2025-04-10T10:00:00Z', endTime: '2025-04-10T11:00:00Z' },
           { id: 'pr2', channelId: 'REALITY_TV',        title: 'Creator Challenge S2',     hostId: userId, startTime: '2025-04-12T20:00:00Z', endTime: '2025-04-12T22:00:00Z' },
           { id: 'pr3', channelId: 'VILLAGE_TV_RADIO',  title: 'Cowrie Code Podcast Live', hostId: userId, startTime: null, endTime: null },
@@ -309,7 +313,8 @@ export default function GriotCreatorStudio() {
         endTime: progForm.endTime || null,
       })
       setPrograms(prev => [result, ...prev])
-    } catch {
+    } catch (e) {
+      logApiFailure('studio/program/create', e)
       const fallback = {
         id: `pr_${Date.now()}`,
         channelId: progForm.channelId,
@@ -339,13 +344,13 @@ export default function GriotCreatorStudio() {
         price: schedForm.price ? parseInt(schedForm.price) : undefined,
         bookedBy: userId,
       })
-    } catch {}
+    } catch (e) { logApiFailure('studio/schedule/book', e) }
     setLoading(false)
     setShowBookSchedule(false)
     setSchedForm({ channelId: 'MAIN_TV', programId: '', startTime: '', endTime: '', price: '' })
   }
 
-  const dayStrip = getDayStrip()
+  const dayStrip = getDayStrip(clientNow)
 
   /* ── Chart data based on range ── */
   const analyticsViews = analyticsRange === '7D'
@@ -551,7 +556,7 @@ export default function GriotCreatorStudio() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {programs.map(prog => {
                 const ch = CHANNELS_MAP[prog.channelId] ?? { label: prog.channelId, color: '#fff' }
-                const isLiveNow = !prog.startTime || (new Date(prog.startTime) <= new Date() && (!prog.endTime || new Date(prog.endTime) >= new Date()))
+                const isLiveNow = !prog.startTime || (new Date(prog.startTime) <= clientNow && (!prog.endTime || new Date(prog.endTime) >= clientNow))
                 return (
                   <div key={prog.id} style={{ ...S.card, padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
@@ -926,7 +931,7 @@ export default function GriotCreatorStudio() {
           {/* Recent root planters */}
           <div style={{ ...S.sectionTitle }}>RECENT PLANTERS</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {MOCK_AUDIENCE.map(planter => {
+            {USE_MOCKS && MOCK_AUDIENCE.map(planter => {
               const tierCfg = TIER_CONFIG[planter.tier as keyof typeof TIER_CONFIG]
               return (
                 <div key={planter.id} style={{

@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const IS_LOCAL = process.env.NODE_ENV === 'development'
 const OGBO_URL = process.env.OGBO_UTU_URL || 'http://localhost:3051'
 
 const MOCK_POTS = [
   {
     id: 'pot-market-001',
     state: 'HELD',
-    buyerAfroId: 'demo-user',
+    buyerAfroId: 'user',
     sellerAfroId: 'mama-ngozi',
     amountCowrie: 3000,
     escrowType: 'MARKETPLACE_HOLD',
@@ -21,7 +20,7 @@ const MOCK_POTS = [
   {
     id: 'pot-service-002',
     state: 'PENDING_VERIFICATION',
-    buyerAfroId: 'demo-user',
+    buyerAfroId: 'user',
     sellerAfroId: 'bro-kwame-artisan',
     amountCowrie: 1500,
     escrowType: 'SERVICE_HOLD',
@@ -35,49 +34,51 @@ const MOCK_POTS = [
 ]
 
 export async function GET(req: NextRequest) {
-  const afroId = req.nextUrl.searchParams.get('afroId') || 'demo-user'
-
-  if (IS_LOCAL) {
-    try {
-      const res = await fetch(`${OGBO_URL}/v1/pots/active/${afroId}`, { next: { revalidate: 0 } })
-      if (res.ok) return NextResponse.json(await res.json())
-    } catch { /* fall through */ }
+  const afroId = req.nextUrl.searchParams.get('afroId')
+  if (!afroId) {
+    return NextResponse.json({ error: 'afroId required' }, { status: 400 })
   }
+
+  const auth = req.headers.get('authorization')
+  try {
+    const headers: Record<string, string> = {}
+    if (auth) headers['Authorization'] = auth
+
+    const res = await fetch(`${OGBO_URL}/v1/pots/active/${afroId}`, {
+      headers,
+      signal: AbortSignal.timeout(4_000),
+    })
+    if (res.ok) return NextResponse.json(await res.json())
+  } catch { /* fall through */ }
 
   return NextResponse.json({ afroId, pots: MOCK_POTS, count: MOCK_POTS.length })
 }
 
 export async function POST(req: NextRequest) {
+  const auth = req.headers.get('authorization')
+  if (!auth) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+
   const body = await req.json()
   const { action = 'create', potId, ...rest } = body
 
-  if (IS_LOCAL) {
-    try {
-      const url = action === 'create'
-        ? `${OGBO_URL}/v1/pot/create`
-        : `${OGBO_URL}/v1/pot/${potId}/${action}`
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rest),
-      })
-      if (res.ok) return NextResponse.json(await res.json())
-    } catch { /* fall through */ }
-  }
-
-  if (action === 'create') {
-    return NextResponse.json({
-      potId: `pot-${Date.now()}`,
-      state: 'HELD',
-      ...rest,
-      eventHash: `kowe_pot_${Math.random().toString(16).slice(2, 18)}`,
-      message: 'Pot sealed. Funds locked until Proof of Hand.',
+  try {
+    const url = action === 'create'
+      ? `${OGBO_URL}/v1/pot/create`
+      : `${OGBO_URL}/v1/pot/${potId}/${action}`
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': auth,
+      },
+      body: JSON.stringify(rest),
+      signal: AbortSignal.timeout(10_000),
     })
+    const data = await res.json()
+    return NextResponse.json(data, { status: res.status })
+  } catch {
+    return NextResponse.json({ error: 'Upstream unavailable' }, { status: 502 })
   }
-
-  return NextResponse.json({
-    potId,
-    state: action === 'release' ? 'SETTLED' : action === 'revert' ? 'REVERSED' : 'PENDING_VERIFICATION',
-    message: 'Pot state updated.',
-  })
 }

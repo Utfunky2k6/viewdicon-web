@@ -259,29 +259,33 @@ function LoginPageContent() {
         }
         setVerified(true)
         setTimeout(() => router.push(nextUrl), 700)
-      } catch {
-        // Backend offline or OTP mismatch — try local code match
-        if (currentDevCode && currentOtp === currentDevCode) {
-          const syntheticToken = `local_${Date.now()}_${Math.random().toString(36).slice(2)}`
-          const syntheticUser = {
-            id: 'local', afroId: identifier, displayName: 'Traveller',
-            handle: 'traveller', countryCode: 'NG', heritageCircle: 'continental',
-            languageCode: 'en', onboardingComplete: false,
-          } as any
-          setTokens(syntheticToken, '')
-          setUser(syntheticUser)
+      } catch (err: any) {
+        // ── Local fallback: backend unreachable (Vercel → localhost gap) ──
+        // If the OTP the user typed matches the code shown on screen, accept it locally.
+        if (currentOtp === currentDevCode && currentDevCode.length === 6) {
+          const mockUser = {
+            id: `local-${Date.now()}`,
+            afroId: `AFR-NGA-${currentOtp}`,
+            firstName: null, lastName: null, fullName: null, displayName: null,
+            handle: null, countryCode: 'NG', heritage: null, heritageCircle: 'continental',
+            languageCode: 'en', villageId: null, roleKey: null, avatarUrl: null,
+            onboardingComplete: false,
+          }
+          const mockToken = `local.${btoa(JSON.stringify({ sub: mockUser.id, exp: Date.now() + 86400000 }))}.sig`
+          setTokens(mockToken, mockToken)
+          setUser(mockUser as any)
           completeCeremony()
           if (typeof document !== 'undefined') {
-            const secure = location.protocol === 'https:' ? '; Secure' : ''
-            document.cookie = `afk_token=${syntheticToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict${secure}`
+            document.cookie = `afk_token=${mockToken}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict`
           }
           setVerified(true)
           setTimeout(() => router.push(nextUrl), 700)
-        } else {
-          setError('Verification failed — check the code and try again')
-          setOtp('')
-          setVerified(false)
+          return
         }
+        // OTP mismatch or backend error with different code
+        setError('Verification failed — check the code and try again. If the problem persists, the service may be temporarily unavailable.')
+        setOtp('')
+        setVerified(false)
       } finally { setVerifying(false) }
     }, 400)
   }

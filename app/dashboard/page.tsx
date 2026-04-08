@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ThemeMode, t, SectionLabel } from '@/components/dashboard/shared'
 import { useAuthStore } from '@/stores/authStore'
 import { authApi } from '@/lib/api'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 import UbuntuRing from '@/components/dashboard/UbuntuRing'
 import { useVillageStore } from '@/stores/villageStore'
 import { VILLAGE_BY_ID } from '@/lib/villages-data'
@@ -131,7 +132,7 @@ export default function DashboardPage() {
         }
         setUser(merged)
       }
-    }).catch(() => {})
+    }).catch((e) => logApiFailure('dashboard/me', e))
   }, [setUser])
 
   // Sync user's village from auth profile into village store on first load
@@ -141,8 +142,9 @@ export default function DashboardPage() {
       if (user.roleKey) setActiveRole(user.roleKey)
     }
   }, [activeVillageId, user?.villageId, user?.roleKey, setActiveVillage, setActiveRole])
-  const greeting = React.useMemo(() => getTimeGreeting(), [])
-  const africanGreeting = React.useMemo(() => getAfricanGreeting(), [])
+  const [greeting, setGreeting] = React.useState<{ period: string; english: string; emoji: string }>({ period: 'morning', english: 'Good morning', emoji: '🌅' })
+  const [africanGreeting, setAfricanGreeting] = React.useState({ text: '', language: '' })
+  React.useEffect(() => { setGreeting(getTimeGreeting()); setAfricanGreeting(getAfricanGreeting()) }, [])
   // Use activeVillageId from villageStore, fall back to user.villageId for immediate first-render hydration
   const resolvedVillageId = activeVillageId || user?.villageId || null
   const villageName = (resolvedVillageId && VILLAGE_NAMES[resolvedVillageId]) || VILLAGE_NAMES['commerce']
@@ -175,15 +177,14 @@ export default function DashboardPage() {
           notifCount: v.notifCount ?? v.unreadNotifications ?? 0,
         })
       })
-      .catch(() => {})
+      .catch((e) => logApiFailure('dashboard/vitality', e))
   }, [])
 
   const isDark = mode === 'dark'
-  const [clockStr, setClockStr] = React.useState(() => {
-    const d = new Date(); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`
-  })
+  const [clockStr, setClockStr] = React.useState('--:--')
   React.useEffect(() => {
     const tick = () => { const d = new Date(); setClockStr(`${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`) }
+    tick()
     const id = setInterval(tick, 15000)
     return () => clearInterval(id)
   }, [])
@@ -317,13 +318,13 @@ export default function DashboardPage() {
                 📍 No village yet — tap to choose your path →
               </div>
             )}
-            <div style={{ fontSize:11, color:'rgba(212,160,23,.7)', fontStyle:'italic', marginBottom:4 }}>"{africanGreeting.text}" — <span style={{ fontSize:10, color:'rgba(212,160,23,.45)' }}>{africanGreeting.language}</span></div>
+            {africanGreeting.text && <div style={{ fontSize:11, color:'rgba(212,160,23,.7)', fontStyle:'italic', marginBottom:4 }}>"{africanGreeting.text}" — <span style={{ fontSize:10, color:'rgba(212,160,23,.45)' }}>{africanGreeting.language}</span></div>}
 
             <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
               {([
                 [`🛡 Nkisi ${user?.nkisiState || 'GREEN'}`,'rgba(26,124,62,.25)','rgba(26,124,62,.5)','#4ade80'],
                 ...(isAlly ? [[`🤝 Alliance Circle`,'rgba(37,99,235,.15)','rgba(37,99,235,.4)','#60a5fa']] : []),
-                ...(user?.roleKey ? [`✦ Crest I`,'rgba(212,160,23,.15)','rgba(212,160,23,.4)','#fbbf24'] as string[] : []),
+                ...(user?.roleKey ? [[`✦ Crest I`,'rgba(212,160,23,.15)','rgba(212,160,23,.4)','#fbbf24']] : []),
                 ...(user?.heritage ? [[`🌍 ${user.heritage}`,'rgba(255,255,255,.08)','rgba(255,255,255,.15)','#f0f7f0']] : []),
               ] as string[][]).map(([lbl,bg,bd,col])=>(
                 <span key={lbl} style={{ borderRadius:99, padding:'3px 9px', fontSize:10, fontWeight:600, background:bg, border:`1px solid ${bd}`, color:col }}>{lbl}</span>
@@ -417,7 +418,7 @@ export default function DashboardPage() {
           <div style={{ fontSize:36, flexShrink:0 }}>🌳</div>
           <div style={{ flex:1 }}>
             <div style={{ fontFamily:'Sora, sans-serif', fontSize:16, fontWeight:900, background:'linear-gradient(135deg,#4ade80,#1a7c3e)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', marginBottom:2 }}>BAOBAB</div>
-            <div style={{ fontSize:10, color:'rgba(74,222,128,.5)', fontWeight:600 }}>Bank · Marketplace · Calendar · Villages · 17 more apps</div>
+            <div style={{ fontSize:10, color:'rgba(74,222,128,.5)', fontWeight:600 }}>Bank · Marketplace · Love World · Villages · 20 more apps</div>
           </div>
           <div style={{ width:36, height:36, borderRadius:12, background:'rgba(26,124,62,.15)', border:'1px solid rgba(26,124,62,.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, color:'#4ade80', fontWeight:900 }}>→</div>
         </div>

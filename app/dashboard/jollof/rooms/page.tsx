@@ -7,6 +7,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { jollofTvApi } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
+import { USE_MOCKS, logApiFailure } from '@/lib/flags'
 
 // ── Inject-once CSS ───────────────────────────────────────────────
 const CSS_ID = 'palaver-hut-css'
@@ -65,7 +66,7 @@ const MOCK_ROOMS: Room[] = [
     id: 'rm3', title: 'Tech Founders Roundtable', hostId: 'dev_amaka',
     topic: 'Technology & Startups', villageId: 'technology', isLive: false, listenerCount: 0,
     participants: [],
-    scheduledAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+    scheduledAt: '2026-04-09T03:00:00.000Z',
   },
   {
     id: 'rm4', title: 'Healing Through Ubuntu', hostId: 'nurse_fatou',
@@ -81,7 +82,7 @@ const MOCK_ROOMS: Room[] = [
     id: 'rm5', title: 'African Fashion Week Recap', hostId: 'designer_olu',
     topic: 'Fashion & Style', villageId: 'fashion', isLive: false, listenerCount: 0,
     participants: [],
-    scheduledAt: new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString(),
+    scheduledAt: '2026-04-09T05:00:00.000Z',
   },
   {
     id: 'rm6', title: 'Cowrie Finance Masterclass', hostId: 'fin_kolade',
@@ -326,13 +327,14 @@ function CreateRoomSheet({ onClose, userId }: { onClose: () => void; userId: str
     try {
       await jollofTvApi.createAudioRoom({
         title,
-        hostId: userId || 'demo-user',
+        hostId: userId,
         villageId: villageId || undefined,
         topic: topic || undefined,
       })
       setDone(true)
       setTimeout(onClose, 1400)
-    } catch {
+    } catch (e) {
+      logApiFailure('jollof/rooms/create', e)
       setDone(true)
       setTimeout(onClose, 1400)
     } finally {
@@ -459,7 +461,7 @@ function CreateRoomSheet({ onClose, userId }: { onClose: () => void; userId: str
 export default function PalaverHutPage() {
   const router = useRouter()
   const user = useAuthStore(s => s.user)
-  const userId = user?.id || 'demo-user'
+  const userId = user?.id || ''
 
   const [rooms, setRooms] = React.useState<Room[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -482,9 +484,10 @@ export default function PalaverHutPage() {
       try {
         const res = await jollofTvApi.audioRooms()
         const data = (res as any)?.rooms || []
-        if (mounted) setRooms(data.length > 0 ? data : MOCK_ROOMS)
-      } catch {
-        if (mounted) setRooms(MOCK_ROOMS)
+        if (mounted) setRooms(data.length > 0 ? data : (USE_MOCKS ? MOCK_ROOMS : []))
+      } catch (e) {
+        logApiFailure('jollof/rooms/list', e)
+        if (mounted) setRooms(USE_MOCKS ? MOCK_ROOMS : [])
       } finally {
         if (mounted) setLoading(false)
       }

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { NkisiShield } from '@/components/ui/NkisiShield'
 import { deriveNkisiState } from '@/lib/nkisi'
 import type { ConnectionRing, NkisiState } from '@/types'
+import { logApiFailure } from '@/lib/flags'
 
 // Three Rings model
 const RINGS: { id: ConnectionRing; emoji: string; label: string; desc: string; color: string }[] = [
@@ -46,7 +47,7 @@ export default function ConnectionsPage() {
           const data = await res.json()
           setConnections(Array.isArray(data) ? data : (data.connections ?? []))
         }
-      } catch { /* show empty state */ }
+      } catch (e) { logApiFailure('connections/fetch', e) }
     })()
   }, [])
 

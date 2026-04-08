@@ -57,10 +57,9 @@ const CSS = `
 
 type Tab = 'all' | 'active' | 'completed' | 'business' | 'tools'
 
-function fmt(iso: string) {
+function fmt(iso: string, nowMs: number) {
   const d = new Date(iso)
-  const now = new Date()
-  const diff = Math.floor((now.getTime() - d.getTime()) / 1000)
+  const diff = Math.floor((nowMs - d.getTime()) / 1000)
   if (diff < 60) return `${diff}s ago`
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
@@ -72,7 +71,12 @@ export default function SessionsPage() {
   const [tab, setTab] = React.useState<Tab>('all')
   const [search, setSearch] = React.useState('')
   const [dismissed, setDismissed] = React.useState<Set<string>>(new Set())
+  const [nowMs, setNowMs] = React.useState(0)
   const vc = '#1a7c3e'
+
+  React.useEffect(() => {
+    setNowMs(Date.now())
+  }, [])
 
   React.useEffect(() => {
     if (typeof document !== 'undefined' && !document.getElementById('ss-css')) {
@@ -257,7 +261,7 @@ export default function SessionsPage() {
                 {session.counterparty && (
                   <span style={{ fontSize: 10, color: 'rgba(255,255,255,.4)' }}>👤 {session.counterparty}</span>
                 )}
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginLeft: 'auto' }}>{fmt(session.updatedAt)}</span>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,.3)', marginLeft: 'auto' }}>{fmt(session.updatedAt, nowMs)}</span>
               </div>
 
               {/* Bottom row — amount + actions */}

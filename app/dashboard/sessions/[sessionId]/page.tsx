@@ -107,8 +107,8 @@ const CSS = `
 `
 
 // ── Helper ─────────────────────────────────────────────────────────
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
+function timeAgo(iso: string, nowMs: number): string {
+  const diff = nowMs - new Date(iso).getTime()
   const min = Math.floor(diff / 60000)
   if (min < 1) return 'just now'
   if (min < 60) return `${min}m ago`
@@ -141,7 +141,12 @@ export default function LiveSessionPage() {
   const [callingRunner, setCallingRunner] = React.useState(false)
   const [showEscrowExpanded, setShowEscrowExpanded] = React.useState(false)
   const [playingMsg, setPlayingMsg] = React.useState<string | null>(null)
+  const [nowMs, setNowMs] = React.useState(0)
   const endRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    setNowMs(Date.now())
+  }, [])
 
   const fetchSession = async () => {
     try {
@@ -618,7 +623,7 @@ export default function LiveSessionPage() {
                     </div>
                   )}
                   <div style={{ fontSize: 8, color: 'rgba(240,247,240,.25)', marginTop: 6, textAlign: 'right' }}>
-                    {timeAgo(msg.sentAt)}
+                    {timeAgo(msg.sentAt, nowMs)}
                   </div>
                 </div>
               </div>
@@ -720,10 +725,10 @@ export default function LiveSessionPage() {
                       <div style={{
                         flex: 1, display: 'flex', alignItems: 'center', gap: 1, height: 20,
                       }}>
-                        {Array.from({ length: 24 }).map((_, i) => (
+                        {[65,42,88,35,72,55,90,28,78,45,62,85,38,95,50,70,32,80,58,43,75,92,47,68].map((h, i) => (
                           <div key={i} style={{
                             width: 2, borderRadius: 1, flex: 1,
-                            height: `${20 + Math.random() * 80}%`,
+                            height: `${h}%`,
                             background: mine ? 'rgba(74,222,128,.4)' : 'rgba(255,255,255,.2)',
                           }} />
                         ))}
@@ -740,7 +745,7 @@ export default function LiveSessionPage() {
                   fontSize: 8, color: 'rgba(240,247,240,.2)', marginTop: 2,
                   textAlign: mine ? 'right' : 'left', paddingLeft: 2, paddingRight: 2,
                 }}>
-                  {timeAgo(msg.sentAt)}
+                  {timeAgo(msg.sentAt, nowMs)}
                 </div>
               </div>
             </div>
